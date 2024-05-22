@@ -14,7 +14,7 @@ Welcome to **Alternup**, a NextJS solution allowing tutors to monitor and manage
 
 3. To be defined
 
-4. To be defined
+4. License
 
 # Project overview
 [![](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white)](https://www.figma.com)
@@ -24,3 +24,12 @@ Welcome to **Alternup**, a NextJS solution allowing tutors to monitor and manage
 [![](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/)
 [![](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com)
+
+# License
+
+You may use, modify and contribute to this project for personal, non-commercial purposes.  
+This project is under license.  
+For more details, read the [LICENSE](LICENSE) file.
+
+---
+2024 - Roche Sébastien
