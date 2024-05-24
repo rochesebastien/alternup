@@ -51,14 +51,12 @@ pnpm dev
 # or
 bun dev
 ```
-
-And to finish you need to start the BDD Dockerfile.
 To use it in production you need to follow these steps : 
 ```bash
 npm run build #create the build application
 npm run start #run the prod application
 ```
-
+And to finish you need to start the BDD Dockerfile.
 # License
 
 You may use, modify and contribute to this project for personal, non-commercial purposes.  
