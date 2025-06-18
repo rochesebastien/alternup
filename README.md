@@ -69,4 +69,4 @@ This project is under license.
 For more details, read the [LICENSE](LICENSE) file.
 
 ---
-2024 - Roche Sébastien
+2025 - Roche Sébastien
