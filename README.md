@@ -2,7 +2,7 @@
 
 ![Image Description](docs/readme_cover.jpg)  
 
-Welcome to **Alternup**, a NextJS solution allowing tutors to monitor and manage their work-study students (and interns). The project uses a PostgresSQL database, tailwindCSS as a styling framework and Typescript. The application will allow you to see your work-study students/trainees, see your tasks, see your average, your skills and create personalized quizzes.
+Welcome to **Alternup**, a NuxtJS solution allowing tutors to monitor and manage their work-study students (and interns). The project now relies on a Supabase database, Tailwind CSS as a styling framework and TypeScript. The application will allow you to see your work-study students/trainees, see your tasks, see your average, your skills and create personalized quizzes.
 
 
 
@@ -17,31 +17,35 @@ Welcome to **Alternup**, a NextJS solution allowing tutors to monitor and manage
 4. License
 
 # Project overview
-[![](https://img.shields.io/badge/Next-black?style=for-the-badge&logo=next.js&logoColor=white)](https://www.figma.com)
+[![](https://img.shields.io/badge/Nuxt-00DC82?style=for-the-badge&logo=nuxtdotjs&logoColor=white)](https://nuxt.com)
 [![](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/en)
-[![](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
 [![](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/)
 [![](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com)
 
 # Installation 
 
-## Automate - using Docker
+## Docker
 
-If u want to launch all the part of the solution just run the following command : 
+Each app contains its own `Dockerfile`. Build and run them separately if you want
+to containerize the project:
 
 ```bash
-docker-compose up
+docker build -t alternup-frontend ./apps/frontend
+docker run -p 3000:3000 alternup-frontend
 ```
-This command will create 2 containers: 
-- postgresql database 
-- nextjs_app based on the database (in prod version)
+
+```bash
+docker build -t alternup-backend ./apps/backend
+docker run -p 4000:4000 alternup-backend
+```
 
 # Manual - with commands
 
 First you need to install nodeJS : [Node Oficial Website](https://nodejs.org/en).
-Then go in the nextjs_app folder, and execute this commands : 
+Then go in the `apps/frontend` folder, and execute these commands :
 ```bash
 npm run dev
 # or
@@ -51,12 +55,13 @@ pnpm dev
 # or
 bun dev
 ```
-To use it in production you need to follow these steps : 
+To start the backend just run the same command inside `apps/backend`.
+
+To use it in production you need to follow these steps :
 ```bash
 npm run build #create the build application
 npm run start #run the prod application
 ```
-And to finish you need to start the BDD Dockerfile.
 # License
 
 You may use, modify and contribute to this project for personal, non-commercial purposes.  
