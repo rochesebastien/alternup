@@ -2,15 +2,17 @@
   "name": "backend",
   "private": true,
   "scripts": {
-    "dev": "nuxt dev",
+    "dev": "nuxt dev --port 4000",
     "build": "nuxt build",
-    "start": "nuxt start"
+    "start": "nuxt start",
+    "preview": "nuxt preview"
   },
   "dependencies": {
     "nuxt": "^3.9.0",
     "@supabase/supabase-js": "^2.43.1"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0"
   }
 }

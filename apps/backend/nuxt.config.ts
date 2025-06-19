@@ -2,7 +2,8 @@ import { defineNuxtConfig } from 'nuxt/config'
 
 export default defineNuxtConfig({
   nitro: {
-    preset: 'node-server'
+    preset: 'node-server',
+    port: 4000
   },
   typescript: {
     strict: true
