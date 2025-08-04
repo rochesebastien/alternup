@@ -8,11 +8,12 @@
     "preview": "nuxt preview"
   },
   "dependencies": {
-    "nuxt": "^3.9.0",
-    "@supabase/supabase-js": "^2.43.1"
+    "@supabase/supabase-js": "^2.43.1",
+    "nuxt": "^3.9.0"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.0.0"
+    "@types/node": "^20.0.0",
+    "supabase": "^2.33.9",
+    "typescript": "^5.4.0"
   }
 }
