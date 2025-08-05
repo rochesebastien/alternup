@@ -6,7 +6,8 @@
     "build": "nuxt build",
     "start": "nuxt start",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@nuxt/ui": "^3.3.0",

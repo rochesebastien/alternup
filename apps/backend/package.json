@@ -5,7 +5,8 @@
     "dev": "nuxt dev --port 4000",
     "build": "nuxt build",
     "start": "nuxt start",
-    "preview": "nuxt preview"
+    "preview": "nuxt preview",
+    "check": "tsc --noEmit"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.1",

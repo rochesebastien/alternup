@@ -12,7 +12,8 @@
     "start": "concurrently \"npm:start:*\"",
     "start:frontend": "npm run start --workspace=apps/frontend",
     "start:backend": "npm run start --workspace=apps/backend",
-    "install:all": "npm install --workspaces"
+    "install:all": "npm install --workspaces",
+    "check": "npm run check --workspaces"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"
