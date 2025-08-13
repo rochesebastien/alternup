@@ -1,21 +1,22 @@
 {
   "private": true,
-  "workspaces": [
-    "apps/frontend",
-    "apps/backend"
-  ],
   "scripts": {
-    "dev": "concurrently \"npm:dev:*\"",
-    "dev:frontend": "npm run dev --workspace=apps/frontend",
-    "dev:backend": "npm run dev --workspace=apps/backend",
-    "build": "npm run build --workspaces",
-    "start": "concurrently \"npm:start:*\"",
-    "start:frontend": "npm run start --workspace=apps/frontend",
-    "start:backend": "npm run start --workspace=apps/backend",
-    "install:all": "npm install --workspaces",
-    "check": "npm run check --workspaces"
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "typecheck": "nuxt typecheck",
+    "lint": "eslint .",
+    "test": "vitest",
+    "test:watch": "vitest --watch"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^3.0.0",
+    "@supabase/supabase-js": "^2.0.0",
+    "nuxt": "^3.0.0"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@nuxt/test-utils": "^3.0.0",
+    "vitest": "^3.2.0",
+    "typescript": "^5.0.0"
   }
 }

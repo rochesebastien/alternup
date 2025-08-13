@@ -1,0 +1,29 @@
+import { getSupabaseClient } from '../../plugins/supabase'
+
+
+export default defineEventHandler(async (event) => {
+  const supabase = getSupabaseClient()
+  const id = getRouterParam(event, 'id')
+
+  if (!id) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Profile ID is required'
+    })
+  }
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (error) {
+    throw createError({
+      statusCode: error.code === 'PGRST116' ? 404 : 500,
+      statusMessage: error.code === 'PGRST116' ? 'Profile not found' : error.message
+    })
+  }
+
+  return data
+})
