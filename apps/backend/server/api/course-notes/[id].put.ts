@@ -1,7 +1,7 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+
 
 export default defineEventHandler(async (event) => {
-  const supabase: SupabaseClient = event.context.supabase
+  const supabase = getSupabaseClient()
   const id = getRouterParam(event, 'id')
   const body = await readBody(event)
 
