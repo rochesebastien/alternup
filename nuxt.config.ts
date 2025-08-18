@@ -14,6 +14,21 @@ export default defineNuxtConfig({
     }
   },
   nitro: {
-    preset: 'node-server'
+    preset: 'node-server',
+    experimental: { 
+      openAPI: true 
+    },
+    openAPI: {
+      meta: { 
+        title: 'Alternup API', 
+        version: '1.0.0',
+        description: 'API for managing work-study students and interns'
+      },
+      production: "runtime",
+      ui: {
+        scalar: { route: "/_docs" }
+      },
+      route: "/_docs/openapi.json"
+    }
   }
 })
