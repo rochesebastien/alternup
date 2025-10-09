@@ -1,22 +1,58 @@
 {
+  "name": "alternup",
+  "version": "1.0.0",
+  "description": "Application de gestion des alternances avec NuxtJS et Supabase",
   "private": true,
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
+    "start": "nuxt start",
     "preview": "nuxt preview",
-    "typecheck": "nuxt typecheck",
-    "lint": "eslint .",
-    "test": "vitest",
-    "test:watch": "vitest --watch"
+    "postinstall": "nuxt prepare",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts",
+    "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "prepare": "husky",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@nuxt/ui": "^3.0.0",
-    "@supabase/supabase-js": "^2.0.0",
-    "nuxt": "^3.0.0"
+    "@nuxt/image": "*",
+    "@nuxtjs/color-mode": "*",
+    "@nuxtjs/tailwindcss": "*",
+    "@pinia/nuxt": "*",
+    "@supabase/supabase-js": "*",
+    "@vueuse/nuxt": "*",
+    "h3": "*",
+    "jsonwebtoken": "*",
+    "nuxt": "*",
+    "pinia": "*",
+    "vue": "*",
+    "vue-router": "*",
+    "zod": "*"
   },
   "devDependencies": {
-    "@nuxt/test-utils": "^3.0.0",
-    "vitest": "^3.2.0",
-    "typescript": "^5.0.0"
+    "@nuxt/devtools": "*",
+    "@types/jsonwebtoken": "*",
+    "@types/node": "*",
+    "@typescript-eslint/eslint-plugin": "*",
+    "@typescript-eslint/parser": "*",
+    "autoprefixer": "*",
+    "eslint": "*",
+    "eslint-plugin-vue": "*",
+    "husky": "*",
+    "lint-staged": "*",
+    "postcss": "*",
+    "tailwindcss": "*",
+    "typescript": "*",
+    "vitest": "*",
+    "vue-tsc": "*"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Roche Sébastien",
+  "license": "SEE LICENSE IN LICENSE",
+  "lint-staged": {
+    "*.{js,ts,vue}": "eslint --cache --fix"
   }
 }
