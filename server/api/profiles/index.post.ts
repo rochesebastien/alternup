@@ -1,4 +1,4 @@
-import { getSupabaseClient } from '../../plugins/supabase'
+
 
 defineRouteMeta({
   openAPI: {
@@ -49,7 +49,7 @@ defineRouteMeta({
 })
 
 export default defineEventHandler(async (event) => {
-  const supabase = getSupabaseClient()
+  const supabase = event.context.supabase
   const body = await readBody(event)
 
   const { data, error } = await supabase
