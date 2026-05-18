@@ -55,6 +55,11 @@
 </template>
 
 <script setup lang="ts">
+definePageMeta({
+  middleware: ['role'],
+  requireRole: 'Tutor'
+})
+
 interface AlternantDetail {
   id: string
   email: string

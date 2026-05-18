@@ -16,6 +16,11 @@
 <script setup lang="ts">
 import type { AlternantListItem } from '~/components/AlternantsList.vue'
 
+definePageMeta({
+  middleware: ['role'],
+  requireRole: 'Tutor'
+})
+
 const router = useRouter()
 
 const { data: alternants, error, status } = await useFetch<AlternantListItem[]>('/api/alternants')
