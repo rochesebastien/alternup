@@ -16,20 +16,21 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@nuxt/fonts": "^0.14.0",
+    "@nuxt/icon": "^2.2.2",
     "@nuxt/image": "*",
-    "@nuxtjs/color-mode": "*",
-    "@nuxtjs/tailwindcss": "*",
+    "@nuxt/ui": "^4.7.1",
     "@pinia/nuxt": "*",
     "@prisma/client": "^7.8.0",
     "@vueuse/nuxt": "*",
     "bcrypt": "^6.0.0",
     "h3": "*",
-    "nuxt": "*",
+    "nuxt": "^4.4.5",
     "nuxt-auth-utils": "^0.5.29",
     "pinia": "*",
     "prisma": "^7.8.0",
     "vue": "*",
-    "vue-router": "*",
+    "vue-router": "^5.0.7",
     "zod": "*"
   },
   "devDependencies": {
@@ -45,10 +46,10 @@
     "husky": "*",
     "lint-staged": "*",
     "postcss": "*",
-    "tailwindcss": "*",
+    "tailwindcss": "^4.3.0",
     "typescript": "*",
     "vitest": "*",
-    "vue-tsc": "*"
+    "vue-tsc": "^3.2.9"
   },
   "engines": {
     "node": ">=18.0.0"
