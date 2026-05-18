@@ -1,122 +1,93 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center px-4 py-12">
-    <div class="w-full max-w-md bg-white shadow rounded-lg p-8 space-y-6">
-      <div>
-        <h1 class="text-2xl font-bold text-gray-900">Créer un compte</h1>
-        <p class="text-sm text-gray-500 mt-1">
-          Déjà inscrit ?
-          <NuxtLink to="/login" class="text-emerald-600 hover:underline">
-            Se connecter
-          </NuxtLink>
-        </p>
-      </div>
+  <div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
+    <UCard class="w-full max-w-md">
+      <UAuthForm
+        :schema="registerInputSchema"
+        :fields="fields"
+        :state="state"
+        title="Créer un compte"
+        description="Choisissez votre rôle pour commencer."
+        icon="i-lucide-user-plus"
+        :submit="{ label: 'Créer mon compte', loading: pending, block: true, color: 'primary' }"
+        @submit="onSubmit"
+      >
+        <template #footer>
+          <p class="text-sm text-center text-gray-500">
+            Déjà inscrit ?
+            <NuxtLink to="/login" class="text-primary-600 hover:underline">
+              Se connecter
+            </NuxtLink>
+          </p>
+        </template>
+      </UAuthForm>
 
-      <form class="space-y-4" @submit.prevent="onSubmit">
-        <div class="grid grid-cols-2 gap-3">
-          <label class="block">
-            <span class="text-sm font-medium text-gray-700">Prénom</span>
-            <input
-              v-model="firstName"
-              type="text"
-              required
-              class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-          </label>
-          <label class="block">
-            <span class="text-sm font-medium text-gray-700">Nom</span>
-            <input
-              v-model="lastName"
-              type="text"
-              required
-              class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            >
-          </label>
-        </div>
-
-        <label class="block">
-          <span class="text-sm font-medium text-gray-700">Email</span>
-          <input
-            v-model="email"
-            type="email"
-            required
-            autocomplete="email"
-            class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-        </label>
-
-        <label class="block">
-          <span class="text-sm font-medium text-gray-700">Mot de passe</span>
-          <input
-            v-model="password"
-            type="password"
-            required
-            minlength="8"
-            autocomplete="new-password"
-            class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-          <span class="text-xs text-gray-500">8 caractères minimum.</span>
-        </label>
-
-        <label class="block">
-          <span class="text-sm font-medium text-gray-700">Rôle</span>
-          <select
-            v-model="role"
-            class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
-          >
-            <option value="Alternant">Alternant</option>
-            <option value="Stagiaire">Stagiaire</option>
-            <option value="Tutor">Tuteur</option>
-          </select>
-        </label>
-
-        <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
-
-        <button
-          type="submit"
-          :disabled="pending"
-          class="w-full py-2 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-medium rounded-md disabled:opacity-60 disabled:cursor-not-allowed"
-        >
-          {{ pending ? 'Création…' : 'Créer mon compte' }}
-        </button>
-      </form>
-    </div>
+      <UAlert
+        v-if="serverError"
+        class="mt-4"
+        color="error"
+        variant="soft"
+        :title="serverError"
+      />
+    </UCard>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { Role } from '@prisma/client'
+import { Role } from '@prisma/client'
+import type { FormSubmitEvent } from '@nuxt/ui'
+import { registerInputSchema, type RegisterInput } from '~/shared/utils/auth-credentials'
+import { resolvePostLoginPath } from '~/shared/utils/auth-redirect'
 
-definePageMeta({ auth: false, layout: false })
+definePageMeta({ auth: false })
 
-const { fetch: refreshSession } = useUserSession()
+const { fetch: refreshSession, user } = useUserSession()
 
-const firstName = ref('')
-const lastName = ref('')
-const email = ref('')
-const password = ref('')
-const role = ref<Role>('Alternant' as Role)
+const state = reactive<Partial<RegisterInput>>({
+  firstName: undefined,
+  lastName: undefined,
+  email: undefined,
+  password: undefined,
+  role: Role.Alternant
+})
+
+const fields = [
+  { name: 'firstName', label: 'Prénom', type: 'text' as const },
+  { name: 'lastName', label: 'Nom', type: 'text' as const },
+  { name: 'email', label: 'Email', type: 'text' as const, placeholder: 'vous@exemple.com', autocomplete: 'email' },
+  {
+    name: 'password',
+    label: 'Mot de passe',
+    type: 'password' as const,
+    autocomplete: 'new-password',
+    help: '8 caractères minimum.'
+  },
+  {
+    name: 'role',
+    label: 'Rôle',
+    type: 'select' as const,
+    items: [
+      { label: 'Alternant', value: Role.Alternant },
+      { label: 'Stagiaire', value: Role.Stagiaire },
+      { label: 'Tuteur', value: Role.Tutor }
+    ]
+  }
+]
+
 const pending = ref(false)
-const error = ref<string | null>(null)
+const serverError = ref<string | null>(null)
 
-async function onSubmit() {
+async function onSubmit(event: FormSubmitEvent<RegisterInput>) {
   pending.value = true
-  error.value = null
+  serverError.value = null
   try {
-    await $fetch('/api/auth/register', {
-      method: 'POST',
-      body: {
-        firstName: firstName.value,
-        lastName: lastName.value,
-        email: email.value,
-        password: password.value,
-        role: role.value
-      }
-    })
+    await $fetch('/api/auth/register', { method: 'POST', body: event.data })
     await refreshSession()
-    await navigateTo('/')
+    if (user.value) {
+      await navigateTo(resolvePostLoginPath(user.value.role))
+    }
   } catch (err: unknown) {
-    const e = err as { statusMessage?: string; message?: string }
-    error.value = e.statusMessage || e.message || 'Impossible de créer le compte'
+    const e = err as { statusMessage?: string; data?: { statusMessage?: string } }
+    serverError.value = e.data?.statusMessage || e.statusMessage || 'Impossible de créer le compte.'
   } finally {
     pending.value = false
   }
