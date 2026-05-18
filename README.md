@@ -2,6 +2,8 @@
 
 ![Image Description](docs/readme_cover.jpg)
 
+[![CI](https://github.com/rochesebastien/alternup/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/rochesebastien/alternup/actions/workflows/ci.yml)
+
 Solution **Nuxt 3** permettant aux tuteurs de suivre et gérer leurs étudiants en alternance (et stagiaires). Application monolithique avec **PostgreSQL** (Prisma) côté données, **nuxt-auth-utils** pour la session et **Tailwind CSS** pour l'UI. Déploiement cible : **Dokploy**.
 
 ## Stack

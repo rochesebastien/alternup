@@ -2,7 +2,24 @@
 
 ## Vue d'ensemble
 
-L'app tourne en monolithe (Nuxt 3 + Nitro) avec un Postgres self-hosted, le tout orchestré par `docker-compose.yml`.
+L'app tourne en monolithe (Nuxt 3 + Nitro) avec un Postgres self-hosted, le tout orchestré par `docker-compose.yml`. Le conteneur applicatif :
+
+- tourne sous un utilisateur non-root (uid 10001) ;
+- applique automatiquement `prisma migrate deploy` au démarrage ;
+- expose un healthcheck Docker sur `GET /api/health` (utilisé par le service-discovery Dokploy).
+
+## CI
+
+`.github/workflows/ci.yml` exécute, sur chaque PR ciblant `dev`/`main` et chaque push sur ces branches :
+
+- `npm ci`
+- `prisma generate`
+- `nuxt prepare`
+- `vue-tsc --noEmit` (typecheck)
+- `npm test` (vitest, suite partagée)
+- `nuxt build` (build complet Nitro + client)
+
+Le workflow ne déploie pas — Dokploy écoute le repo Git séparément et redéploie quand la branche cible évolue.
 
 ## Variables d'environnement requises
 

@@ -497,3 +497,22 @@ Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_e
 - [x] `npm test` : 98 tests verts (6 nouveaux)
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #18 — CI/CD + Dokploy ready
+
+> Branche : `18-feat-ci-cd` → PR vers `dev`
+
+**Objectif** : poser un workflow GitHub Actions qui valide chaque PR (typecheck + tests + build), durcir le Dockerfile pour la prod et compléter `.env.example` pour qu'un déploiement Dokploy soit possible sans deviner les clefs.
+
+### Tâches
+
+- [x] `.github/workflows/ci.yml` : `npm ci` → `prisma generate` → `nuxt prepare` → `vue-tsc --noEmit` → `npm test` → `nuxt build` (Node 20, concurrency control, cancel sur push PR)
+- [x] `Dockerfile` : user non-root (uid 10001) avec `chown -R`, `HEALTHCHECK` sur `GET /api/health`, multi-stage conservé
+- [x] `docker-compose.yml` : healthcheck applicatif aligné sur celui du Dockerfile, depends_on healthy déjà en place
+- [x] `.env.example` : ajout `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `APP_PORT`, sections commentées par usage (app / compose / optionnel)
+- [x] `docs/deploy-dokploy.md` : section CI ajoutée, mention non-root + healthcheck
+- [x] `README.md` : badge CI
+
+**Hors scope (à suivre dans une PR dédiée)** : la commande `npm run lint` casse car ESLint v10 attend une `eslint.config.*` flat config, absente du repo. Lint donc retiré du CI pour ne pas bloquer ; ticket à ouvrir pour migrer la config.
