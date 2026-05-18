@@ -1,5 +1,6 @@
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col">
+  <UApp>
+    <div class="min-h-screen bg-gray-50 flex flex-col">
     <header class="bg-white shadow">
       <div class="max-w-7xl mx-auto py-4 px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center">
         <div class="flex items-center mb-4 sm:mb-0">
@@ -50,7 +51,8 @@
         </div>
       </div>
     </footer>
-  </div>
+    </div>
+  </UApp>
 </template>
 
 <script setup lang="ts">
