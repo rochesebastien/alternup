@@ -1,46 +1,47 @@
 import { z } from 'zod'
-import { Prisma, ProjectStatus } from '@prisma/client'
+import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireAuth } from '~/server/utils/require-role'
+import { loadAssignmentVisibleTo } from '~/server/utils/projects'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
+import { assignmentUpdateSchema, pickStudentEditableFields } from '~/shared/utils/projects'
 
-const bodySchema = z.object({
-  projectId: z.string().uuid().optional(),
-  studentId: z.string().uuid().optional(),
-  status: z.nativeEnum(ProjectStatus).optional(),
-  tutorComment: z.string().nullable().optional(),
-  studentComment: z.string().nullable().optional(),
-  startedAt: z.coerce.date().nullable().optional()
-})
+const uuid = z.string().uuid()
+
+const include = {
+  project: { select: { id: true, title: true, internal: true } },
+  student: { select: { id: true, firstName: true, lastName: true, email: true } }
+} as const
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Assignment ID is required' })
+  const user = await requireAuth(event)
+  const id = uuid.safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid assignment id' })
   }
 
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const assignment = await loadAssignmentVisibleTo(id.data, user)
+
+  const parsed = assignmentUpdateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid assignment payload',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
 
-  try {
-    return await prisma.projectAssignment.update({
-      where: { id },
-      data: parsed.data,
-      include: {
-        project: { select: { id: true, title: true, internal: true } },
-        student: { select: { id: true, firstName: true, lastName: true, email: true } }
-      }
-    })
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
-      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Assignment already exists' })
-      if (err.code === 'P2003') {
-        const field = (err.meta?.field_name as string | undefined) ?? ''
-        const message = field.includes('project') ? 'Invalid projectId' : 'Invalid studentId'
-        throw createError({ statusCode: 400, statusMessage: message })
-      }
-    }
-    throw err
+  const isTutor =
+    user.role === Role.Tutor && assignment.project.createdById === user.id
+
+  const data = isTutor ? parsed.data : pickStudentEditableFields(parsed.data)
+  if (Object.keys(data).length === 0) {
+    throw createError({ statusCode: 403, statusMessage: 'No editable field for this role' })
   }
+
+  return prisma.projectAssignment.update({
+    where: { id: id.data },
+    data,
+    include
+  })
 })
