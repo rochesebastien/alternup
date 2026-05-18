@@ -1,45 +1,22 @@
-
-
+import { prisma } from '~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
   const id = getRouterParam(event, 'id')
-
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Assignment ID is required'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Assignment ID is required' })
   }
 
-  const { data, error } = await supabase
-    .from('project_assignments')
-    .select(`
-      *,
-      project:projects(
-        id,
-        title,
-        description,
-        internal,
-        created_at
-      ),
-      student:profiles!student_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .eq('id', id)
-    .single()
+  const assignment = await prisma.projectAssignment.findUnique({
+    where: { id },
+    include: {
+      project: true,
+      student: { select: { id: true, firstName: true, lastName: true, email: true } }
+    }
+  })
 
-  if (error) {
-    throw createError({
-      statusCode: error.code === 'PGRST116' ? 404 : 500,
-      statusMessage: error.code === 'PGRST116' ? 'Assignment not found' : error.message
-    })
+  if (!assignment) {
+    throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
   }
 
-  return data
+  return assignment
 })

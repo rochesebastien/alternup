@@ -1,45 +1,39 @@
+import { z } from 'zod'
+import { Prisma, ProjectStatus } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
-
+const bodySchema = z.object({
+  projectId: z.string().uuid(),
+  studentId: z.string().uuid(),
+  status: z.nativeEnum(ProjectStatus).optional(),
+  tutorComment: z.string().nullable().optional(),
+  studentComment: z.string().nullable().optional(),
+  startedAt: z.coerce.date().nullable().optional()
+})
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
-  const body = await readBody(event)
-
-  const { data, error } = await supabase
-    .from('project_assignments')
-    .insert([{
-      project_id: body.project_id,
-      student_id: body.student_id,
-      status: body.status ?? 'non_demarre',
-      tutor_comment: body.tutor_comment,
-      student_comment: body.student_comment,
-      started_at: body.started_at
-    }])
-    .select(`
-      *,
-      project:projects(
-        id,
-        title,
-        description,
-        internal,
-        created_at
-      ),
-      student:profiles!student_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .single()
-
-  if (error) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: error.message
-    })
+  const parsed = bodySchema.safeParse(await readBody(event))
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
   }
 
-  return data
+  try {
+    return await prisma.projectAssignment.create({
+      data: parsed.data,
+      include: {
+        project: { select: { id: true, title: true, internal: true } },
+        student: { select: { id: true, firstName: true, lastName: true, email: true } }
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Assignment already exists' })
+      if (err.code === 'P2003') {
+        const field = (err.meta?.field_name as string | undefined) ?? ''
+        const message = field.includes('project') ? 'Invalid projectId' : 'Invalid studentId'
+        throw createError({ statusCode: 400, statusMessage: message })
+      }
+    }
+    throw err
+  }
 })

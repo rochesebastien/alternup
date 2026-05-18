@@ -1,43 +1,35 @@
+import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
-
+const bodySchema = z.object({
+  studentId: z.string().uuid(),
+  courseId: z.string().uuid(),
+  startDate: z.coerce.date(),
+  endDate: z.coerce.date().nullable().optional()
+})
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
-  const body = await readBody(event)
-
-  const { data, error } = await supabase
-    .from('course_assignments')
-    .insert([{
-      student_id: body.student_id,
-      course_id: body.course_id,
-      start_date: body.start_date,
-      end_date: body.end_date
-    }])
-    .select(`
-      *,
-      student:profiles!student_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      ),
-      course:courses(
-        id,
-        title,
-        description,
-        created_by,
-        created_at
-      )
-    `)
-    .single()
-
-  if (error) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: error.message
-    })
+  const parsed = bodySchema.safeParse(await readBody(event))
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
   }
 
-  return data
+  try {
+    return await prisma.courseAssignment.create({
+      data: parsed.data,
+      include: {
+        student: {
+          select: { id: true, firstName: true, lastName: true, email: true, role: true }
+        },
+        course: true
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Assignment already exists for this student, course and start date' })
+      if (err.code === 'P2003') throw createError({ statusCode: 400, statusMessage: 'Invalid studentId or courseId reference' })
+    }
+    throw err
+  }
 })

@@ -1,36 +1,44 @@
+import { z } from 'zod'
+import { Prisma, Role } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
-
+const bodySchema = z.object({
+  email: z.string().email().optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
+  role: z.nativeEnum(Role).optional()
+})
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
   const id = getRouterParam(event, 'id')
-  const body = await readBody(event)
-
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Profile ID is required'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Profile ID is required' })
   }
 
-  const { data, error } = await supabase
-    .from('profiles')
-    .update({
-      first_name: body.first_name,
-      last_name: body.last_name,
-      email: body.email,
-      role: body.role
-    })
-    .eq('id', id)
-    .select()
-    .single()
-
-  if (error) {
-    throw createError({
-      statusCode: error.code === 'PGRST116' ? 404 : 400,
-      statusMessage: error.code === 'PGRST116' ? 'Profile not found' : error.message
-    })
+  const parsed = bodySchema.safeParse(await readBody(event))
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
   }
 
-  return data
+  try {
+    return await prisma.user.update({
+      where: { id },
+      data: parsed.data,
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        createdAt: true,
+        updatedAt: true
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Profile not found' })
+      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Email already in use' })
+    }
+    throw err
+  }
 })

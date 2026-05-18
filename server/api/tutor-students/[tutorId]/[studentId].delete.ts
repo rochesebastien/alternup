@@ -1,30 +1,23 @@
-import { getSupabaseClient } from '../../../plugins/supabase'
-
+import { Prisma } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
   const tutorId = getRouterParam(event, 'tutorId')
   const studentId = getRouterParam(event, 'studentId')
 
   if (!tutorId || !studentId) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Both tutor ID and student ID are required'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Both tutorId and studentId are required' })
   }
 
-  const { error } = await supabase
-    .from('tutor_students')
-    .delete()
-    .eq('tutor_id', tutorId)
-    .eq('student_id', studentId)
-
-  if (error) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message
+  try {
+    await prisma.tutorStudent.delete({
+      where: { tutorId_studentId: { tutorId, studentId } }
     })
+    return { message: 'Relation deleted successfully' }
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+      throw createError({ statusCode: 404, statusMessage: 'Relation not found' })
+    }
+    throw err
   }
-
-  return { message: 'Tutor-student relationship deleted successfully' }
 })

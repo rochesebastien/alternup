@@ -1,33 +1,19 @@
+import { prisma } from '~/server/utils/prisma'
+
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
-  
-  const { data, error } = await supabase
-    .from('calendar_events')
-    .select(`
-      *,
-      student:profiles!student_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      ),
-      tutor:profiles!tutor_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .order('start_time', { ascending: true })
+  const query = getQuery(event)
+  const studentId = typeof query.studentId === 'string' ? query.studentId : undefined
+  const tutorId = typeof query.tutorId === 'string' ? query.tutorId : undefined
 
-  if (error) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message
-    })
-  }
-
-  return data
+  return prisma.calendarEvent.findMany({
+    where: {
+      ...(studentId ? { studentId } : {}),
+      ...(tutorId ? { tutorId } : {})
+    },
+    orderBy: { startTime: 'asc' },
+    include: {
+      student: { select: { id: true, firstName: true, lastName: true } },
+      tutor: { select: { id: true, firstName: true, lastName: true } }
+    }
+  })
 })

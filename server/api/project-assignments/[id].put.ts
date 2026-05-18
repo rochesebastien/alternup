@@ -1,53 +1,46 @@
+import { z } from 'zod'
+import { Prisma, ProjectStatus } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
-
+const bodySchema = z.object({
+  projectId: z.string().uuid().optional(),
+  studentId: z.string().uuid().optional(),
+  status: z.nativeEnum(ProjectStatus).optional(),
+  tutorComment: z.string().nullable().optional(),
+  studentComment: z.string().nullable().optional(),
+  startedAt: z.coerce.date().nullable().optional()
+})
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
   const id = getRouterParam(event, 'id')
-  const body = await readBody(event)
-
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Assignment ID is required'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Assignment ID is required' })
   }
 
-  const { data, error } = await supabase
-    .from('project_assignments')
-    .update({
-      status: body.status,
-      tutor_comment: body.tutor_comment,
-      student_comment: body.student_comment,
-      started_at: body.started_at,
-      updated_at: new Date().toISOString()
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      project:projects(
-        id,
-        title,
-        description,
-        internal,
-        created_at
-      ),
-      student:profiles!student_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .single()
-
-  if (error) {
-    throw createError({
-      statusCode: error.code === 'PGRST116' ? 404 : 400,
-      statusMessage: error.code === 'PGRST116' ? 'Assignment not found' : error.message
-    })
+  const parsed = bodySchema.safeParse(await readBody(event))
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
   }
 
-  return data
+  try {
+    return await prisma.projectAssignment.update({
+      where: { id },
+      data: parsed.data,
+      include: {
+        project: { select: { id: true, title: true, internal: true } },
+        student: { select: { id: true, firstName: true, lastName: true, email: true } }
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
+      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Assignment already exists' })
+      if (err.code === 'P2003') {
+        const field = (err.meta?.field_name as string | undefined) ?? ''
+        const message = field.includes('project') ? 'Invalid projectId' : 'Invalid studentId'
+        throw createError({ statusCode: 400, statusMessage: message })
+      }
+    }
+    throw err
+  }
 })

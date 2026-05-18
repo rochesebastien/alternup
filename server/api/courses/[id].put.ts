@@ -1,43 +1,39 @@
+import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
-
+const bodySchema = z.object({
+  title: z.string().min(1).optional(),
+  description: z.string().nullable().optional(),
+  createdById: z.string().uuid().nullable().optional()
+})
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
   const id = getRouterParam(event, 'id')
-  const body = await readBody(event)
-
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Course ID is required'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Course ID is required' })
   }
 
-  const { data, error } = await supabase
-    .from('courses')
-    .update({
-      title: body.title,
-      description: body.description
-    })
-    .eq('id', id)
-    .select(`
-      *,
-      created_by_profile:profiles!created_by(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .single()
-
-  if (error) {
-    throw createError({
-      statusCode: error.code === 'PGRST116' ? 404 : 400,
-      statusMessage: error.code === 'PGRST116' ? 'Course not found' : error.message
-    })
+  const parsed = bodySchema.safeParse(await readBody(event))
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
   }
 
-  return data
+  try {
+    return await prisma.course.update({
+      where: { id },
+      data: parsed.data,
+      include: {
+        createdBy: {
+          select: { id: true, firstName: true, lastName: true, email: true, role: true }
+        }
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError) {
+      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Course not found' })
+      if (err.code === 'P2003') throw createError({ statusCode: 400, statusMessage: 'Invalid createdById reference' })
+    }
+    throw err
+  }
 })

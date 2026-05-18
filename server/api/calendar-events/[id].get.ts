@@ -1,42 +1,22 @@
+import { prisma } from '~/server/utils/prisma'
+
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
   const id = getRouterParam(event, 'id')
-
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Event ID is required'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Event ID is required' })
   }
 
-  const { data, error } = await supabase
-    .from('calendar_events')
-    .select(`
-      *,
-      student:profiles!student_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      ),
-      tutor:profiles!tutor_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .eq('id', id)
-    .single()
+  const calendarEvent = await prisma.calendarEvent.findUnique({
+    where: { id },
+    include: {
+      student: { select: { id: true, firstName: true, lastName: true } },
+      tutor: { select: { id: true, firstName: true, lastName: true } }
+    }
+  })
 
-  if (error) {
-    throw createError({
-      statusCode: error.code === 'PGRST116' ? 404 : 500,
-      statusMessage: error.code === 'PGRST116' ? 'Event not found' : error.message
-    })
+  if (!calendarEvent) {
+    throw createError({ statusCode: 404, statusMessage: 'Event not found' })
   }
 
-  return data
+  return calendarEvent
 })

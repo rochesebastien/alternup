@@ -1,36 +1,11 @@
+import { prisma } from '~/server/utils/prisma'
 
-
-
-export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
-  
-  const { data, error } = await supabase
-    .from('project_assignments')
-    .select(`
-      *,
-      project:projects(
-        id,
-        title,
-        description,
-        internal,
-        created_at
-      ),
-      student:profiles!student_id(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .order('updated_at', { ascending: false })
-
-  if (error) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: error.message
-    })
-  }
-
-  return data
+export default defineEventHandler(async () => {
+  return prisma.projectAssignment.findMany({
+    orderBy: { updatedAt: 'desc' },
+    include: {
+      project: { select: { id: true, title: true, internal: true } },
+      student: { select: { id: true, firstName: true, lastName: true, email: true } }
+    }
+  })
 })

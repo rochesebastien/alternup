@@ -1,35 +1,32 @@
+import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
-
+const bodySchema = z.object({
+  title: z.string().min(1),
+  description: z.string().optional(),
+  createdById: z.string().uuid().optional()
+})
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
-  const body = await readBody(event)
-
-  const { data, error } = await supabase
-    .from('courses')
-    .insert([{
-      title: body.title,
-      description: body.description,
-      created_by: body.created_by
-    }])
-    .select(`
-      *,
-      created_by_profile:profiles!created_by(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      )
-    `)
-    .single()
-
-  if (error) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: error.message
-    })
+  const parsed = bodySchema.safeParse(await readBody(event))
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
   }
 
-  return data
+  try {
+    return await prisma.course.create({
+      data: parsed.data,
+      include: {
+        createdBy: {
+          select: { id: true, firstName: true, lastName: true, email: true, role: true }
+        }
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid createdById reference' })
+    }
+    throw err
+  }
 })

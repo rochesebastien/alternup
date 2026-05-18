@@ -1,47 +1,37 @@
+import { z } from 'zod'
+import { Prisma } from '@prisma/client'
+import { prisma } from '~/server/utils/prisma'
 
-
+const bodySchema = z.object({
+  assignmentId: z.string().uuid(),
+  sessionDate: z.coerce.date(),
+  grade: z.coerce.number().nullable().optional(),
+  comment: z.string().nullable().optional(),
+  notionsCovered: z.any().nullable().optional()
+})
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
-  const body = await readBody(event)
-
-  const { data, error } = await supabase
-    .from('course_notes')
-    .insert([{
-      assignment_id: body.assignment_id,
-      session_date: body.session_date,
-      grade: body.grade,
-      comment: body.comment,
-      notions_covered: body.notions_covered
-    }])
-    .select(`
-      *,
-      assignment:course_assignments(
-        id,
-        start_date,
-        end_date,
-        student:profiles!student_id(
-          id,
-          first_name,
-          last_name,
-          email,
-          role
-        ),
-        course:courses(
-          id,
-          title,
-          description
-        )
-      )
-    `)
-    .single()
-
-  if (error) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: error.message
-    })
+  const parsed = bodySchema.safeParse(await readBody(event))
+  if (!parsed.success) {
+    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
   }
 
-  return data
+  try {
+    return await prisma.courseNote.create({
+      data: parsed.data,
+      include: {
+        assignment: {
+          include: {
+            student: { select: { id: true, firstName: true, lastName: true } },
+            course: { select: { id: true, title: true } }
+          }
+        }
+      }
+    })
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid assignmentId' })
+    }
+    throw err
+  }
 })

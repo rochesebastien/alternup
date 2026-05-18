@@ -1,51 +1,30 @@
-
-
+import { prisma } from '~/server/utils/prisma'
 
 export default defineEventHandler(async (event) => {
-  const supabase = event.context.supabase
   const id = getRouterParam(event, 'id')
-
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Course ID is required'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Course ID is required' })
   }
 
-  const { data, error } = await supabase
-    .from('courses')
-    .select(`
-      *,
-      created_by_profile:profiles!created_by(
-        id,
-        first_name,
-        last_name,
-        email,
-        role
-      ),
-      assignments:course_assignments(
-        id,
-        start_date,
-        end_date,
-        created_at,
-        student:profiles!student_id(
-          id,
-          first_name,
-          last_name,
-          email,
-          role
-        )
-      )
-    `)
-    .eq('id', id)
-    .single()
+  const course = await prisma.course.findUnique({
+    where: { id },
+    include: {
+      createdBy: {
+        select: { id: true, firstName: true, lastName: true, email: true, role: true }
+      },
+      assignments: {
+        include: {
+          student: {
+            select: { id: true, firstName: true, lastName: true, email: true, role: true }
+          }
+        }
+      }
+    }
+  })
 
-  if (error) {
-    throw createError({
-      statusCode: error.code === 'PGRST116' ? 404 : 500,
-      statusMessage: error.code === 'PGRST116' ? 'Course not found' : error.message
-    })
+  if (!course) {
+    throw createError({ statusCode: 404, statusMessage: 'Course not found' })
   }
 
-  return data
+  return course
 })
