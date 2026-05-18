@@ -88,6 +88,7 @@ model CourseAssignment {
   student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
   course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
   notes   CourseNote[]
+  events  CalendarEvent[]
 
   @@unique([studentId, courseId, startDate])
   @@index([studentId])
@@ -142,17 +143,20 @@ model ProjectAssignment {
 }
 
 model CalendarEvent {
-  id        String   @id @default(uuid()) @db.Uuid
-  studentId String   @map("student_id") @db.Uuid
-  tutorId   String   @map("tutor_id") @db.Uuid
-  title     String
-  startTime DateTime @map("start_time") @db.Timestamptz
-  endTime   DateTime @map("end_time") @db.Timestamptz
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  id                 String   @id @default(uuid()) @db.Uuid
+  studentId          String   @map("student_id") @db.Uuid
+  tutorId            String   @map("tutor_id") @db.Uuid
+  courseAssignmentId String?  @map("course_assignment_id") @db.Uuid
+  title              String
+  startTime          DateTime @map("start_time") @db.Timestamptz
+  endTime            DateTime @map("end_time") @db.Timestamptz
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  student User @relation("EventStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  tutor   User @relation("EventTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  student          User              @relation("EventStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor            User              @relation("EventTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  courseAssignment CourseAssignment? @relation(fields: [courseAssignmentId], references: [id], onDelete: SetNull)
 
   @@index([studentId, startTime])
+  @@index([courseAssignmentId])
   @@map("calendar_events")
 }

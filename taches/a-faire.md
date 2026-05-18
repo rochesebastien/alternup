@@ -393,3 +393,55 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 - [x] `npm test` : 63 tests verts (3 nouveaux)
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #9 — Endpoints cours, notes & calendrier
+
+> Branche : `9-feat-courses-notes` → PR vers `dev`
+
+**Objectif** : aligner le backend sur la spec — `GET /users/:id/calendar` + `POST /events/:eventId/notes` — et durcir les routes existantes `calendar-events/*` et `course-notes/*` (scope par rôle, ownership).
+
+### Choix de schéma (option A validée)
+
+Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_events` qui pointe vers `course_assignments(id)`. Un événement peut maintenant être :
+- une session de cours (lié à un `CourseAssignment`)
+- ou un événement libre (lien à `null`)
+
+`POST /events/:eventId/notes` crée/upsert une `CourseNote` (clef = `assignment.id` + `sessionDate = event.startTime` tronquée à minuit UTC). Le 400 explicite si l'event n'est pas rattaché à une session.
+
+### Matrice rôle / route
+
+| Action | Tutor | Alternant / Stagiaire |
+|---|---|---|
+| `GET /api/calendar-events` | Ses events (tutorId) | Ses events (studentId) |
+| `POST /api/calendar-events` | ✅ avec learner de son réseau (+ assignment compatible si fourni) | ❌ 403 |
+| `GET /api/calendar-events/:id` | Si tutorId ou studentId == user.id | Idem |
+| `PUT /api/calendar-events/:id` | Si tutorId == user.id | ❌ 403 |
+| `DELETE /api/calendar-events/:id` | Si tutorId == user.id | ❌ 403 |
+| `GET /api/users/:id/calendar` | Pour soi ou pour un learner de son réseau | Pour soi |
+| `POST /api/events/:eventId/notes` | Sur events de son réseau, si event lié à une session | Sur ses propres events, idem |
+| `GET /api/course-notes` | Notes des learners de son réseau | Ses notes |
+| `POST /api/course-notes` | Sur learner de son réseau | Sur soi |
+| `GET / PUT / DELETE /api/course-notes/:id` | Si learner dans son réseau | Si c'est sa note |
+
+### Décisions
+
+- **404 plutôt que 403** sur ressources invisibles (cohérent avec #12).
+- **`createdById` interdit dans le body** (POST /calendar-events) : forcé serveur-side depuis la session tuteur.
+- **`notionsCovered` traité via `Prisma.DbNull`** quand l'appelant envoie `null` (sinon TypeScript refuse l'assignation sur un champ `Json?`).
+- **Pas de transaction** pour l'upsert via event : `findFirst` puis `update`/`create` — l'index sur `(assignmentId, sessionDate)` n'existe pas, ajouter un `@@unique` serait plus propre mais déborde du scope (à revoir si on a besoin de race-safety).
+- **Schémas Zod centralisés** dans `shared/utils/calendar.ts` (réutilisables par #11).
+
+### Tâches
+
+- [x] Schéma Prisma : ajout `courseAssignmentId` (nullable) + relation + index
+- [x] Migration `20260518120000_link_calendar_to_assignment` (1 ADD COLUMN, 1 INDEX, 1 FK SET NULL)
+- [x] `shared/utils/calendar.ts` : `calendarEventCreateSchema`, `calendarEventUpdateSchema`, `eventNoteUpsertSchema` + tests (19 cas)
+- [x] `server/utils/courses.ts` : helpers `assertTutorOwnsLearner`, `loadCalendarEventVisibleTo`, `loadCourseNoteVisibleTo`, `assertCanReadAssignment`, `notionsToPrismaInput`
+- [x] 5 routes `/api/calendar-events/*` durcies
+- [x] 5 routes `/api/course-notes/*` durcies
+- [x] Nouvelles routes `/api/users/:id/calendar` (GET) et `/api/events/:id/notes` (POST upsert)
+- [x] `npm test` : 82 tests verts (19 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès

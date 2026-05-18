@@ -1,41 +1,44 @@
 import { z } from 'zod'
-import { Prisma } from '@prisma/client'
+import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireRole } from '~/server/utils/require-role'
+import { loadCalendarEventVisibleTo } from '~/server/utils/courses'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
+import { calendarEventUpdateSchema } from '~/shared/utils/calendar'
 
-const bodySchema = z
-  .object({
-    studentId: z.string().uuid().optional(),
-    tutorId: z.string().uuid().optional(),
-    title: z.string().min(1).optional(),
-    startTime: z.coerce.date().optional(),
-    endTime: z.coerce.date().optional()
-  })
-  .refine((d) => !d.startTime || !d.endTime || d.endTime > d.startTime, {
-    message: 'endTime must be after startTime',
-    path: ['endTime']
-  })
+const uuid = z.string().uuid()
+
+const include = {
+  student: { select: { id: true, firstName: true, lastName: true, email: true } },
+  tutor: { select: { id: true, firstName: true, lastName: true, email: true } },
+  courseAssignment: {
+    include: { course: { select: { id: true, title: true } } }
+  }
+} as const
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Event ID is required' })
+  const tutor = await requireRole(event, Role.Tutor)
+  const id = uuid.safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid event id' })
   }
 
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const existing = await loadCalendarEventVisibleTo(id.data, tutor)
+  if (existing.tutorId !== tutor.id) {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+  }
+
+  const parsed = calendarEventUpdateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid event payload',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
-
   const data = parsed.data
 
-  if ((data.startTime && !data.endTime) || (!data.startTime && data.endTime)) {
-    const existing = await prisma.calendarEvent.findUnique({
-      where: { id },
-      select: { startTime: true, endTime: true }
-    })
-    if (!existing) {
-      throw createError({ statusCode: 404, statusMessage: 'Event not found' })
-    }
+  if (data.startTime || data.endTime) {
     const start = data.startTime ?? existing.startTime
     const end = data.endTime ?? existing.endTime
     if (end <= start) {
@@ -43,24 +46,21 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  try {
-    return await prisma.calendarEvent.update({
-      where: { id },
-      data,
-      include: {
-        student: { select: { id: true, firstName: true, lastName: true } },
-        tutor: { select: { id: true, firstName: true, lastName: true } }
-      }
+  if (data.courseAssignmentId) {
+    const assignment = await prisma.courseAssignment.findUnique({
+      where: { id: data.courseAssignmentId },
+      select: { studentId: true }
     })
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Event not found' })
-      if (err.code === 'P2003') {
-        const field = (err.meta?.field_name as string | undefined) ?? ''
-        const message = field.includes('tutor') ? 'Invalid tutorId' : 'Invalid studentId'
-        throw createError({ statusCode: 400, statusMessage: message })
-      }
+    if (!assignment) {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid courseAssignmentId' })
     }
-    throw err
+    if (assignment.studentId !== existing.studentId) {
+      throw createError({
+        statusCode: 400,
+        statusMessage: 'Course assignment does not belong to this learner'
+      })
+    }
   }
+
+  return prisma.calendarEvent.update({ where: { id: id.data }, data, include })
 })
