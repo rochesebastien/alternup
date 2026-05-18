@@ -1,24 +1,26 @@
-import { z } from 'zod'
 import { Prisma, Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { requireSelfTutor } from '~/server/utils/require-self-tutor'
-
-const bodySchema = z.object({
-  userId: z.string().uuid()
-})
+import { addLearnerBodySchema } from '~/shared/utils/tutor-learners'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
 
 export default defineEventHandler(async (event) => {
   const tutor = await requireSelfTutor(event)
 
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const parsed = addLearnerBodySchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid payload',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
 
-  const { userId } = parsed.data
+  const where =
+    'userId' in parsed.data ? { id: parsed.data.userId } : { email: parsed.data.email }
 
   const learner = await prisma.user.findUnique({
-    where: { id: userId },
+    where,
     select: { id: true, role: true, firstName: true, lastName: true, email: true }
   })
   if (!learner) {

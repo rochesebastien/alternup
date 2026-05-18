@@ -297,3 +297,29 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 - [x] `npm test` : 39 tests verts (3 nouveaux + 30 hérités)
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #8 — Dashboard tuteur (gestion des learners)
+
+> Branche : `8-feat-tutor-dashboard` → PR vers `dev`
+
+**Objectif** : remplacer `/alternants` par un vrai dashboard tuteur connecté aux endpoints `/api/tutors/:id/learners` (issue #6), avec ajout/retrait via modales et UX intuitive.
+
+### Décisions
+
+- **Add-learner par email** : `POST /api/tutors/:id/learners` accepte désormais `{ userId }` OU `{ email }` (union Zod). La résolution email→user est faite côté serveur, l'UI n'a pas à connaître les UUIDs. Le contrat `{ userId }` historique reste valide.
+- **Pas de duplication backend** : on étend la route existante au lieu d'ajouter un endpoint de recherche utilisateur — moins d'API, même surface fonctionnelle.
+- **Liste branchée sur le tuteur connecté** : `useFetch('/api/tutors/' + user.id + '/learners')` (et pas `/api/alternants` qui listait tous les Alternants de la base).
+- **Composants Nuxt UI** : `<UTable>` avec slots `*-cell`, `<UModal>` pour Ajouter et pour confirmer Supprimer, `<UAlert>` pour les erreurs, `useToast()` pour les confirmations.
+
+### Tâches
+
+- [x] `shared/utils/tutor-learners.ts` : `addLearnerBodySchema` (union `{ userId } | { email }`) + tests (5 cas)
+- [x] `server/api/tutors/[id]/learners/index.post.ts` : accepte les deux shapes, normalise l'email, conserve les erreurs 400/404/409
+- [x] `pages/alternants/index.vue` réécrit en dashboard tuteur (table, ajout via email, suppression confirmée, toasts)
+- [x] `pages/alternants/[id].vue` repassé sur Nuxt UI natif (UCard / UAlert / UBadge / UIcon)
+- [x] Suppression composants legacy : `components/AlternantsList.vue`, `components/ui/Alert.vue`, `components/ui/Button.vue`
+- [x] `npm test` : 44 tests verts (5 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
