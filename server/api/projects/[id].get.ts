@@ -1,28 +1,14 @@
-import { prisma } from '~/server/utils/prisma'
+import { z } from 'zod'
+import { requireAuth } from '~/server/utils/require-role'
+import { loadProjectVisibleTo } from '~/server/utils/projects'
+
+const uuid = z.string().uuid()
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Project ID is required' })
+  const user = await requireAuth(event)
+  const id = uuid.safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid project id' })
   }
-
-  const project = await prisma.project.findUnique({
-    where: { id },
-    include: {
-      createdBy: {
-        select: { id: true, firstName: true, lastName: true, email: true }
-      },
-      assignments: {
-        include: {
-          student: { select: { id: true, firstName: true, lastName: true } }
-        }
-      }
-    }
-  })
-
-  if (!project) {
-    throw createError({ statusCode: 404, statusMessage: 'Project not found' })
-  }
-
-  return project
+  return loadProjectVisibleTo(id.data, user)
 })

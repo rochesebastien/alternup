@@ -323,3 +323,45 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 - [x] `npm test` : 44 tests verts (5 nouveaux)
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #12 — Endpoints projets & missions
+
+> Branche : `12-feat-projects-missions` → PR vers `dev`
+
+**Objectif** : durcir les endpoints `/api/projects/*` et `/api/project-assignments/*` (issus de la migration) avec scoping par rôle, ownership et validation forte. Une « mission » = un `ProjectAssignment` (terme métier vs terme de schéma).
+
+### Règles métier
+
+| Action | Tutor | Alternant / Stagiaire |
+|---|---|---|
+| `GET /projects` | Projets qu'il a créés | Projets où il est assigné |
+| `POST /projects` | ✅ `createdById = user.id` (forcé serveur-side) | ❌ 403 |
+| `GET /projects/:id` | Si créateur ou learner assigné | Si learner assigné |
+| `PUT /projects/:id` | Si créateur | ❌ 403 |
+| `DELETE /projects/:id` | Si créateur | ❌ 403 |
+| `GET /project-assignments` | Assignations sur ses projets | Ses propres assignations |
+| `POST /project-assignments` | ✅ si projet à lui + cible learner | ❌ 403 |
+| `GET /project-assignments/:id` | Si créateur du projet | Si c'est sa mission |
+| `PUT /project-assignments/:id` | Tous les champs | Uniquement `status` et `studentComment` |
+| `DELETE /project-assignments/:id` | Si créateur du projet | ❌ 403 |
+
+### Décisions
+
+- **Pas de `createdById` dans le body** : forcé depuis la session, immuable côté `PUT`. Évite l'usurpation.
+- **404 plutôt que 403 pour les ressources invisibles** : ne pas leaker l'existence des projets d'autres tuteurs.
+- **`pickStudentEditableFields`** : helper testé qui filtre le payload en PUT pour ne garder que `status` et `studentComment` quand l'appelant est l'alternant. Si rien ne reste après filtrage → 403.
+- **`requireRole(event, Role.Tutor)`** sur POST projects/assignments + DELETE assignment ; `requireAuth` ailleurs (le scoping fait le reste).
+- **Schémas Zod centralisés** dans `shared/utils/projects.ts` (testables, réutilisables par le futur frontend issue #13).
+
+### Tâches
+
+- [x] `shared/utils/projects.ts` : `projectCreateSchema`, `projectUpdateSchema`, `assignmentCreateSchema`, `assignmentUpdateSchema` + `pickStudentEditableFields`
+- [x] `server/utils/projects.ts` : `loadProjectVisibleTo`, `loadProjectOwnedBy`, `loadAssignmentVisibleTo`
+- [x] 5 routes `server/api/projects/*` réécrites (scope + ownership + erreurs structurées)
+- [x] 5 routes `server/api/project-assignments/*` réécrites
+- [x] `tests/shared/projects.test.ts` : 16 cas sur les schémas + le helper de filtrage
+- [x] `npm test` : 60 tests verts
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès

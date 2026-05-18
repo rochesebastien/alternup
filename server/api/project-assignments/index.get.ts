@@ -1,11 +1,23 @@
+import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireAuth } from '~/server/utils/require-role'
 
-export default defineEventHandler(async () => {
+const include = {
+  project: { select: { id: true, title: true, internal: true, createdById: true } },
+  student: { select: { id: true, firstName: true, lastName: true, email: true } }
+} as const
+
+export default defineEventHandler(async (event) => {
+  const user = await requireAuth(event)
+
+  const where =
+    user.role === Role.Tutor
+      ? { project: { createdById: user.id } }
+      : { studentId: user.id }
+
   return prisma.projectAssignment.findMany({
+    where,
     orderBy: { updatedAt: 'desc' },
-    include: {
-      project: { select: { id: true, title: true, internal: true } },
-      student: { select: { id: true, firstName: true, lastName: true, email: true } }
-    }
+    include
   })
 })
