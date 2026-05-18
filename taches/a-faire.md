@@ -127,13 +127,69 @@ Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/inser
 - [ ] `npm run dev` + smoke test `/api/health` + register/login — nécessite Postgres live (sera validé au premier déploiement Dokploy ou en local par l'utilisateur)
 - [ ] Commit + push branche (fait au fil des phases)
 
-## Phase 10 — Reprise issue #6
+## Phase 10 — Reprise issue #6 (CRUD alternants/stagiaires pour tuteur)
 
-Une fois la migration mergée, reprendre la PR #22 avec la nouvelle stack :
-- [ ] Endpoints `/api/tutors/:id/learners` (alias rest-style, ou conserver `/api/tutor-students`)
-- [ ] Protection : seul un tuteur authentifié peut modifier son réseau
-- [ ] Validation Zod sur les bodies
-- [ ] 404/400 propres
+**Spec issue #6** :
+- `GET /tutors/:id/learners` → liste des alternants/stagiaires rattachés
+- `POST /tutors/:id/learners` → ajouter un learner (body `{ userId }`)
+- `DELETE /tutors/:id/learners/:learnerId`
+- Seul le tuteur authentifié peut modifier son propre réseau
+- Validation des IDs, erreurs 404/400 propres
+
+### Plan détaillé
+
+#### Nouvelles routes (3)
+- `server/api/tutors/[id]/learners/index.get.ts` → list
+- `server/api/tutors/[id]/learners/index.post.ts` → add
+- `server/api/tutors/[id]/learners/[learnerId].delete.ts` → remove
+
+#### Règles d'auth (helper centralisé)
+- `server/utils/require-self-tutor.ts` : helper qui combine `requireRole(event, 'Tutor')` + vérifie que `getRouterParam(event, 'id') === user.id`. Throw 403 sinon.
+
+#### Validation
+- IDs parsés via `z.string().uuid()` (ou check léger côté code)
+- Pour POST : body `{ userId: z.string().uuid() }`. Vérifier que le learner existe et a `role in [Alternant, Stagiaire]` (sinon 400 avec message clair)
+
+#### Codes d'erreur
+- 401 (pas de session) — via `requireUserSession`
+- 403 (pas Tutor OU id URL ≠ user.id) — via helper
+- 404 (learner introuvable pour POST/DELETE)
+- 400 (body invalide ou learner pas Alternant/Stagiaire)
+- 409 (relation déjà existante — P2002)
+
+#### Question architecturale ouverte : que devient `/api/tutor-students/*` ?
+
+Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucune auth**. Trois choix :
+
+- **A. Supprimer** ces 5 routes. Les nouvelles `/api/tutors/:id/learners` couvrent le besoin. Simplicité maximale.
+- **B. Les garder + ajouter `requireRole('Tutor')`** + check ownership. Doublon fonctionnel mais URLs plus génériques pour des appels internes/admin.
+- **C. Les garder publiques** (statu quo). ⚠️ Faille de sécurité — n'importe qui peut lister/modifier le réseau de n'importe quel tuteur.
+
+→ Recommandation : **A**. C n'est pas une option (sécurité), B introduit du doublon pour aucun gain immédiat.
+
+#### Tests manuels prévus (à exécuter en local avec Postgres live)
+1. Register 1 tuteur + 2 alternants via `/api/auth/register`
+2. Login en tant que tuteur → cookie de session
+3. POST `/api/tutors/<tutorId>/learners` avec `{ userId: <alternant1> }` → 200
+4. GET `/api/tutors/<tutorId>/learners` → liste contenant alternant1
+5. DELETE `/api/tutors/<tutorId>/learners/<alternant1>` → 204/200
+6. Try POST sans login → 401
+7. Try POST en tant qu'alternant → 403
+8. Try POST avec `:id` ≠ user.id → 403
+
+### Tâches
+
+- [x] Décision tranchée : **A — supprimer les routes `tutor-students/*`**
+- [x] Créer `server/utils/require-self-tutor.ts`
+- [x] Créer `server/api/tutors/[id]/learners/index.get.ts`
+- [x] Créer `server/api/tutors/[id]/learners/index.post.ts`
+- [x] Créer `server/api/tutors/[id]/learners/[learnerId].delete.ts`
+- [x] Suppression `server/api/tutor-students/` (5 routes retirées)
+- [x] `vue-tsc` : 0 erreur
+- [x] `nuxt build` : succès, les 3 routes enregistrées dans le bundle Nitro (`/api/tutors/:id/learners` GET/POST + `/api/tutors/:id/learners/:learnerId` DELETE)
+- [ ] Commit + push sur `6-featusers-crud-alternantsstagiaires-pour-tuteur`
+- [ ] Ouvrir nouvelle PR vers `dev` (l'ancienne PR #22 est obsolète après reset)
+- [ ] Smoke test live (à exécuter par l'utilisateur en local avec Postgres)
 
 ---
 
