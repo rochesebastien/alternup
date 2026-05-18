@@ -269,3 +269,31 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 - [x] `npm test` : 30 tests verts
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #14 — Formulaires Auth (login / register)
+
+> Branche : `14-feat-auth-ui` → PR vers `dev`
+
+**Objectif** : remplacer les stubs natifs créés dans #7 par des formulaires Nuxt UI propres, avec validation client basée sur la même source que le backend, et redirection post-login en fonction du rôle.
+
+### Choix techniques
+
+- **Source unique de validation** : `server/utils/auth-credentials.ts` déplacé en `shared/utils/auth-credentials.ts`. Le client réutilise les mêmes schémas Zod que le serveur — pas de drift possible. Types switchés vers `z.input` pour matcher l'état de formulaire (pré-defaults).
+- **Composant Nuxt UI** : `<UAuthForm>` câblé avec `:schema` + `:fields` + `@submit`. Gestion erreurs serveur via `<UAlert>`.
+- **Redirection par rôle** : `shared/utils/auth-redirect.ts` (testé) — `Tutor → /alternants`, autres → `/`. Si `?redirect=…` valide (chemin relatif sûr), il est privilégié.
+- **Pas de Pinia** : `useUserSession()` de `nuxt-auth-utils` suffit comme source réactive d'identité. Ajouter Pinia par-dessus dupliquerait l'état pour zéro bénéfice.
+- **Header session-aware** : `app.vue` affiche nom + bouton Déconnexion quand loggé, sinon Connexion/Inscription. Lien « Mes alternants » réservé au rôle Tutor.
+
+### Tâches
+
+- [x] Déplacement `server/utils/auth-credentials.ts` → `shared/utils/auth-credentials.ts` (+ tests déplacés)
+- [x] `shared/utils/auth-redirect.ts` + tests (9 cas : landing par rôle, redirect sûr, rejet de cibles externes / `javascript:` / `//`)
+- [x] `pages/login.vue` réécrit avec `<UAuthForm>` + redirection par rôle
+- [x] `pages/register.vue` réécrit avec `<UAuthForm>` (select pour le rôle)
+- [x] `pages/forbidden.vue` passé sur Nuxt UI (`<UCard>`, `<UIcon>`, `<UButton>`)
+- [x] `app.vue` : header dynamique (login/logout, lien tuteur conditionnel)
+- [x] `npm test` : 39 tests verts (3 nouveaux + 30 hérités)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès

@@ -4,7 +4,7 @@ import {
   formatZodIssues,
   loginInputSchema,
   registerInputSchema
-} from '~/server/utils/auth-credentials'
+} from '~/shared/utils/auth-credentials'
 
 describe('registerInputSchema', () => {
   const baseInput = {

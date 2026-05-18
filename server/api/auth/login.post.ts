@@ -1,6 +1,6 @@
 import bcrypt from 'bcrypt'
 import { prisma } from '~/server/utils/prisma'
-import { formatZodIssues, loginInputSchema } from '~/server/utils/auth-credentials'
+import { formatZodIssues, loginInputSchema } from '~/shared/utils/auth-credentials'
 
 export default defineEventHandler(async (event) => {
   const parsed = loginInputSchema.safeParse(await readBody(event))

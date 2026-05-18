@@ -1,7 +1,7 @@
 import bcrypt from 'bcrypt'
 import { Prisma } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
-import { formatZodIssues, registerInputSchema } from '~/server/utils/auth-credentials'
+import { formatZodIssues, registerInputSchema } from '~/shared/utils/auth-credentials'
 
 const PASSWORD_COST = 12
 

@@ -22,8 +22,8 @@ export const loginInputSchema = z.object({
   password: z.string().min(1)
 })
 
-export type RegisterInput = z.infer<typeof registerInputSchema>
-export type LoginInput = z.infer<typeof loginInputSchema>
+export type RegisterInput = z.input<typeof registerInputSchema>
+export type LoginInput = z.input<typeof loginInputSchema>
 
 export type ValidationIssue = { path: string; message: string }
 
