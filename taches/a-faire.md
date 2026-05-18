@@ -187,8 +187,10 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 - [x] Suppression `server/api/tutor-students/` (5 routes retirées)
 - [x] `vue-tsc` : 0 erreur
 - [x] `nuxt build` : succès, les 3 routes enregistrées dans le bundle Nitro (`/api/tutors/:id/learners` GET/POST + `/api/tutors/:id/learners/:learnerId` DELETE)
-- [ ] Commit + push sur `6-featusers-crud-alternantsstagiaires-pour-tuteur`
-- [ ] Ouvrir nouvelle PR vers `dev` (l'ancienne PR #22 est obsolète après reset)
+- [x] Commit + push sur `6-featusers-crud-alternantsstagiaires-pour-tuteur` (`b3f426b`)
+- [x] PR #22 retitrée et redécrite pour cadrer juste l'issue #6 (le diff réel est désormais d'1 seul commit après fast-forward de `dev` sur `main`)
+- [x] `dev` synchronisée sur `main` (fast-forward `c67e925 → df7e804`) — 22 commits de retard rattrapés
+- [x] Branche `claude/review-code-progress-fQMkQ` supprimée du remote
 - [ ] Smoke test live (à exécuter par l'utilisateur en local avec Postgres)
 
 ---
