@@ -239,3 +239,33 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 - [x] `vitest.config.ts` + suite `tests/server/utils/auth-credentials.test.ts` (13 tests : normalisation, défauts, rejets)
 - [x] `vue-tsc --noEmit` : OK
 - [x] `npm test` : 13 tests passent
+
+---
+
+## Issue #7 — Protection des routes et redirections
+
+> Branche : `7-feat-route-protection` → PR vers `dev`
+
+**Objectif** : verrouiller l'accès aux routes sensibles côté API (Nitro) et côté pages (Nuxt), avec redirection propre vers `/login` pour les non-authentifiés et vers `/forbidden` pour les rôles non autorisés.
+
+### Architecture
+
+- **Allowlist partagée** : `shared/utils/public-routes.ts` exporte `PUBLIC_API_ROUTES` (health + register/login/logout) et `PUBLIC_PAGES` (`/`, `/login`, `/register`, `/forbidden`). Source unique de vérité pour les deux couches.
+- **Backend** : `server/middleware/auth-guard.ts` exige une session sur tout `/api/*` qui n'est pas dans l'allowlist (401 sinon). Les contrôles fins de rôle/ownership restent dans les handlers via `requireRole` / `requireSelfTutor`.
+- **Frontend** :
+  - `middleware/auth.global.ts` — redirige vers `/login?redirect=...` si non authentifié sur une page non publique. Opt-out via `definePageMeta({ auth: false })`.
+  - `middleware/role.ts` — middleware nommé qui lit `definePageMeta({ requireRole })`, redirige vers `/forbidden` si rôle invalide.
+- **Pages stubs** : `/login`, `/register`, `/forbidden`. UI minimale fonctionnelle (formulaires natifs). Le rebuild propre revient à #14 / #8.
+- **Typage** : `types/page-meta.d.ts` augmente `PageMeta` (`auth?: false`, `requireRole?: Role | Role[]`).
+
+### Tâches
+
+- [x] `shared/utils/public-routes.ts` + tests (17 cas : allowlists API & pages, query-string stripping)
+- [x] `server/middleware/auth-guard.ts`
+- [x] `middleware/auth.global.ts` + `middleware/role.ts`
+- [x] `pages/{login,register,forbidden}.vue` (stubs fonctionnels avec `auth: false`)
+- [x] `pages/alternants/{index,[id]}.vue` annotés `requireRole: 'Tutor'`
+- [x] `types/page-meta.d.ts`
+- [x] `npm test` : 30 tests verts
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
