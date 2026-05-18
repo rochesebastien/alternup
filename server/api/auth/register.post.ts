@@ -1,24 +1,22 @@
-import { z } from 'zod'
 import bcrypt from 'bcrypt'
-import { Prisma, Role } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { formatZodIssues, registerInputSchema } from '~/server/utils/auth-credentials'
 
-const bodySchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(8),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  role: z.nativeEnum(Role).default(Role.Alternant)
-})
+const PASSWORD_COST = 12
 
 export default defineEventHandler(async (event) => {
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const parsed = registerInputSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid registration payload',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
 
   const { password, ...data } = parsed.data
-  const passwordHash = await bcrypt.hash(password, 12)
+  const passwordHash = await bcrypt.hash(password, PASSWORD_COST)
 
   let user
   try {

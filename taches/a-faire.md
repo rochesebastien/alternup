@@ -220,3 +220,22 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 **Suite logique**
 
 → Phase 10 = reprendre l'issue #6 (CRUD alternants/stagiaires pour tuteur) sur la nouvelle stack, en ajoutant les routes alias `/api/tutors/:id/learners` et la validation `requireRole(event, 'Tutor')`.
+
+---
+
+## Issue #5 — Auth endpoints multi-rôles
+
+> Branche : `5-feat-auth-multi-roles` → PR vers `dev`
+
+**Objectif** : durcir les endpoints `/api/auth/{register,login,logout,me}` livrés pendant la migration et exposer un mécanisme propre de protection par rôle.
+
+**Divergence assumée vs. spec** : la spec mentionne « JWT + payload contenant role ». Le stack validé est `nuxt-auth-utils` (cookie de session signé, payload côté serveur). La sémantique demandée — auth stateful + role disponible côté requête — est respectée ; on ne réintroduit pas JWT.
+
+### Tâches
+
+- [x] `server/utils/auth-credentials.ts` : schémas `registerInputSchema` / `loginInputSchema` (email lowercase+trim, names trim, password ≥ 8) + `formatZodIssues` pour réponses propres
+- [x] `register.post.ts` et `login.post.ts` : adoption du schéma centralisé + `data.issues` en cas de 400
+- [x] `server/utils/require-role.ts` : ajout `requireAuth`, signature `requireRole(event, ...allowed: [Role, ...Role[]])` (compile-time : au moins un rôle requis)
+- [x] `vitest.config.ts` + suite `tests/server/utils/auth-credentials.test.ts` (13 tests : normalisation, défauts, rejets)
+- [x] `vue-tsc --noEmit` : OK
+- [x] `npm test` : 13 tests passent
