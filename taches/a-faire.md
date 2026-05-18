@@ -365,3 +365,31 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 - [x] `npm test` : 60 tests verts
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #13 — UI projets & missions
+
+> Branche : `13-feat-projects-ui` → PR vers `dev`
+
+**Objectif** : exposer le backend #12 dans l'UI. Tuteur gère ses projets et leurs missions ; alternant suit ses missions et met à jour son avancement (`status`, `studentComment`).
+
+### Décisions
+
+- **Sélection learner par dropdown plutôt qu'UUID** : la modale « Assigner un learner » ne demande pas un UUID brut — elle propose un `<USelect>` chargé depuis `/api/tutors/{user.id}/learners` (la liste du réseau du tuteur). Évite la friction UX.
+- **State stocké en `string` puis converti** : les `<UTextarea>` Nuxt UI n'acceptent que `string`. Les champs `description` / `*Comment` sont conservés en `''` côté formulaire, convertis en `null` au submit (le backend distingue `null` de `""`).
+- **Vue alternant en cards plutôt qu'en table** : un alternant a typiquement peu de missions actives. Une card par mission avec sélecteur de statut + zone de notes inline est plus lisible qu'un tableau.
+- **Helpers d'affichage centralisés** (`projectStatusLabel`, `projectStatusColor`, `PROJECT_STATUS_OPTIONS`) côté `shared/utils/projects.ts` : une seule source de labels FR + couleurs UBadge, partageable côté tuteur et alternant.
+- **`landingPageFor` ajusté** : Alternants / Stagiaires redirigés vers `/missions` après login (au lieu de `/`).
+
+### Tâches
+
+- [x] `shared/utils/projects.ts` enrichi : `projectStatusLabel`, `projectStatusColor`, `PROJECT_STATUS_OPTIONS` + tests
+- [x] `landingPageFor` redirige Alternant/Stagiaire vers `/missions` (+ tests mis à jour)
+- [x] `pages/projects/index.vue` : liste tuteur (`<UTable>`), modales création/édition/suppression
+- [x] `pages/projects/[id].vue` : détail projet + missions (assigner via select learner, éditer statut+commentaire tuteur, retirer)
+- [x] `pages/missions/index.vue` : cards par mission, formulaire inline statut + studentComment
+- [x] `app.vue` : nav enrichie (« Mes projets » tuteur, « Mes missions » learner)
+- [x] `npm test` : 63 tests verts (3 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès

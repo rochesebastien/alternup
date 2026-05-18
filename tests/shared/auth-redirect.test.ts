@@ -7,8 +7,8 @@ describe('landingPageFor', () => {
     expect(landingPageFor(Role.Tutor)).toBe('/alternants')
   })
 
-  it.each([Role.Alternant, Role.Stagiaire])('sends %s to the home page', (role) => {
-    expect(landingPageFor(role)).toBe('/')
+  it.each([Role.Alternant, Role.Stagiaire])('sends %s to their missions', (role) => {
+    expect(landingPageFor(role)).toBe('/missions')
   })
 })
 
@@ -19,7 +19,7 @@ describe('resolvePostLoginPath', () => {
 
   it('falls back to the default landing when no path is requested', () => {
     expect(resolvePostLoginPath(Role.Tutor)).toBe('/alternants')
-    expect(resolvePostLoginPath(Role.Alternant, null)).toBe('/')
+    expect(resolvePostLoginPath(Role.Alternant, null)).toBe('/missions')
   })
 
   it.each([

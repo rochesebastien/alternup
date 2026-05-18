@@ -17,12 +17,26 @@
             >
               Accueil
             </NuxtLink>
+            <template v-if="isTutor">
+              <NuxtLink
+                to="/alternants"
+                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              >
+                Mes alternants
+              </NuxtLink>
+              <NuxtLink
+                to="/projects"
+                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              >
+                Mes projets
+              </NuxtLink>
+            </template>
             <NuxtLink
-              v-if="isTutor"
-              to="/alternants"
+              v-if="isLearner"
+              to="/missions"
               class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
             >
-              Mes alternants
+              Mes missions
             </NuxtLink>
           </nav>
 
@@ -83,6 +97,9 @@ const appVersion = config.public.appVersion
 
 const { loggedIn, user, clear: clearSession } = useUserSession()
 const isTutor = computed(() => user.value?.role === Role.Tutor)
+const isLearner = computed(
+  () => user.value?.role === Role.Alternant || user.value?.role === Role.Stagiaire
+)
 
 const loggingOut = ref(false)
 

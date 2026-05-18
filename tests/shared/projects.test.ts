@@ -1,10 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { ProjectStatus } from '@prisma/client'
 import {
+  PROJECT_STATUS_OPTIONS,
   assignmentCreateSchema,
   assignmentUpdateSchema,
   pickStudentEditableFields,
   projectCreateSchema,
+  projectStatusColor,
+  projectStatusLabel,
   projectUpdateSchema
 } from '~/shared/utils/projects'
 
@@ -99,5 +102,30 @@ describe('pickStudentEditableFields', () => {
 
   it('returns an empty object when the input has none of the student fields', () => {
     expect(pickStudentEditableFields({ tutorComment: 'nope' })).toEqual({})
+  })
+})
+
+describe('projectStatusLabel / projectStatusColor', () => {
+  it('returns a French label for every status', () => {
+    for (const status of Object.values(ProjectStatus)) {
+      const label = projectStatusLabel(status)
+      expect(label).toMatch(/^[A-Z]/)
+      expect(label.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('returns a UI color for every status', () => {
+    expect(projectStatusColor(ProjectStatus.non_demarre)).toBe('neutral')
+    expect(projectStatusColor(ProjectStatus.en_cours)).toBe('primary')
+    expect(projectStatusColor(ProjectStatus.termine)).toBe('success')
+    expect(projectStatusColor(ProjectStatus.annule)).toBe('error')
+  })
+})
+
+describe('PROJECT_STATUS_OPTIONS', () => {
+  it('contains one option per enum value', () => {
+    const values = PROJECT_STATUS_OPTIONS.map((o) => o.value).sort()
+    const expected = Object.values(ProjectStatus).sort()
+    expect(values).toEqual(expected)
   })
 })

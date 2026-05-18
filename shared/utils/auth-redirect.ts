@@ -2,8 +2,8 @@ import type { Role } from '@prisma/client'
 
 const DEFAULT_LANDING: Record<Role, string> = {
   Tutor: '/alternants',
-  Alternant: '/',
-  Stagiaire: '/'
+  Alternant: '/missions',
+  Stagiaire: '/missions'
 }
 
 export function landingPageFor(role: Role): string {

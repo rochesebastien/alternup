@@ -59,3 +59,35 @@ export function pickStudentEditableFields(
   }
   return result
 }
+
+const STATUS_LABELS: Record<ProjectStatus, string> = {
+  non_demarre: 'Non démarré',
+  en_cours: 'En cours',
+  termine: 'Terminé',
+  annule: 'Annulé'
+}
+
+const STATUS_COLORS: Record<ProjectStatus, 'neutral' | 'primary' | 'success' | 'error'> = {
+  non_demarre: 'neutral',
+  en_cours: 'primary',
+  termine: 'success',
+  annule: 'error'
+}
+
+export function projectStatusLabel(status: ProjectStatus): string {
+  return STATUS_LABELS[status]
+}
+
+export function projectStatusColor(
+  status: ProjectStatus
+): 'neutral' | 'primary' | 'success' | 'error' {
+  return STATUS_COLORS[status]
+}
+
+export const PROJECT_STATUS_OPTIONS: Array<{
+  value: ProjectStatus
+  label: string
+}> = (Object.values(ProjectStatus) as ProjectStatus[]).map((value) => ({
+  value,
+  label: STATUS_LABELS[value]
+}))
