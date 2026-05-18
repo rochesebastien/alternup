@@ -26,14 +26,14 @@
 
 ## Phase 1 — Dépendances & config
 
-- [ ] `npm rm @supabase/supabase-js`
-- [ ] `npm i prisma @prisma/client bcrypt nuxt-auth-utils`
-- [ ] `npm i -D @types/bcrypt`
-- [ ] `npx prisma init` (génère `prisma/schema.prisma` + `.env`)
-- [ ] Ajouter `nuxt-auth-utils` dans `nuxt.config.ts` (`modules`)
-- [ ] Retirer de `runtimeConfig` : `supabaseUrl`, `supabaseKey`, `public.supabaseUrl`, `public.supabaseKey`
-- [ ] Ajouter `runtimeConfig` : `databaseUrl`, `sessionPassword` (nuxt-auth-utils utilise `NUXT_SESSION_PASSWORD`)
-- [ ] Mettre à jour `.env.example` : `DATABASE_URL`, `NUXT_SESSION_PASSWORD`, retirer `SUPABASE_*`
+- [x] `npm rm @supabase/supabase-js`
+- [x] `npm i prisma @prisma/client bcrypt nuxt-auth-utils`
+- [x] `npm i -D @types/bcrypt dotenv`
+- [x] `prisma/schema.prisma` créé + `prisma.config.ts` (Prisma 7 : `url` dans config, pas dans schema)
+- [x] Ajouter `nuxt-auth-utils` dans `nuxt.config.ts` (`modules`)
+- [x] Retirer de `runtimeConfig` : `supabaseUrl`, `supabaseKey`, `jwtSecret`
+- [x] Ajouter `runtimeConfig` : `databaseUrl`
+- [x] Mettre à jour `.env.example` : `DATABASE_URL`, `NUXT_SESSION_PASSWORD`, retirer `SUPABASE_*`
 
 ## Phase 2 — Schéma Prisma (traduire les 6 migrations Supabase)
 
@@ -45,15 +45,17 @@ Modèles à créer dans `prisma/schema.prisma` :
 
 Modèles :
 
-- [ ] `enum Role { Tutor Alternant Stagiaire }`
-- [ ] `enum ProjectStatus { ... }` (à confirmer depuis migration `20250805000702`)
-- [ ] `model User` — `id`, `email` unique, `passwordHash`, `role`, `firstName`, `lastName`, `createdAt`, `updatedAt`
-- [ ] `model TutorStudent` (tutorId, studentId, addedAt, PK composite, relations vers User)
-- [ ] `model Course`, `model CourseAssignment`, `model CourseNote`
-- [ ] `model Project`, `model ProjectAssignment`
-- [ ] `model CalendarEvent`
-- [ ] `npx prisma migrate dev --name init`
-- [ ] Supprimer `supabase/` entier (migrations, config.toml, rapports)
+- [x] `enum Role { Tutor Alternant Stagiaire }`
+- [x] `enum ProjectStatus { non_demarre en_cours termine annule }`
+- [x] `model User` — `id`, `email` unique, `passwordHash`, `role`, `firstName`, `lastName`, timestamps
+- [x] `model TutorStudent` (PK composite tutorId+studentId, relations vers User)
+- [x] `model Course`, `model CourseAssignment`, `model CourseNote`
+- [x] `model Project`, `model ProjectAssignment`
+- [x] `model CalendarEvent`
+- [x] Schéma validé via `prisma validate` ✅
+- [x] SQL généré vérifié via `prisma migrate diff` ✅
+- [ ] **`npx prisma migrate dev --name init`** — sera lancé en Phase 7 quand Postgres tournera dans Docker
+- [ ] Supprimer `supabase/` entier — sera fait en Phase 8 (nettoyage)
 
 ## Phase 3 — Connexion DB (remplacer le plugin Supabase serveur)
 

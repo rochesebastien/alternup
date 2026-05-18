@@ -5,7 +5,8 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vueuse/nuxt',
     '@nuxt/image',
-    '@nuxtjs/color-mode'
+    '@nuxtjs/color-mode',
+    'nuxt-auth-utils'
   ],
   css: ['~/assets/css/main.css'],
   typescript: {
@@ -15,14 +16,10 @@ export default defineNuxtConfig({
   },
   devtools: { enabled: process.env.NODE_ENV === 'development' },
   runtimeConfig: {
-    // Clés privées (disponibles uniquement côté serveur)
-    supabaseUrl: process.env.SUPABASE_URL,
-    supabaseKey: process.env.SUPABASE_KEY,
-    jwtSecret: process.env.JWT_SECRET || 'super_secret_jwt_key',
+    // Serveur uniquement
+    databaseUrl: process.env.DATABASE_URL,
+    // nuxt-auth-utils lit NUXT_SESSION_PASSWORD automatiquement via runtimeConfig.session
     public: {
-      // Clés publiques (disponibles côté client)
-      supabaseUrl: process.env.SUPABASE_URL,
-      supabaseKey: process.env.SUPABASE_KEY,
       appVersion: process.env.APP_VERSION || '1.0.0'
     }
   },
@@ -32,7 +29,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Application de gestion des alternances avec NuxtJS et Supabase' }
+        { name: 'description', content: 'Application de gestion des alternances avec NuxtJS et PostgreSQL' }
       ],
       link: [
         { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
