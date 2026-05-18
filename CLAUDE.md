@@ -64,6 +64,13 @@ Ce fichier guide Claude Code (claude.ai/code) quand il travaille sur ce dépôt.
 - **Aucune paresse** : Trouver les causes profondes. Pas de correctifs temporaires. Standards d'ingénieur senior.
 - **Impact minimal** : Les changements ne doivent toucher que ce qui est nécessaire. Éviter d'introduire des bugs.
 
+## Workflow Git
+
+- **`main`** : branche de release. **Ne jamais y pousser ni ouvrir une PR directe** (sauf cas exceptionnel explicitement demandé par l'utilisateur).
+- **`dev`** : branche d'intégration. Toutes les PRs feature ciblent `dev`.
+- **`<numéro>-<slug>`** : branches feature, partent de `dev`, mergent vers `dev`.
+- Promotion `dev → main` : décidée par l'utilisateur au moment d'une release. Ne pas la déclencher de soi-même.
+
 ## Commandes utiles
 
 ```bash
