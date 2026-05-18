@@ -445,3 +445,28 @@ Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_e
 - [x] `npm test` : 82 tests verts (19 nouveaux)
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #11 — Dashboard Alternant (cours + notes)
+
+> Branche : `11-feat-learner-dashboard` → PR vers `dev`
+
+**Objectif** : exposer côté UI le backend cours/notes livré par #9 — `GET /api/users/:id/calendar` + `POST /api/events/:eventId/notes` — sous forme d'un dashboard d'inscription des notes par session.
+
+### Décisions
+
+- **Une carte par session** (et non un tableau) : un alternant a peu de sessions actives, l'édition inline est plus lisible en cards. Le mot « tableau » de la spec est respecté au sens « inventaire de ses cours ».
+- **`/courses` plutôt que `/learner/dashboard`** : URL plus parlante et conforme à la convention courte du reste de l'app.
+- **Notions saisies en CSV** : un input texte séparé par virgules, parsé/dédupliqué côté client via `parseNotions`. Plus simple qu'un composant de chips et déjà serializable côté JSON pour le backend.
+- **État de note pré-rempli depuis `/api/course-notes`** : le composant matche le note existant via `findNoteForSession` (`assignmentId` + `sessionDate` tronquée à minuit UTC). Évite de demander un second fetch par event.
+- **Refresh complet après submit** : `refreshEvents()` + `refreshNotes()` en parallèle. Le badge « Note enregistrée » réagit en temps réel sans reload de page (critère d'acceptance).
+
+### Tâches
+
+- [x] `shared/utils/course-notes.ts` : `sessionDateKey`, `findNoteForSession`, `parseNotions`, `notionsToString` + tests (10 cas)
+- [x] `pages/courses/index.vue` : liste des sessions, formulaire inline par session (note 0–20 / commentaire / notions CSV), badge d'état
+- [x] `app.vue` : lien « Mes cours » pour les learners
+- [x] `npm test` : 92 tests verts (10 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès

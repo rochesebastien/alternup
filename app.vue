@@ -31,13 +31,20 @@
                 Mes projets
               </NuxtLink>
             </template>
-            <NuxtLink
-              v-if="isLearner"
-              to="/missions"
-              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
-            >
-              Mes missions
-            </NuxtLink>
+            <template v-if="isLearner">
+              <NuxtLink
+                to="/courses"
+                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              >
+                Mes cours
+              </NuxtLink>
+              <NuxtLink
+                to="/missions"
+                class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+              >
+                Mes missions
+              </NuxtLink>
+            </template>
           </nav>
 
           <div class="flex items-center gap-2">
