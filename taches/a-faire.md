@@ -470,3 +470,30 @@ Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_e
 - [x] `npm test` : 92 tests verts (10 nouveaux)
 - [x] `vue-tsc --noEmit` : 0 erreur
 - [x] `nuxt build` : succès
+
+---
+
+## Issue #10 — Calendrier (vue mois / semaine / jour / liste)
+
+> Branche : `10-feat-calendar-ui` → PR vers `dev`
+
+**Objectif** : afficher les `calendar_events` du user connecté dans une vraie vue calendrier (FullCalendar), avec navigation mois/semaine/jour/liste, et permettre d'éditer la note d'une session de cours d'un clic.
+
+### Décisions
+
+- **FullCalendar v6.1** : standard de l'industrie, accessible, supporté en Vue 3 via `@fullcalendar/vue3`. Plugins activés : `dayGrid`, `timeGrid`, `interaction`, `list`. Locale FR officielle.
+- **`<ClientOnly>` obligatoire** : FullCalendar accède au DOM dans son init ; on évite le SSR.
+- **Page unique `/calendar` pour tous les rôles** : tutor et learner voient leur propre agenda via `GET /api/users/{user.id}/calendar` (helper backend qui scope correctement).
+- **Modale unique pour clic** : si l'event est rattaché à une session (`courseAssignmentId`), elle affiche le formulaire de note (réutilise les helpers de #11 — `findNoteForSession`, `parseNotions`, `notionsToString`) ; sinon elle affiche le détail et le tuteur peut supprimer.
+- **Création d'event réservée au tuteur** : modale avec sélection du learner depuis son réseau (`/api/tutors/{user.id}/learners`), titre, début/fin (datetime-local convertis en ISO).
+- **Style accordé Tailwind** : header toolbar FullCalendar restylé en `emerald-700/800` via overrides CSS minimaux.
+
+### Tâches
+
+- [x] `npm i @fullcalendar/{vue3,core,daygrid,timegrid,interaction,list}` (v6.1.20)
+- [x] `shared/utils/calendar-display.ts` : `toFullCalendarEvent` + tests (6 cas)
+- [x] `pages/calendar.vue` : vue FullCalendar + modale note + modale création (tuteur)
+- [x] `app.vue` : lien « Calendrier » accessible à tous les rôles authentifiés
+- [x] `npm test` : 98 tests verts (6 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
