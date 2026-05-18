@@ -45,6 +45,13 @@
                 Mes missions
               </NuxtLink>
             </template>
+            <NuxtLink
+              v-if="loggedIn"
+              to="/calendar"
+              class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100"
+            >
+              Calendrier
+            </NuxtLink>
           </nav>
 
           <div class="flex items-center gap-2">
