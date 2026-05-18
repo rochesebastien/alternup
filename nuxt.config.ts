@@ -38,12 +38,7 @@ export default defineNuxtConfig({
   },
   nitro: {
     compressPublicAssets: true,
-    timing: process.env.NODE_ENV === 'development',
-    cors: {
-      origin: process.env.NODE_ENV === 'development' ? ['http://localhost:3000'] : true,
-      methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-      credentials: true
-    }
+    timing: process.env.NODE_ENV === 'development'
   },
   colorMode: {
     classSuffix: ''

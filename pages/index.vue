@@ -10,7 +10,7 @@
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p>Connexion Supabase établie avec succès</p>
+          <p>Application prête : Nuxt + Prisma + PostgreSQL</p>
         </div>
       </div>
       
@@ -27,10 +27,10 @@
         <div class="bg-gray-50 border rounded-md p-4">
           <h2 class="font-semibold mb-2">Technologies</h2>
           <ul class="list-disc list-inside text-sm space-y-1">
-            <li>NuxtJS Monolithe</li>
-            <li>Supabase (Base de données)</li>
-            <li>Tailwind CSS (UI)</li>
-            <li>TypeScript (Typage)</li>
+            <li>NuxtJS (monolithe)</li>
+            <li>PostgreSQL via Prisma</li>
+            <li>nuxt-auth-utils (sessions)</li>
+            <li>Tailwind CSS + TypeScript</li>
           </ul>
         </div>
       </div>

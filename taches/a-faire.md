@@ -54,74 +54,78 @@ Modèles :
 - [x] `model CalendarEvent`
 - [x] Schéma validé via `prisma validate` ✅
 - [x] SQL généré vérifié via `prisma migrate diff` ✅
-- [ ] **`npx prisma migrate dev --name init`** — sera lancé en Phase 7 quand Postgres tournera dans Docker
-- [ ] Supprimer `supabase/` entier — sera fait en Phase 8 (nettoyage)
+- [x] Migration `init` générée manuellement via `prisma migrate diff --from-empty --to-schema` → `prisma/migrations/20260518000000_init/migration.sql` + `migration_lock.toml`. Sera appliquée par `prisma migrate deploy` au démarrage du conteneur.
+- [x] Suppression de `supabase/` faite en Phase 8.
 
 ## Phase 3 — Connexion DB (remplacer le plugin Supabase serveur)
 
-- [ ] Créer `server/utils/prisma.ts` : singleton `PrismaClient` (pattern HMR-safe)
-- [ ] Supprimer `server/plugins/supabase.ts`
-- [ ] Supprimer l'injection `event.context.supabase` (chaque route importera `prisma` directement)
-- [ ] Supprimer `plugins/supabase.client.ts` (pas de client Supabase côté browser)
-- [ ] Supprimer `utils/supabase.ts`
-- [ ] Supprimer `types/supabase.ts` (les types viennent de `@prisma/client`)
+- [x] Créer `server/utils/prisma.ts` : singleton `PrismaClient` (pattern HMR-safe)
+- [x] Supprimer `server/plugins/supabase.ts`
+- [x] Supprimer l'injection `event.context.supabase` (chaque route importe `prisma` directement)
+- [x] Supprimer `plugins/supabase.client.ts`
+- [x] Supprimer `utils/supabase.ts`
+- [x] Supprimer `types/supabase.ts`
 
 ## Phase 4 — Réécriture des routes API
 
 Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/insert/update/delete` par l'équivalent Prisma. Méthodologie : 1 ressource = 1 commit pour faciliter la review.
 
-- [ ] `health.get.ts` (juste retirer la dépendance supabase si présente)
-- [ ] `profiles/` (5 routes) → `prisma.user.*` (table fusionnée)
-- [ ] `tutor-students/` (5 routes) → `prisma.tutorStudent.*`
-- [ ] `courses/` (5 routes) → `prisma.course.*`
-- [ ] `course-assignments/` (5 routes)
-- [ ] `course-notes/` (5 routes)
-- [ ] `projects/` (5 routes)
-- [ ] `project-assignments/` (5 routes)
-- [ ] `calendar-events/` (5 routes)
-- [ ] `alternants/` (2 routes) → vérifier si toujours pertinent vs `profiles?role=Alternant`
+- [x] `health.get.ts` (n'utilisait pas Supabase)
+- [x] `profiles/` (5 routes) → `prisma.user.*`
+- [x] `tutor-students/` (5 routes) → `prisma.tutorStudent.*`
+- [x] `courses/` (5 routes) → `prisma.course.*`
+- [x] `course-assignments/` (5 routes)
+- [x] `course-notes/` (5 routes)
+- [x] `projects/` (5 routes)
+- [x] `project-assignments/` (5 routes)
+- [x] `calendar-events/` (5 routes)
+- [x] `alternants/` (2 routes) → `prisma.user` filtré par `role: Alternant`
 
 ## Phase 5 — Auth minimale (pour que le schéma tienne debout)
 
 > Objectif Phase 5 : avoir un système auth fonctionnel basique. Les écrans UI + flows complets restent dans l'issue #5/#14.
 
-- [ ] `server/api/auth/register.post.ts` : email + password + role → bcrypt hash → `prisma.user.create` → `setUserSession`
-- [ ] `server/api/auth/login.post.ts` : verify password → `setUserSession({ user: { id, role } })`
-- [ ] `server/api/auth/logout.post.ts` : `clearUserSession`
-- [ ] `server/utils/require-user.ts` : helper qui throw 401 si pas de session
-- [ ] (Optionnel) seed Prisma : 1 tuteur + 2 alternants pour les tests manuels
+- [x] `server/api/auth/register.post.ts` : email + password + role → bcrypt hash → `prisma.user.create` → `setUserSession`
+- [x] `server/api/auth/login.post.ts` : verify password → `setUserSession`
+- [x] `server/api/auth/logout.post.ts` : `clearUserSession`
+- [x] `server/api/auth/me.get.ts` : `requireUserSession` (le helper de nuxt-auth-utils sert déjà de `requireUser`)
+- [x] `server/utils/require-role.ts` : helper d'autorisation par rôle (utilisé pour issue #6)
+- [x] `types/auth.d.ts` : augmentation `#auth-utils` pour typer `user` (id, email, firstName, lastName, role)
+- [ ] (Optionnel) seed Prisma — reporté, pas bloquant
 
 ## Phase 6 — Frontend : retirer Supabase client
 
-- [ ] `pages/alternants/index.vue` : remplacer `useSupabaseClient()` par `$fetch('/api/alternants')`
-- [ ] `pages/alternants/[id].vue` : idem
-- [ ] `components/AlternantsList.vue` : idem
-- [ ] Vérifier qu'aucun `useSupabase*` ne reste (`grep -r useSupabase`)
+- [x] `pages/alternants/index.vue` : `useFetch('/api/alternants')`, UI simplifiée
+- [x] `pages/alternants/[id].vue` : `useFetch('/api/alternants/[id]')`, sections obsolètes (compétences/notes/formation) retirées — issue #8 reconstruira le dashboard tuteur proprement
+- [x] `components/AlternantsList.vue` : props alignées sur User (firstName/lastName/email/role)
+- [x] `pages/index.vue` : retiré "Connexion Supabase" + libellés stack mis à jour
+- [x] Aucun `useSupabase*` ni import `~/types/supabase` restant
 
 ## Phase 7 — Docker / Dokploy
 
-- [ ] `docker-compose.yml` : ajouter service `postgres:16-alpine`, volume, healthcheck
-- [ ] `docker-compose.yml` : retirer `SUPABASE_*`, ajouter `DATABASE_URL`, `NUXT_SESSION_PASSWORD`
-- [ ] `Dockerfile` : ajouter `RUN npx prisma generate` avant `npm run build`
-- [ ] `Dockerfile` : multi-stage (deps → builder → runner) pour image plus légère
-- [ ] Créer `docs/deploy-dokploy.md` : variables d'env, commande migrate (`prisma migrate deploy`), volumes
-- [ ] Mettre à jour `README.md` : nouveau setup local (`docker compose up postgres`, `prisma migrate dev`, `npm run dev`)
+- [x] `docker-compose.yml` : service `postgres:16-alpine` avec healthcheck + volume nommé
+- [x] `docker-compose.yml` : `DATABASE_URL` + `NUXT_SESSION_PASSWORD`, plus aucune référence Supabase
+- [x] `Dockerfile` : multi-stage (builder + runner), `prisma generate` dans chaque stage, `prisma migrate deploy` au démarrage
+- [x] `docs/deploy-dokploy.md` créé
+- [x] `README.md` réécrit (stack actuelle, commandes locales, lien vers le doc Dokploy)
 
 ## Phase 8 — Nettoyage
 
-- [ ] Supprimer `MIGRATION_COMPLETE.md`
-- [ ] Supprimer `MONOLITH_SUCCESS.md`
-- [ ] Supprimer `supabase/MIGRATION_REPORT_*.md`
-- [ ] Mettre à jour `docs/BACKEND_API_IMPLEMENTATION.md` (mentions Supabase)
+- [x] `MIGRATION_COMPLETE.md` supprimé
+- [x] `MONOLITH_SUCCESS.md` supprimé
+- [x] Dossier `supabase/` entier supprimé (config.toml + migrations + rapports)
+- [x] `docs/BACKEND_API_IMPLEMENTATION.md` supprimé (devenu obsolète, Swagger sera refait via issue #19)
+- [x] `scripts/init-supabase.sql` supprimé + dossier `scripts/` retiré
+- [x] Dossiers vides `plugins/` et `utils/` racine retirés
+- [x] `package.json` : description mise à jour, `jsonwebtoken` + `@types/jsonwebtoken` retirés (inutilisés)
 
 ## Phase 9 — Vérification
 
-- [ ] `npx vue-tsc --noEmit` (typecheck) passe
-- [ ] `npm run lint` passe
-- [ ] `npm run build` réussit
-- [ ] `npm run dev` démarre, `/api/health` répond 200
-- [ ] Un POST `/api/auth/register` puis un GET `/api/profiles` authentifié fonctionne
-- [ ] Commit + push branche
+- [x] `npx vue-tsc --noEmit -p .nuxt/tsconfig.json` : **0 erreur**
+- [x] `npm run build` réussit (output Nitro complet, 40 MB)
+- [ ] `npm run lint` — non lancé (out of scope migration ; tooling ESLint à valider dans une passe dédiée)
+- [ ] `npm run dev` + smoke test `/api/health` + register/login — nécessite Postgres live (sera validé au premier déploiement Dokploy ou en local par l'utilisateur)
+- [ ] Commit + push branche (fait au fil des phases)
 
 ## Phase 10 — Reprise issue #6
 
@@ -133,6 +137,28 @@ Une fois la migration mergée, reprendre la PR #22 avec la nouvelle stack :
 
 ---
 
-## Section Revue (à remplir au fur et à mesure)
+## Section Revue
 
-_(vide pour l'instant)_
+### 2026-05-18 — Migration Supabase → Postgres/Prisma/nuxt-auth-utils terminée
+
+**Périmètre livré (Phases 1 à 9 hors lint/smoke-test live)**
+
+- Stack remplacée : `@supabase/supabase-js` retiré, `prisma`, `@prisma/client`, `nuxt-auth-utils`, `bcrypt` installés.
+- Schéma Prisma (`prisma/schema.prisma`) : 8 modèles, 2 enums, User et Profile fusionnés.
+- 42 routes API réécrites en Prisma, contrat API désormais en camelCase.
+- Auth minimale en place : `/api/auth/{register,login,logout,me}` + helper `requireRole`.
+- Frontend allégé (pages alternants + composant liste) — issue #8 reconstruira proprement.
+- Docker : compose Postgres+app, Dockerfile multi-stage avec `prisma migrate deploy` au démarrage, doc Dokploy.
+- Cleanup complet : `supabase/`, `MIGRATION_COMPLETE.md`, `MONOLITH_SUCCESS.md`, scripts obsolètes supprimés.
+- Init migration générée (`prisma/migrations/20260518000000_init/migration.sql`) — directement applicable en prod.
+
+**À surveiller (dette identifiée)**
+
+- Frontend `/alternants` est volontairement minimal (juste un listing) ; le dashboard tuteur complet est l'objet de l'issue #8.
+- `POST /api/profiles` exige désormais un mot de passe — usage admin uniquement, à protéger via `requireRole(event, 'Tutor')` ou équivalent quand le besoin sera clair (issue #7).
+- OpenAPI / Swagger annotations supprimées des routes — issue #19 les refera dans un format cohérent.
+- Lint non lancé dans cette passe : config ESLint à vérifier dans une PR dédiée.
+
+**Suite logique**
+
+→ Phase 10 = reprendre l'issue #6 (CRUD alternants/stagiaires pour tuteur) sur la nouvelle stack, en ajoutant les routes alias `/api/tutors/:id/learners` et la validation `requireRole(event, 'Tutor')`.

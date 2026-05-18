@@ -1,7 +1,7 @@
 {
   "name": "alternup",
   "version": "1.0.0",
-  "description": "Application de gestion des alternances avec NuxtJS et Supabase",
+  "description": "Application de gestion des alternances avec Nuxt 3, Prisma et PostgreSQL",
   "private": true,
   "scripts": {
     "dev": "nuxt dev",
@@ -24,7 +24,6 @@
     "@vueuse/nuxt": "*",
     "bcrypt": "^6.0.0",
     "h3": "*",
-    "jsonwebtoken": "*",
     "nuxt": "*",
     "nuxt-auth-utils": "^0.5.29",
     "pinia": "*",
@@ -36,7 +35,6 @@
   "devDependencies": {
     "@nuxt/devtools": "*",
     "@types/bcrypt": "^6.0.0",
-    "@types/jsonwebtoken": "*",
     "@types/node": "*",
     "@typescript-eslint/eslint-plugin": "*",
     "@typescript-eslint/parser": "*",
