@@ -1,0 +1,158 @@
+// Prisma schema — Alternup
+// Voir taches/a-faire.md pour le contexte de la migration depuis Supabase.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  Tutor
+  Alternant
+  Stagiaire
+}
+
+enum ProjectStatus {
+  non_demarre
+  en_cours
+  termine
+  annule
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  firstName    String   @map("first_name")
+  lastName     String   @map("last_name")
+  role         Role     @default(Alternant)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  // Relations: réseau tuteur ↔ étudiants
+  tutoredStudents TutorStudent[] @relation("Tutor")
+  tutors          TutorStudent[] @relation("Student")
+
+  // Relations: contenus créés
+  coursesCreated  Course[]  @relation("CourseCreator")
+  projectsCreated Project[] @relation("ProjectCreator")
+
+  // Relations: assignments en tant qu'étudiant
+  courseAssignments  CourseAssignment[]
+  projectAssignments ProjectAssignment[]
+
+  // Relations: calendrier
+  studentEvents CalendarEvent[] @relation("EventStudent")
+  tutorEvents   CalendarEvent[] @relation("EventTutor")
+
+  @@index([role])
+  @@map("users")
+}
+
+model TutorStudent {
+  tutorId   String   @map("tutor_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  addedAt   DateTime @default(now()) @map("added_at") @db.Timestamptz
+
+  tutor   User @relation("Tutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  student User @relation("Student", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([tutorId, studentId])
+  @@map("tutor_students")
+}
+
+model Course {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  createdById String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  createdBy   User?              @relation("CourseCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  assignments CourseAssignment[]
+
+  @@map("courses")
+}
+
+model CourseAssignment {
+  id        String    @id @default(uuid()) @db.Uuid
+  studentId String    @map("student_id") @db.Uuid
+  courseId  String    @map("course_id") @db.Uuid
+  startDate DateTime  @map("start_date") @db.Date
+  endDate   DateTime? @map("end_date") @db.Date
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  student User   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  notes   CourseNote[]
+
+  @@unique([studentId, courseId, startDate])
+  @@index([studentId])
+  @@map("course_assignments")
+}
+
+model CourseNote {
+  id              String   @id @default(uuid()) @db.Uuid
+  assignmentId    String   @map("assignment_id") @db.Uuid
+  sessionDate     DateTime @map("session_date") @db.Date
+  grade           Decimal? @db.Decimal(5, 2)
+  comment         String?
+  notionsCovered  Json?    @map("notions_covered")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  assignment CourseAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId])
+  @@map("course_notes")
+}
+
+model Project {
+  id          String   @id @default(uuid()) @db.Uuid
+  title       String
+  description String?
+  internal    Boolean  @default(true)
+  createdById String?  @map("created_by") @db.Uuid
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  createdBy   User?               @relation("ProjectCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  assignments ProjectAssignment[]
+
+  @@map("projects")
+}
+
+model ProjectAssignment {
+  id              String        @id @default(uuid()) @db.Uuid
+  projectId       String        @map("project_id") @db.Uuid
+  studentId       String        @map("student_id") @db.Uuid
+  status          ProjectStatus @default(non_demarre)
+  tutorComment    String?       @map("tutor_comment")
+  studentComment  String?       @map("student_comment")
+  startedAt       DateTime?     @map("started_at") @db.Timestamptz
+  updatedAt       DateTime      @updatedAt @map("updated_at") @db.Timestamptz
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, studentId])
+  @@index([studentId])
+  @@map("project_assignments")
+}
+
+model CalendarEvent {
+  id        String   @id @default(uuid()) @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  tutorId   String   @map("tutor_id") @db.Uuid
+  title     String
+  startTime DateTime @map("start_time") @db.Timestamptz
+  endTime   DateTime @map("end_time") @db.Timestamptz
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  student User @relation("EventStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor   User @relation("EventTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, startTime])
+  @@map("calendar_events")
+}

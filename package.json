@@ -1,20 +1,61 @@
 {
+  "name": "alternup",
+  "version": "1.0.0",
+  "description": "Application de gestion des alternances avec Nuxt 3, Prisma et PostgreSQL",
   "private": true,
-  "workspaces": [
-    "apps/frontend",
-    "apps/backend"
-  ],
   "scripts": {
-    "dev": "concurrently \"npm:dev:*\"",
-    "dev:frontend": "npm run dev --workspace=apps/frontend",
-    "dev:backend": "npm run dev --workspace=apps/backend",
-    "build": "npm run build --workspaces",
-    "start": "concurrently \"npm:start:*\"",
-    "start:frontend": "npm run start --workspace=apps/frontend",
-    "start:backend": "npm run start --workspace=apps/backend",
-    "install:all": "npm install --workspaces"
+    "dev": "nuxt dev",
+    "build": "nuxt build",
+    "start": "nuxt start",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts",
+    "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "prepare": "husky",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@nuxt/image": "*",
+    "@nuxtjs/color-mode": "*",
+    "@nuxtjs/tailwindcss": "*",
+    "@pinia/nuxt": "*",
+    "@prisma/client": "^7.8.0",
+    "@vueuse/nuxt": "*",
+    "bcrypt": "^6.0.0",
+    "h3": "*",
+    "nuxt": "*",
+    "nuxt-auth-utils": "^0.5.29",
+    "pinia": "*",
+    "prisma": "^7.8.0",
+    "vue": "*",
+    "vue-router": "*",
+    "zod": "*"
   },
   "devDependencies": {
-    "concurrently": "^8.2.2"
+    "@nuxt/devtools": "*",
+    "@types/bcrypt": "^6.0.0",
+    "@types/node": "*",
+    "@typescript-eslint/eslint-plugin": "*",
+    "@typescript-eslint/parser": "*",
+    "autoprefixer": "*",
+    "dotenv": "^17.4.2",
+    "eslint": "*",
+    "eslint-plugin-vue": "*",
+    "husky": "*",
+    "lint-staged": "*",
+    "postcss": "*",
+    "tailwindcss": "*",
+    "typescript": "*",
+    "vitest": "*",
+    "vue-tsc": "*"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "Roche Sébastien",
+  "license": "SEE LICENSE IN LICENSE",
+  "lint-staged": {
+    "*.{js,ts,vue}": "eslint --cache --fix"
   }
 }

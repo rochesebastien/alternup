@@ -1,72 +1,104 @@
-# Alternup - Manage your alternship
+# Alternup - Gérez vos alternances
 
-![Image Description](docs/readme_cover.jpg)  
+![Image Description](docs/readme_cover.jpg)
 
-Welcome to **Alternup**, a NuxtJS solution allowing tutors to monitor and manage their work-study students (and interns). The project now relies on a Supabase database, Tailwind CSS as a styling framework and TypeScript. The application will allow you to see your work-study students/trainees, see your tasks, see your average, your skills and create personalized quizzes.
+Solution **Nuxt 3** permettant aux tuteurs de suivre et gérer leurs étudiants en alternance (et stagiaires). Application monolithique avec **PostgreSQL** (Prisma) côté données, **nuxt-auth-utils** pour la session et **Tailwind CSS** pour l'UI. Déploiement cible : **Dokploy**.
 
+## Stack
 
+[![Nuxt](https://img.shields.io/badge/Nuxt-00DC82?style=for-the-badge&logo=nuxtdotjs&logoColor=white)](https://nuxt.com)
+[![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
+[![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 
-# Table of Contents
+## Structure du projet
 
-1. Installation
-
-2. To be defined
-
-3. To be defined
-
-4. License
-
-# Project overview
-[![](https://img.shields.io/badge/Nuxt-00DC82?style=for-the-badge&logo=nuxtdotjs&logoColor=white)](https://nuxt.com)
-[![](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
-[![](https://img.shields.io/badge/Node.js-43853D?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/en)
-[![](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com/)
-[![](https://img.shields.io/badge/npm-CB3837?style=for-the-badge&logo=npm&logoColor=white)](https://www.npmjs.com/)
-[![](https://img.shields.io/badge/figma-%23F24E1E.svg?style=for-the-badge&logo=figma&logoColor=white)](https://www.figma.com)
-
-# Installation 
-
-## Docker
-
-Each app contains its own `Dockerfile`. Build and run them separately if you want
-to containerize the project:
-
-```bash
-docker build -t alternup-frontend ./apps/frontend
-docker run -p 3000:3000 alternup-frontend
+```
+alternup/
+├── components/            # Composants Vue partagés
+├── pages/                 # Pages Nuxt (routing automatique)
+├── server/
+│   ├── api/               # Routes API Nitro
+│   │   └── auth/          # register / login / logout / me
+│   └── utils/             # prisma.ts (singleton), require-role.ts
+├── prisma/
+│   ├── schema.prisma      # Modèle de données
+│   └── migrations/        # Migrations Prisma générées
+├── prisma.config.ts       # Config Prisma 7 (DATABASE_URL)
+├── types/                 # Augmentations TypeScript (auth, etc.)
+├── docs/                  # Documentation projet (déploiement, etc.)
+├── docker-compose.yml     # Stack Postgres + app
+└── Dockerfile             # Build multi-stage Nuxt
 ```
 
+## Prérequis
+
+- Node.js ≥ 18
+- Docker + Docker Compose (pour la stack locale ou Dokploy)
+
+## Variables d'environnement
+
+Copier `.env.example` vers `.env` :
+
 ```bash
-docker build -t alternup-backend ./apps/backend
-docker run -p 4000:4000 alternup-backend
+DATABASE_URL=postgresql://alternup:alternup@localhost:5432/alternup
+NUXT_SESSION_PASSWORD=<32+ caractères aléatoires>
+APP_VERSION=1.0.0
 ```
 
-# Manual - with commands
+Génération rapide d'un secret de session :
 
-First you need to install nodeJS : [Node Oficial Website](https://nodejs.org/en).
-Then go in the `apps/frontend` folder, and execute these commands :
 ```bash
+openssl rand -base64 48
+```
+
+## Développement local
+
+```bash
+# 1. Démarrer Postgres
+docker compose up -d postgres
+
+# 2. Installer les deps
+npm install
+
+# 3. Appliquer les migrations Prisma
+npx prisma migrate dev
+
+# 4. Lancer le serveur Nuxt (port 3000)
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
-To start the backend just run the same command inside `apps/backend`.
 
-To use it in production you need to follow these steps :
+Vérification : http://localhost:3000/api/health
+
+## Commandes utiles
+
 ```bash
-npm run build #create the build application
-npm run start #run the prod application
+npm run dev          # Serveur Nuxt avec HMR
+npm run build        # Build production
+npm run start        # Démarrer le build
+npm run lint         # ESLint
+npm run lint:fix     # ESLint --fix
+npm test             # Vitest
+npx prisma studio    # GUI sur la base
+npx prisma migrate dev --name <slug>   # Nouvelle migration
 ```
-# License
 
-You may use, modify and contribute to this project for personal, non-commercial purposes.  
-This project is under license.  
+## Production / Déploiement Dokploy
+
+Voir `docs/deploy-dokploy.md` pour les détails. Résumé :
+
+```bash
+docker compose up -d --build
+```
+
+L'image applique automatiquement `prisma migrate deploy` au démarrage.
+
+## License
+
+You may use, modify and contribute to this project for personal, non-commercial purposes.
 For more details, read the [LICENSE](LICENSE) file.
 
 ---
-2025 - Roche Sébastien
+© Roche Sébastien

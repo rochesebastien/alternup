@@ -1,28 +1,34 @@
-version: '3.8'
-
 services:
-  frontend:
-    build: 
-      context: ./apps/frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_KEY}
-    depends_on:
-      - backend
+      POSTGRES_USER: ${POSTGRES_USER:-alternup}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alternup}
+      POSTGRES_DB: ${POSTGRES_DB:-alternup}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-alternup} -d ${POSTGRES_DB:-alternup}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-  backend:
+  alternup:
     build:
-      context: ./apps/backend
+      context: .
       dockerfile: Dockerfile
     ports:
-      - "4000:4000"
+      - "${APP_PORT:-3000}:3000"
     environment:
-      - SUPABASE_URL=${SUPABASE_URL}
-      - SUPABASE_KEY=${SUPABASE_SERVICE_KEY}
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:-postgresql://alternup:alternup@postgres:5432/alternup}
+      NUXT_SESSION_PASSWORD: ${NUXT_SESSION_PASSWORD}
+      APP_VERSION: ${APP_VERSION:-1.0.0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
-networks:
-  default:
-    name: alternup-network
+volumes:
+  postgres_data:
