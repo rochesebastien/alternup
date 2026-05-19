@@ -1,0 +1,446 @@
+<template>
+  <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Calendrier</h1>
+        <p class="text-sm text-gray-500">
+          {{ isTutor ? 'Sessions et rendez-vous avec vos learners.' : 'Vos cours et rendez-vous à venir.' }}
+        </p>
+      </div>
+      <UButton
+        v-if="isTutor"
+        color="primary"
+        icon="i-lucide-plus"
+        @click="openCreate"
+      >
+        Nouvel événement
+      </UButton>
+    </div>
+
+    <UAlert
+      v-if="loadError"
+      color="error"
+      variant="soft"
+      title="Erreur de chargement"
+      :description="loadError.message"
+    />
+
+    <UCard>
+      <ClientOnly>
+        <FullCalendar v-if="calendarOptions" :options="calendarOptions" />
+        <template #fallback>
+          <div class="flex justify-center py-12">
+            <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-primary-500" />
+          </div>
+        </template>
+      </ClientOnly>
+    </UCard>
+
+    <!-- Détail / édition de note (session de cours) -->
+    <UModal v-model:open="noteModalOpen" :title="noteModalTitle">
+      <template #body>
+        <div v-if="selectedEvent" class="space-y-4">
+          <p class="text-sm text-gray-500">
+            {{ formatDate(selectedEvent.startTime) }} ·
+            {{ formatTimeRange(selectedEvent.startTime, selectedEvent.endTime) }}
+          </p>
+
+          <UForm
+            v-if="selectedEvent.courseAssignmentId"
+            :state="noteState"
+            :schema="noteFormSchema"
+            class="space-y-4"
+            @submit="onNoteSubmit"
+          >
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <UFormField label="Note /20" name="grade">
+                <UInput
+                  v-model="noteState.grade"
+                  type="number"
+                  min="0"
+                  max="20"
+                  step="0.25"
+                  class="w-full"
+                />
+              </UFormField>
+
+              <UFormField label="Notions vues" name="notions" class="sm:col-span-2">
+                <UInput
+                  v-model="noteState.notions"
+                  placeholder="Algèbre, Géométrie, …"
+                  class="w-full"
+                />
+              </UFormField>
+            </div>
+
+            <UFormField label="Commentaire" name="comment">
+              <UTextarea v-model="noteState.comment" :rows="3" class="w-full" />
+            </UFormField>
+
+            <UAlert
+              v-if="noteError"
+              color="error"
+              variant="soft"
+              :title="noteError"
+            />
+
+            <div class="flex justify-end gap-2 pt-2">
+              <UButton color="neutral" variant="ghost" @click="noteModalOpen = false">
+                Fermer
+              </UButton>
+              <UButton type="submit" color="primary" :loading="notePending">
+                Enregistrer
+              </UButton>
+            </div>
+          </UForm>
+
+          <div v-else>
+            <p class="text-sm text-gray-600">{{ selectedEvent.title }}</p>
+            <div v-if="isTutor" class="flex justify-end gap-2 mt-6">
+              <UButton color="neutral" variant="ghost" @click="noteModalOpen = false">
+                Fermer
+              </UButton>
+              <UButton
+                color="error"
+                variant="soft"
+                :loading="deletePending"
+                @click="confirmDelete"
+              >
+                Supprimer
+              </UButton>
+            </div>
+          </div>
+        </div>
+      </template>
+    </UModal>
+
+    <!-- Création (tuteur) -->
+    <UModal v-if="isTutor" v-model:open="createOpen" title="Nouvel événement">
+      <template #body>
+        <UForm
+          :state="createState"
+          :schema="createSchema"
+          class="space-y-4"
+          @submit="onCreateSubmit"
+        >
+          <UFormField label="Titre" name="title" required>
+            <UInput v-model="createState.title" class="w-full" />
+          </UFormField>
+
+          <UFormField label="Learner" name="studentId" required>
+            <USelect
+              v-model="createState.studentId"
+              :items="learnerItems"
+              value-key="value"
+              placeholder="Sélectionner un learner…"
+              class="w-full"
+            />
+          </UFormField>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <UFormField label="Début" name="startTime" required>
+              <UInput
+                v-model="createState.startTime"
+                type="datetime-local"
+                class="w-full"
+              />
+            </UFormField>
+            <UFormField label="Fin" name="endTime" required>
+              <UInput
+                v-model="createState.endTime"
+                type="datetime-local"
+                class="w-full"
+              />
+            </UFormField>
+          </div>
+
+          <UAlert
+            v-if="createError"
+            color="error"
+            variant="soft"
+            :title="createError"
+          />
+
+          <div class="flex justify-end gap-2 pt-2">
+            <UButton color="neutral" variant="ghost" @click="createOpen = false">
+              Annuler
+            </UButton>
+            <UButton type="submit" color="primary" :loading="createPending">
+              Créer
+            </UButton>
+          </div>
+        </UForm>
+      </template>
+    </UModal>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { z } from 'zod'
+import { Role } from '@prisma/client'
+import FullCalendar from '@fullcalendar/vue3'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import timeGridPlugin from '@fullcalendar/timegrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import listPlugin from '@fullcalendar/list'
+import frLocale from '@fullcalendar/core/locales/fr'
+import type { EventClickArg } from '@fullcalendar/core'
+import {
+  toFullCalendarEvents,
+  type ApiCalendarEvent
+} from '~/shared/utils/calendar-display'
+import {
+  findNoteForSession,
+  notionsToString,
+  parseNotions,
+  type NoteByAssignmentRef
+} from '~/shared/utils/course-notes'
+
+definePageMeta({
+  // Authentifié seulement — pas de contrainte de rôle
+})
+
+const toast = useToast()
+const { user } = useUserSession()
+const isTutor = computed(() => user.value?.role === Role.Tutor)
+
+interface CourseNote extends NoteByAssignmentRef {
+  assignment?: { course?: { id: string; title: string } }
+}
+
+const eventsUrl = computed(() => `/api/users/${user.value?.id ?? ''}/calendar`)
+
+const {
+  data: events,
+  error: loadError,
+  refresh: refreshEvents
+} = await useFetch<ApiCalendarEvent[]>(eventsUrl, { default: () => [] })
+
+const { data: notes, refresh: refreshNotes } = await useFetch<CourseNote[]>(
+  '/api/course-notes',
+  { default: () => [] }
+)
+
+const learners = ref<Array<{ id: string; firstName: string; lastName: string; email: string }>>([])
+watch(
+  () => (isTutor.value ? user.value?.id : null),
+  async (id) => {
+    if (!id) return
+    learners.value = await $fetch<typeof learners.value>(
+      `/api/tutors/${id}/learners`
+    )
+  },
+  { immediate: true }
+)
+const learnerItems = computed(() =>
+  learners.value.map((l) => ({
+    label: `${l.firstName} ${l.lastName} (${l.email})`,
+    value: l.id
+  }))
+)
+
+const calendarOptions = computed(() => ({
+  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
+  initialView: 'timeGridWeek',
+  headerToolbar: {
+    left: 'prev,next today',
+    center: 'title',
+    right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+  },
+  locale: frLocale,
+  height: 'auto',
+  weekNumbers: false,
+  nowIndicator: true,
+  events: toFullCalendarEvents(events.value ?? []),
+  eventClick: onEventClick
+}))
+
+const selectedEvent = ref<ApiCalendarEvent | null>(null)
+const noteModalOpen = ref(false)
+
+const noteFormSchema = z.object({
+  grade: z
+    .string()
+    .optional()
+    .refine(
+      (v) => {
+        if (!v || v.trim() === '') return true
+        const n = Number(v)
+        return !Number.isNaN(n) && n >= 0 && n <= 20
+      },
+      { message: 'Doit être un nombre entre 0 et 20' }
+    ),
+  comment: z.string().trim().max(5000).optional(),
+  notions: z.string().trim().max(2000).optional()
+})
+
+const noteState = reactive({ grade: '', comment: '', notions: '' })
+const notePending = ref(false)
+const noteError = ref<string | null>(null)
+const deletePending = ref(false)
+
+const noteModalTitle = computed(() => {
+  if (!selectedEvent.value) return ''
+  return selectedEvent.value.courseAssignment?.course.title ?? selectedEvent.value.title
+})
+
+function onEventClick(arg: EventClickArg) {
+  const raw = arg.event.extendedProps.rawEvent as ApiCalendarEvent
+  selectedEvent.value = raw
+  noteError.value = null
+
+  if (raw.courseAssignmentId) {
+    const existing = findNoteForSession(
+      (notes.value ?? []) as NoteByAssignmentRef[],
+      raw.courseAssignmentId,
+      raw.startTime
+    )
+    noteState.grade = existing?.grade != null ? String(existing.grade) : ''
+    noteState.comment = existing?.comment ?? ''
+    noteState.notions = existing ? notionsToString(existing.notionsCovered) : ''
+  }
+  noteModalOpen.value = true
+}
+
+async function onNoteSubmit() {
+  if (!selectedEvent.value) return
+  notePending.value = true
+  noteError.value = null
+  const trimmedGrade = noteState.grade.trim()
+  const body = {
+    grade: trimmedGrade === '' ? null : Number(trimmedGrade),
+    comment: noteState.comment.trim() === '' ? null : noteState.comment,
+    notionsCovered: noteState.notions.trim() === '' ? null : parseNotions(noteState.notions)
+  }
+  try {
+    await $fetch(`/api/events/${selectedEvent.value.id}/notes`, {
+      method: 'POST',
+      body
+    })
+    toast.add({ title: 'Note enregistrée', color: 'success' })
+    noteModalOpen.value = false
+    await Promise.all([refreshNotes(), refreshEvents()])
+  } catch (err: unknown) {
+    noteError.value = readErrorMessage(err) ?? 'Impossible d\'enregistrer.'
+  } finally {
+    notePending.value = false
+  }
+}
+
+async function confirmDelete() {
+  if (!selectedEvent.value) return
+  if (!window.confirm('Supprimer cet événement ?')) return
+  deletePending.value = true
+  try {
+    await $fetch(`/api/calendar-events/${selectedEvent.value.id}`, { method: 'DELETE' })
+    noteModalOpen.value = false
+    toast.add({ title: 'Événement supprimé', color: 'success' })
+    await refreshEvents()
+  } catch (err: unknown) {
+    noteError.value = readErrorMessage(err) ?? 'Impossible de supprimer.'
+  } finally {
+    deletePending.value = false
+  }
+}
+
+const createOpen = ref(false)
+const createSchema = z
+  .object({
+    title: z.string().trim().min(1, 'Titre requis').max(200),
+    studentId: z.string().uuid('Sélection requise'),
+    startTime: z.string().min(1, 'Date requise'),
+    endTime: z.string().min(1, 'Date requise')
+  })
+  .refine(
+    (d) => {
+      const s = new Date(d.startTime)
+      const e = new Date(d.endTime)
+      return !Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e > s
+    },
+    { message: 'La fin doit être après le début', path: ['endTime'] }
+  )
+
+const createState = reactive({ title: '', studentId: '', startTime: '', endTime: '' })
+const createPending = ref(false)
+const createError = ref<string | null>(null)
+
+function openCreate() {
+  createState.title = ''
+  createState.studentId = ''
+  createState.startTime = ''
+  createState.endTime = ''
+  createError.value = null
+  createOpen.value = true
+}
+
+async function onCreateSubmit() {
+  createPending.value = true
+  createError.value = null
+  try {
+    await $fetch('/api/calendar-events', {
+      method: 'POST',
+      body: {
+        title: createState.title,
+        studentId: createState.studentId,
+        startTime: new Date(createState.startTime).toISOString(),
+        endTime: new Date(createState.endTime).toISOString()
+      }
+    })
+    createOpen.value = false
+    toast.add({ title: 'Événement créé', color: 'success' })
+    await refreshEvents()
+  } catch (err: unknown) {
+    createError.value = readErrorMessage(err) ?? 'Impossible de créer l\'événement.'
+  } finally {
+    createPending.value = false
+  }
+}
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
+  weekday: 'long',
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric'
+})
+const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
+  hour: '2-digit',
+  minute: '2-digit'
+})
+function formatDate(value: string): string {
+  return dateFormatter.format(new Date(value))
+}
+function formatTimeRange(start: string, end: string): string {
+  return `${timeFormatter.format(new Date(start))} – ${timeFormatter.format(new Date(end))}`
+}
+
+function readErrorMessage(err: unknown): string | null {
+  const e = err as {
+    statusMessage?: string
+    data?: { statusMessage?: string; issues?: Array<{ message: string }> }
+  }
+  return e.data?.statusMessage || e.data?.issues?.[0]?.message || e.statusMessage || null
+}
+</script>
+
+<style>
+.fc {
+  font-family: inherit;
+}
+.fc .fc-toolbar-title {
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+.fc .fc-button {
+  background-color: #047857;
+  border-color: #047857;
+}
+.fc .fc-button:hover {
+  background-color: #065f46;
+  border-color: #065f46;
+}
+.fc .fc-button-primary:not(:disabled).fc-button-active,
+.fc .fc-button-primary:not(:disabled):active {
+  background-color: #065f46;
+  border-color: #065f46;
+}
+</style>

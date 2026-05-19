@@ -1,16 +1,15 @@
-import { z } from 'zod'
 import bcrypt from 'bcrypt'
 import { prisma } from '~/server/utils/prisma'
-
-const bodySchema = z.object({
-  email: z.string().email(),
-  password: z.string().min(1)
-})
+import { formatZodIssues, loginInputSchema } from '~/shared/utils/auth-credentials'
 
 export default defineEventHandler(async (event) => {
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const parsed = loginInputSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid login payload',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
 
   const { email, password } = parsed.data

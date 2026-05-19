@@ -1,22 +1,14 @@
-import { prisma } from '~/server/utils/prisma'
+import { z } from 'zod'
+import { requireAuth } from '~/server/utils/require-role'
+import { loadCalendarEventVisibleTo } from '~/server/utils/courses'
+
+const uuid = z.string().uuid()
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Event ID is required' })
+  const user = await requireAuth(event)
+  const id = uuid.safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid event id' })
   }
-
-  const calendarEvent = await prisma.calendarEvent.findUnique({
-    where: { id },
-    include: {
-      student: { select: { id: true, firstName: true, lastName: true } },
-      tutor: { select: { id: true, firstName: true, lastName: true } }
-    }
-  })
-
-  if (!calendarEvent) {
-    throw createError({ statusCode: 404, statusMessage: 'Event not found' })
-  }
-
-  return calendarEvent
+  return loadCalendarEventVisibleTo(id.data, user)
 })

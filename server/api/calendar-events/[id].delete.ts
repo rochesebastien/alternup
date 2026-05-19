@@ -1,19 +1,23 @@
-import { Prisma } from '@prisma/client'
+import { z } from 'zod'
+import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireRole } from '~/server/utils/require-role'
+import { loadCalendarEventVisibleTo } from '~/server/utils/courses'
+
+const uuid = z.string().uuid()
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Event ID is required' })
+  const tutor = await requireRole(event, Role.Tutor)
+  const id = uuid.safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid event id' })
   }
 
-  try {
-    await prisma.calendarEvent.delete({ where: { id } })
-    return { message: 'Event deleted successfully' }
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
-      throw createError({ statusCode: 404, statusMessage: 'Event not found' })
-    }
-    throw err
+  const existing = await loadCalendarEventVisibleTo(id.data, tutor)
+  if (existing.tutorId !== tutor.id) {
+    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
   }
+
+  await prisma.calendarEvent.delete({ where: { id: id.data } })
+  return { message: 'Event deleted' }
 })

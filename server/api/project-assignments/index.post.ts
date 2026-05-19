@@ -1,38 +1,48 @@
-import { z } from 'zod'
-import { Prisma, ProjectStatus } from '@prisma/client'
+import { Prisma, Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireRole } from '~/server/utils/require-role'
+import { loadProjectOwnedBy } from '~/server/utils/projects'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
+import { assignmentCreateSchema } from '~/shared/utils/projects'
 
-const bodySchema = z.object({
-  projectId: z.string().uuid(),
-  studentId: z.string().uuid(),
-  status: z.nativeEnum(ProjectStatus).optional(),
-  tutorComment: z.string().nullable().optional(),
-  studentComment: z.string().nullable().optional(),
-  startedAt: z.coerce.date().nullable().optional()
-})
+const include = {
+  project: { select: { id: true, title: true, internal: true } },
+  student: { select: { id: true, firstName: true, lastName: true, email: true } }
+} as const
 
 export default defineEventHandler(async (event) => {
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const user = await requireRole(event, Role.Tutor)
+
+  const parsed = assignmentCreateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid assignment payload',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
+  }
+
+  await loadProjectOwnedBy(parsed.data.projectId, user)
+
+  const student = await prisma.user.findUnique({
+    where: { id: parsed.data.studentId },
+    select: { id: true, role: true }
+  })
+  if (!student) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid studentId' })
+  }
+  if (student.role !== Role.Alternant && student.role !== Role.Stagiaire) {
+    throw createError({ statusCode: 400, statusMessage: 'Target user is not a learner' })
   }
 
   try {
     return await prisma.projectAssignment.create({
       data: parsed.data,
-      include: {
-        project: { select: { id: true, title: true, internal: true } },
-        student: { select: { id: true, firstName: true, lastName: true, email: true } }
-      }
+      include
     })
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Assignment already exists' })
-      if (err.code === 'P2003') {
-        const field = (err.meta?.field_name as string | undefined) ?? ''
-        const message = field.includes('project') ? 'Invalid projectId' : 'Invalid studentId'
-        throw createError({ statusCode: 400, statusMessage: message })
-      }
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw createError({ statusCode: 409, statusMessage: 'Assignment already exists' })
     }
     throw err
   }

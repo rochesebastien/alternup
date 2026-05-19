@@ -1,44 +1,55 @@
 import { z } from 'zod'
-import { Prisma } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireAuth } from '~/server/utils/require-role'
+import { loadCourseNoteVisibleTo, notionsToPrismaInput } from '~/server/utils/courses'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
 
-const bodySchema = z.object({
-  assignmentId: z.string().uuid().optional(),
-  sessionDate: z.coerce.date().optional(),
-  grade: z.coerce.number().nullable().optional(),
-  comment: z.string().nullable().optional(),
-  notionsCovered: z.any().nullable().optional()
-})
+const uuid = z.string().uuid()
+
+const bodySchema = z
+  .object({
+    grade: z.coerce.number().min(0).max(20).nullable().optional(),
+    comment: z.string().trim().max(5000).nullable().optional(),
+    notionsCovered: z.array(z.string().trim().min(1)).nullable().optional()
+  })
+  .refine((d) => Object.keys(d).length > 0, {
+    message: 'At least one field is required'
+  })
+
+const include = {
+  assignment: {
+    include: {
+      student: { select: { id: true, firstName: true, lastName: true } },
+      course: { select: { id: true, title: true } }
+    }
+  }
+} as const
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Note ID is required' })
+  const user = await requireAuth(event)
+  const id = uuid.safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid note id' })
   }
+
+  await loadCourseNoteVisibleTo(id.data, user)
 
   const parsed = bodySchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Invalid note payload',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
 
-  try {
-    return await prisma.courseNote.update({
-      where: { id },
-      data: parsed.data,
-      include: {
-        assignment: {
-          include: {
-            student: { select: { id: true, firstName: true, lastName: true } },
-            course: { select: { id: true, title: true } }
-          }
-        }
-      }
-    })
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Note not found' })
-      if (err.code === 'P2003') throw createError({ statusCode: 400, statusMessage: 'Invalid assignmentId' })
-    }
-    throw err
+  const data = {
+    ...('grade' in parsed.data ? { grade: parsed.data.grade ?? null } : {}),
+    ...('comment' in parsed.data ? { comment: parsed.data.comment ?? null } : {}),
+    ...('notionsCovered' in parsed.data
+      ? { notionsCovered: notionsToPrismaInput(parsed.data.notionsCovered) }
+      : {})
   }
+
+  return prisma.courseNote.update({ where: { id: id.data }, data, include })
 })

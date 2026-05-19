@@ -17,6 +17,9 @@ FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
 
+# Non-root runtime user
+RUN addgroup -S -g 10001 alternup && adduser -S -u 10001 -G alternup alternup
+
 COPY package*.json ./
 RUN npm ci --omit=dev
 
@@ -26,6 +29,14 @@ RUN npx prisma generate
 
 COPY --from=builder /app/.output ./.output
 
+RUN chown -R alternup:alternup /app
+
+USER alternup
+
 EXPOSE 3000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3000/api/health >/dev/null || exit 1
+
 # Apply pending migrations then start the Nitro server
 CMD ["sh", "-c", "npx prisma migrate deploy && node .output/server/index.mjs"]

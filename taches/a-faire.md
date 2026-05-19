@@ -220,3 +220,299 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 **Suite logique**
 
 → Phase 10 = reprendre l'issue #6 (CRUD alternants/stagiaires pour tuteur) sur la nouvelle stack, en ajoutant les routes alias `/api/tutors/:id/learners` et la validation `requireRole(event, 'Tutor')`.
+
+---
+
+## Issue #5 — Auth endpoints multi-rôles
+
+> Branche : `5-feat-auth-multi-roles` → PR vers `dev`
+
+**Objectif** : durcir les endpoints `/api/auth/{register,login,logout,me}` livrés pendant la migration et exposer un mécanisme propre de protection par rôle.
+
+**Divergence assumée vs. spec** : la spec mentionne « JWT + payload contenant role ». Le stack validé est `nuxt-auth-utils` (cookie de session signé, payload côté serveur). La sémantique demandée — auth stateful + role disponible côté requête — est respectée ; on ne réintroduit pas JWT.
+
+### Tâches
+
+- [x] `server/utils/auth-credentials.ts` : schémas `registerInputSchema` / `loginInputSchema` (email lowercase+trim, names trim, password ≥ 8) + `formatZodIssues` pour réponses propres
+- [x] `register.post.ts` et `login.post.ts` : adoption du schéma centralisé + `data.issues` en cas de 400
+- [x] `server/utils/require-role.ts` : ajout `requireAuth`, signature `requireRole(event, ...allowed: [Role, ...Role[]])` (compile-time : au moins un rôle requis)
+- [x] `vitest.config.ts` + suite `tests/server/utils/auth-credentials.test.ts` (13 tests : normalisation, défauts, rejets)
+- [x] `vue-tsc --noEmit` : OK
+- [x] `npm test` : 13 tests passent
+
+---
+
+## Issue #7 — Protection des routes et redirections
+
+> Branche : `7-feat-route-protection` → PR vers `dev`
+
+**Objectif** : verrouiller l'accès aux routes sensibles côté API (Nitro) et côté pages (Nuxt), avec redirection propre vers `/login` pour les non-authentifiés et vers `/forbidden` pour les rôles non autorisés.
+
+### Architecture
+
+- **Allowlist partagée** : `shared/utils/public-routes.ts` exporte `PUBLIC_API_ROUTES` (health + register/login/logout) et `PUBLIC_PAGES` (`/`, `/login`, `/register`, `/forbidden`). Source unique de vérité pour les deux couches.
+- **Backend** : `server/middleware/auth-guard.ts` exige une session sur tout `/api/*` qui n'est pas dans l'allowlist (401 sinon). Les contrôles fins de rôle/ownership restent dans les handlers via `requireRole` / `requireSelfTutor`.
+- **Frontend** :
+  - `middleware/auth.global.ts` — redirige vers `/login?redirect=...` si non authentifié sur une page non publique. Opt-out via `definePageMeta({ auth: false })`.
+  - `middleware/role.ts` — middleware nommé qui lit `definePageMeta({ requireRole })`, redirige vers `/forbidden` si rôle invalide.
+- **Pages stubs** : `/login`, `/register`, `/forbidden`. UI minimale fonctionnelle (formulaires natifs). Le rebuild propre revient à #14 / #8.
+- **Typage** : `types/page-meta.d.ts` augmente `PageMeta` (`auth?: false`, `requireRole?: Role | Role[]`).
+
+### Tâches
+
+- [x] `shared/utils/public-routes.ts` + tests (17 cas : allowlists API & pages, query-string stripping)
+- [x] `server/middleware/auth-guard.ts`
+- [x] `middleware/auth.global.ts` + `middleware/role.ts`
+- [x] `pages/{login,register,forbidden}.vue` (stubs fonctionnels avec `auth: false`)
+- [x] `pages/alternants/{index,[id]}.vue` annotés `requireRole: 'Tutor'`
+- [x] `types/page-meta.d.ts`
+- [x] `npm test` : 30 tests verts
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #14 — Formulaires Auth (login / register)
+
+> Branche : `14-feat-auth-ui` → PR vers `dev`
+
+**Objectif** : remplacer les stubs natifs créés dans #7 par des formulaires Nuxt UI propres, avec validation client basée sur la même source que le backend, et redirection post-login en fonction du rôle.
+
+### Choix techniques
+
+- **Source unique de validation** : `server/utils/auth-credentials.ts` déplacé en `shared/utils/auth-credentials.ts`. Le client réutilise les mêmes schémas Zod que le serveur — pas de drift possible. Types switchés vers `z.input` pour matcher l'état de formulaire (pré-defaults).
+- **Composant Nuxt UI** : `<UAuthForm>` câblé avec `:schema` + `:fields` + `@submit`. Gestion erreurs serveur via `<UAlert>`.
+- **Redirection par rôle** : `shared/utils/auth-redirect.ts` (testé) — `Tutor → /alternants`, autres → `/`. Si `?redirect=…` valide (chemin relatif sûr), il est privilégié.
+- **Pas de Pinia** : `useUserSession()` de `nuxt-auth-utils` suffit comme source réactive d'identité. Ajouter Pinia par-dessus dupliquerait l'état pour zéro bénéfice.
+- **Header session-aware** : `app.vue` affiche nom + bouton Déconnexion quand loggé, sinon Connexion/Inscription. Lien « Mes alternants » réservé au rôle Tutor.
+
+### Tâches
+
+- [x] Déplacement `server/utils/auth-credentials.ts` → `shared/utils/auth-credentials.ts` (+ tests déplacés)
+- [x] `shared/utils/auth-redirect.ts` + tests (9 cas : landing par rôle, redirect sûr, rejet de cibles externes / `javascript:` / `//`)
+- [x] `pages/login.vue` réécrit avec `<UAuthForm>` + redirection par rôle
+- [x] `pages/register.vue` réécrit avec `<UAuthForm>` (select pour le rôle)
+- [x] `pages/forbidden.vue` passé sur Nuxt UI (`<UCard>`, `<UIcon>`, `<UButton>`)
+- [x] `app.vue` : header dynamique (login/logout, lien tuteur conditionnel)
+- [x] `npm test` : 39 tests verts (3 nouveaux + 30 hérités)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #8 — Dashboard tuteur (gestion des learners)
+
+> Branche : `8-feat-tutor-dashboard` → PR vers `dev`
+
+**Objectif** : remplacer `/alternants` par un vrai dashboard tuteur connecté aux endpoints `/api/tutors/:id/learners` (issue #6), avec ajout/retrait via modales et UX intuitive.
+
+### Décisions
+
+- **Add-learner par email** : `POST /api/tutors/:id/learners` accepte désormais `{ userId }` OU `{ email }` (union Zod). La résolution email→user est faite côté serveur, l'UI n'a pas à connaître les UUIDs. Le contrat `{ userId }` historique reste valide.
+- **Pas de duplication backend** : on étend la route existante au lieu d'ajouter un endpoint de recherche utilisateur — moins d'API, même surface fonctionnelle.
+- **Liste branchée sur le tuteur connecté** : `useFetch('/api/tutors/' + user.id + '/learners')` (et pas `/api/alternants` qui listait tous les Alternants de la base).
+- **Composants Nuxt UI** : `<UTable>` avec slots `*-cell`, `<UModal>` pour Ajouter et pour confirmer Supprimer, `<UAlert>` pour les erreurs, `useToast()` pour les confirmations.
+
+### Tâches
+
+- [x] `shared/utils/tutor-learners.ts` : `addLearnerBodySchema` (union `{ userId } | { email }`) + tests (5 cas)
+- [x] `server/api/tutors/[id]/learners/index.post.ts` : accepte les deux shapes, normalise l'email, conserve les erreurs 400/404/409
+- [x] `pages/alternants/index.vue` réécrit en dashboard tuteur (table, ajout via email, suppression confirmée, toasts)
+- [x] `pages/alternants/[id].vue` repassé sur Nuxt UI natif (UCard / UAlert / UBadge / UIcon)
+- [x] Suppression composants legacy : `components/AlternantsList.vue`, `components/ui/Alert.vue`, `components/ui/Button.vue`
+- [x] `npm test` : 44 tests verts (5 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #12 — Endpoints projets & missions
+
+> Branche : `12-feat-projects-missions` → PR vers `dev`
+
+**Objectif** : durcir les endpoints `/api/projects/*` et `/api/project-assignments/*` (issus de la migration) avec scoping par rôle, ownership et validation forte. Une « mission » = un `ProjectAssignment` (terme métier vs terme de schéma).
+
+### Règles métier
+
+| Action | Tutor | Alternant / Stagiaire |
+|---|---|---|
+| `GET /projects` | Projets qu'il a créés | Projets où il est assigné |
+| `POST /projects` | ✅ `createdById = user.id` (forcé serveur-side) | ❌ 403 |
+| `GET /projects/:id` | Si créateur ou learner assigné | Si learner assigné |
+| `PUT /projects/:id` | Si créateur | ❌ 403 |
+| `DELETE /projects/:id` | Si créateur | ❌ 403 |
+| `GET /project-assignments` | Assignations sur ses projets | Ses propres assignations |
+| `POST /project-assignments` | ✅ si projet à lui + cible learner | ❌ 403 |
+| `GET /project-assignments/:id` | Si créateur du projet | Si c'est sa mission |
+| `PUT /project-assignments/:id` | Tous les champs | Uniquement `status` et `studentComment` |
+| `DELETE /project-assignments/:id` | Si créateur du projet | ❌ 403 |
+
+### Décisions
+
+- **Pas de `createdById` dans le body** : forcé depuis la session, immuable côté `PUT`. Évite l'usurpation.
+- **404 plutôt que 403 pour les ressources invisibles** : ne pas leaker l'existence des projets d'autres tuteurs.
+- **`pickStudentEditableFields`** : helper testé qui filtre le payload en PUT pour ne garder que `status` et `studentComment` quand l'appelant est l'alternant. Si rien ne reste après filtrage → 403.
+- **`requireRole(event, Role.Tutor)`** sur POST projects/assignments + DELETE assignment ; `requireAuth` ailleurs (le scoping fait le reste).
+- **Schémas Zod centralisés** dans `shared/utils/projects.ts` (testables, réutilisables par le futur frontend issue #13).
+
+### Tâches
+
+- [x] `shared/utils/projects.ts` : `projectCreateSchema`, `projectUpdateSchema`, `assignmentCreateSchema`, `assignmentUpdateSchema` + `pickStudentEditableFields`
+- [x] `server/utils/projects.ts` : `loadProjectVisibleTo`, `loadProjectOwnedBy`, `loadAssignmentVisibleTo`
+- [x] 5 routes `server/api/projects/*` réécrites (scope + ownership + erreurs structurées)
+- [x] 5 routes `server/api/project-assignments/*` réécrites
+- [x] `tests/shared/projects.test.ts` : 16 cas sur les schémas + le helper de filtrage
+- [x] `npm test` : 60 tests verts
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #13 — UI projets & missions
+
+> Branche : `13-feat-projects-ui` → PR vers `dev`
+
+**Objectif** : exposer le backend #12 dans l'UI. Tuteur gère ses projets et leurs missions ; alternant suit ses missions et met à jour son avancement (`status`, `studentComment`).
+
+### Décisions
+
+- **Sélection learner par dropdown plutôt qu'UUID** : la modale « Assigner un learner » ne demande pas un UUID brut — elle propose un `<USelect>` chargé depuis `/api/tutors/{user.id}/learners` (la liste du réseau du tuteur). Évite la friction UX.
+- **State stocké en `string` puis converti** : les `<UTextarea>` Nuxt UI n'acceptent que `string`. Les champs `description` / `*Comment` sont conservés en `''` côté formulaire, convertis en `null` au submit (le backend distingue `null` de `""`).
+- **Vue alternant en cards plutôt qu'en table** : un alternant a typiquement peu de missions actives. Une card par mission avec sélecteur de statut + zone de notes inline est plus lisible qu'un tableau.
+- **Helpers d'affichage centralisés** (`projectStatusLabel`, `projectStatusColor`, `PROJECT_STATUS_OPTIONS`) côté `shared/utils/projects.ts` : une seule source de labels FR + couleurs UBadge, partageable côté tuteur et alternant.
+- **`landingPageFor` ajusté** : Alternants / Stagiaires redirigés vers `/missions` après login (au lieu de `/`).
+
+### Tâches
+
+- [x] `shared/utils/projects.ts` enrichi : `projectStatusLabel`, `projectStatusColor`, `PROJECT_STATUS_OPTIONS` + tests
+- [x] `landingPageFor` redirige Alternant/Stagiaire vers `/missions` (+ tests mis à jour)
+- [x] `pages/projects/index.vue` : liste tuteur (`<UTable>`), modales création/édition/suppression
+- [x] `pages/projects/[id].vue` : détail projet + missions (assigner via select learner, éditer statut+commentaire tuteur, retirer)
+- [x] `pages/missions/index.vue` : cards par mission, formulaire inline statut + studentComment
+- [x] `app.vue` : nav enrichie (« Mes projets » tuteur, « Mes missions » learner)
+- [x] `npm test` : 63 tests verts (3 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #9 — Endpoints cours, notes & calendrier
+
+> Branche : `9-feat-courses-notes` → PR vers `dev`
+
+**Objectif** : aligner le backend sur la spec — `GET /users/:id/calendar` + `POST /events/:eventId/notes` — et durcir les routes existantes `calendar-events/*` et `course-notes/*` (scope par rôle, ownership).
+
+### Choix de schéma (option A validée)
+
+Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_events` qui pointe vers `course_assignments(id)`. Un événement peut maintenant être :
+- une session de cours (lié à un `CourseAssignment`)
+- ou un événement libre (lien à `null`)
+
+`POST /events/:eventId/notes` crée/upsert une `CourseNote` (clef = `assignment.id` + `sessionDate = event.startTime` tronquée à minuit UTC). Le 400 explicite si l'event n'est pas rattaché à une session.
+
+### Matrice rôle / route
+
+| Action | Tutor | Alternant / Stagiaire |
+|---|---|---|
+| `GET /api/calendar-events` | Ses events (tutorId) | Ses events (studentId) |
+| `POST /api/calendar-events` | ✅ avec learner de son réseau (+ assignment compatible si fourni) | ❌ 403 |
+| `GET /api/calendar-events/:id` | Si tutorId ou studentId == user.id | Idem |
+| `PUT /api/calendar-events/:id` | Si tutorId == user.id | ❌ 403 |
+| `DELETE /api/calendar-events/:id` | Si tutorId == user.id | ❌ 403 |
+| `GET /api/users/:id/calendar` | Pour soi ou pour un learner de son réseau | Pour soi |
+| `POST /api/events/:eventId/notes` | Sur events de son réseau, si event lié à une session | Sur ses propres events, idem |
+| `GET /api/course-notes` | Notes des learners de son réseau | Ses notes |
+| `POST /api/course-notes` | Sur learner de son réseau | Sur soi |
+| `GET / PUT / DELETE /api/course-notes/:id` | Si learner dans son réseau | Si c'est sa note |
+
+### Décisions
+
+- **404 plutôt que 403** sur ressources invisibles (cohérent avec #12).
+- **`createdById` interdit dans le body** (POST /calendar-events) : forcé serveur-side depuis la session tuteur.
+- **`notionsCovered` traité via `Prisma.DbNull`** quand l'appelant envoie `null` (sinon TypeScript refuse l'assignation sur un champ `Json?`).
+- **Pas de transaction** pour l'upsert via event : `findFirst` puis `update`/`create` — l'index sur `(assignmentId, sessionDate)` n'existe pas, ajouter un `@@unique` serait plus propre mais déborde du scope (à revoir si on a besoin de race-safety).
+- **Schémas Zod centralisés** dans `shared/utils/calendar.ts` (réutilisables par #11).
+
+### Tâches
+
+- [x] Schéma Prisma : ajout `courseAssignmentId` (nullable) + relation + index
+- [x] Migration `20260518120000_link_calendar_to_assignment` (1 ADD COLUMN, 1 INDEX, 1 FK SET NULL)
+- [x] `shared/utils/calendar.ts` : `calendarEventCreateSchema`, `calendarEventUpdateSchema`, `eventNoteUpsertSchema` + tests (19 cas)
+- [x] `server/utils/courses.ts` : helpers `assertTutorOwnsLearner`, `loadCalendarEventVisibleTo`, `loadCourseNoteVisibleTo`, `assertCanReadAssignment`, `notionsToPrismaInput`
+- [x] 5 routes `/api/calendar-events/*` durcies
+- [x] 5 routes `/api/course-notes/*` durcies
+- [x] Nouvelles routes `/api/users/:id/calendar` (GET) et `/api/events/:id/notes` (POST upsert)
+- [x] `npm test` : 82 tests verts (19 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #11 — Dashboard Alternant (cours + notes)
+
+> Branche : `11-feat-learner-dashboard` → PR vers `dev`
+
+**Objectif** : exposer côté UI le backend cours/notes livré par #9 — `GET /api/users/:id/calendar` + `POST /api/events/:eventId/notes` — sous forme d'un dashboard d'inscription des notes par session.
+
+### Décisions
+
+- **Une carte par session** (et non un tableau) : un alternant a peu de sessions actives, l'édition inline est plus lisible en cards. Le mot « tableau » de la spec est respecté au sens « inventaire de ses cours ».
+- **`/courses` plutôt que `/learner/dashboard`** : URL plus parlante et conforme à la convention courte du reste de l'app.
+- **Notions saisies en CSV** : un input texte séparé par virgules, parsé/dédupliqué côté client via `parseNotions`. Plus simple qu'un composant de chips et déjà serializable côté JSON pour le backend.
+- **État de note pré-rempli depuis `/api/course-notes`** : le composant matche le note existant via `findNoteForSession` (`assignmentId` + `sessionDate` tronquée à minuit UTC). Évite de demander un second fetch par event.
+- **Refresh complet après submit** : `refreshEvents()` + `refreshNotes()` en parallèle. Le badge « Note enregistrée » réagit en temps réel sans reload de page (critère d'acceptance).
+
+### Tâches
+
+- [x] `shared/utils/course-notes.ts` : `sessionDateKey`, `findNoteForSession`, `parseNotions`, `notionsToString` + tests (10 cas)
+- [x] `pages/courses/index.vue` : liste des sessions, formulaire inline par session (note 0–20 / commentaire / notions CSV), badge d'état
+- [x] `app.vue` : lien « Mes cours » pour les learners
+- [x] `npm test` : 92 tests verts (10 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #10 — Calendrier (vue mois / semaine / jour / liste)
+
+> Branche : `10-feat-calendar-ui` → PR vers `dev`
+
+**Objectif** : afficher les `calendar_events` du user connecté dans une vraie vue calendrier (FullCalendar), avec navigation mois/semaine/jour/liste, et permettre d'éditer la note d'une session de cours d'un clic.
+
+### Décisions
+
+- **FullCalendar v6.1** : standard de l'industrie, accessible, supporté en Vue 3 via `@fullcalendar/vue3`. Plugins activés : `dayGrid`, `timeGrid`, `interaction`, `list`. Locale FR officielle.
+- **`<ClientOnly>` obligatoire** : FullCalendar accède au DOM dans son init ; on évite le SSR.
+- **Page unique `/calendar` pour tous les rôles** : tutor et learner voient leur propre agenda via `GET /api/users/{user.id}/calendar` (helper backend qui scope correctement).
+- **Modale unique pour clic** : si l'event est rattaché à une session (`courseAssignmentId`), elle affiche le formulaire de note (réutilise les helpers de #11 — `findNoteForSession`, `parseNotions`, `notionsToString`) ; sinon elle affiche le détail et le tuteur peut supprimer.
+- **Création d'event réservée au tuteur** : modale avec sélection du learner depuis son réseau (`/api/tutors/{user.id}/learners`), titre, début/fin (datetime-local convertis en ISO).
+- **Style accordé Tailwind** : header toolbar FullCalendar restylé en `emerald-700/800` via overrides CSS minimaux.
+
+### Tâches
+
+- [x] `npm i @fullcalendar/{vue3,core,daygrid,timegrid,interaction,list}` (v6.1.20)
+- [x] `shared/utils/calendar-display.ts` : `toFullCalendarEvent` + tests (6 cas)
+- [x] `pages/calendar.vue` : vue FullCalendar + modale note + modale création (tuteur)
+- [x] `app.vue` : lien « Calendrier » accessible à tous les rôles authentifiés
+- [x] `npm test` : 98 tests verts (6 nouveaux)
+- [x] `vue-tsc --noEmit` : 0 erreur
+- [x] `nuxt build` : succès
+
+---
+
+## Issue #18 — CI/CD + Dokploy ready
+
+> Branche : `18-feat-ci-cd` → PR vers `dev`
+
+**Objectif** : poser un workflow GitHub Actions qui valide chaque PR (typecheck + tests + build), durcir le Dockerfile pour la prod et compléter `.env.example` pour qu'un déploiement Dokploy soit possible sans deviner les clefs.
+
+### Tâches
+
+- [x] `.github/workflows/ci.yml` : `npm ci` → `prisma generate` → `nuxt prepare` → `vue-tsc --noEmit` → `npm test` → `nuxt build` (Node 20, concurrency control, cancel sur push PR)
+- [x] `Dockerfile` : user non-root (uid 10001) avec `chown -R`, `HEALTHCHECK` sur `GET /api/health`, multi-stage conservé
+- [x] `docker-compose.yml` : healthcheck applicatif aligné sur celui du Dockerfile, depends_on healthy déjà en place
+- [x] `.env.example` : ajout `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` / `APP_PORT`, sections commentées par usage (app / compose / optionnel)
+- [x] `docs/deploy-dokploy.md` : section CI ajoutée, mention non-root + healthcheck
+- [x] `README.md` : badge CI
+
+**Hors scope (à suivre dans une PR dédiée)** : la commande `npm run lint` casse car ESLint v10 attend une `eslint.config.*` flat config, absente du repo. Lint donc retiré du CI pour ne pas bloquer ; ticket à ouvrir pour migrer la config.
