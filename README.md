@@ -58,6 +58,8 @@ openssl rand -base64 48
 
 ## Développement local
 
+La stack Docker Compose (`docker-compose.yml`) embarque l'app + Postgres dans un seul `docker compose up`. C'est le mode recommandé pour le dev local.
+
 ```bash
 # 1. Démarrer Postgres
 docker compose up -d postgres
@@ -74,6 +76,8 @@ npm run dev
 
 Vérification : http://localhost:3000/api/health
 
+> Variante 100 % conteneurisée : `docker compose up -d --build` lance app + Postgres, applique les migrations au démarrage et expose l'app sur le port configuré par `APP_PORT` (3000 par défaut).
+
 ## Commandes utiles
 
 ```bash
@@ -89,13 +93,9 @@ npx prisma migrate dev --name <slug>   # Nouvelle migration
 
 ## Production / Déploiement Dokploy
 
-Voir `docs/deploy-dokploy.md` pour les détails. Résumé :
+En production, l'app et Postgres sont déployés comme **deux ressources Dokploy distinctes** (Application + Database), pas via `docker-compose.yml`. Le guide complet : [`docs/deploy-dokploy.md`](docs/deploy-dokploy.md).
 
-```bash
-docker compose up -d --build
-```
-
-L'image applique automatiquement `prisma migrate deploy` au démarrage.
+Le `docker-compose.yml` du repo n'est **utilisé qu'en dev local** — ne pas l'utiliser tel quel sur Dokploy.
 
 ## License
 
