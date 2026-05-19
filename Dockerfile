@@ -21,7 +21,11 @@ ENV NODE_ENV=production
 RUN addgroup -S -g 10001 alternup && adduser -S -u 10001 -G alternup alternup
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+# --ignore-scripts skips devDep-only hooks (husky/prepare, nuxt prepare/postinstall).
+# Husky is a devDep and not present here; the runner has no git repo to hook into anyway.
+# The .nuxt/ types `nuxt prepare` would generate are useless at runtime — we COPY the built
+# .output/ from the builder stage just below.
+RUN npm ci --omit=dev --ignore-scripts
 
 COPY prisma ./prisma
 COPY prisma.config.ts ./
