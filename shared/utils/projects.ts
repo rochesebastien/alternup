@@ -21,8 +21,8 @@ export const projectUpdateSchema = z
   })
 
 export const assignmentCreateSchema = z.object({
-  projectId: z.string().uuid(),
-  studentId: z.string().uuid(),
+  projectId: z.guid(),
+  studentId: z.guid(),
   status: z.nativeEnum(ProjectStatus).optional(),
   tutorComment: z.string().trim().max(5000).nullable().optional(),
   studentComment: z.string().trim().max(5000).nullable().optional(),

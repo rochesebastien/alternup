@@ -1,25 +1,53 @@
 <template>
   <div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
     <UCard class="w-full max-w-md">
-      <UAuthForm
-        :schema="loginInputSchema"
-        :fields="fields"
+      <div class="flex flex-col items-center text-center mb-6">
+        <span class="iconify i-lucide:log-in size-8 text-primary mb-2" aria-hidden="true" />
+        <h1 class="text-xl font-semibold">Connexion</h1>
+        <p class="text-sm text-muted mt-1">Accédez à votre espace Alternup.</p>
+      </div>
+
+      <UForm
         :state="state"
-        title="Connexion"
-        description="Accédez à votre espace Alternup."
-        icon="i-lucide-log-in"
-        :submit="{ label: 'Se connecter', loading: pending, block: true, color: 'primary' }"
+        :schema="loginInputSchema"
+        :validate-on="['blur', 'change', 'submit']"
+        class="space-y-5"
         @submit="onSubmit"
       >
-        <template #footer>
-          <p class="text-sm text-center text-gray-500">
-            Pas encore de compte ?
-            <NuxtLink to="/register" class="text-primary-600 hover:underline">
-              S'inscrire
-            </NuxtLink>
-          </p>
-        </template>
-      </UAuthForm>
+        <UFormField label="Email" name="email" required>
+          <UInput
+            v-model="state.email"
+            type="email"
+            placeholder="vous@exemple.com"
+            autocomplete="email"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UFormField label="Mot de passe" name="password" required>
+          <UInput
+            v-model="state.password"
+            type="password"
+            autocomplete="current-password"
+            class="w-full"
+          />
+        </UFormField>
+
+        <UButton
+          type="submit"
+          color="primary"
+          block
+          :loading="pending"
+          label="Se connecter"
+        />
+      </UForm>
+
+      <p class="text-sm text-center text-muted mt-4">
+        Pas encore de compte ?
+        <NuxtLink to="/register" class="text-primary-600 hover:underline">
+          S'inscrire
+        </NuxtLink>
+      </p>
 
       <UAlert
         v-if="serverError"
@@ -42,15 +70,10 @@ definePageMeta({ auth: false })
 const route = useRoute()
 const { fetch: refreshSession, user } = useUserSession()
 
-const state = reactive<Partial<LoginInput>>({
-  email: undefined,
-  password: undefined
+const state = reactive<{ email: string; password: string }>({
+  email: '',
+  password: ''
 })
-
-const fields = [
-  { name: 'email', label: 'Email', type: 'text' as const, placeholder: 'vous@exemple.com', autocomplete: 'email' },
-  { name: 'password', label: 'Mot de passe', type: 'password' as const, autocomplete: 'current-password' }
-]
 
 const pending = ref(false)
 const serverError = ref<string | null>(null)

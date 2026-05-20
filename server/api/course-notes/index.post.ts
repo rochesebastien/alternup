@@ -28,7 +28,7 @@ export default defineEventHandler(async (event) => {
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid note payload',
+      statusMessage: 'Données de note invalides.',
       data: { issues: formatZodIssues(parsed.error) }
     })
   }

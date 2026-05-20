@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid registration payload',
+      statusMessage: 'Données d\'inscription invalides.',
       data: { issues: formatZodIssues(parsed.error) }
     })
   }
@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
     })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw createError({ statusCode: 409, statusMessage: 'Email already in use' })
+      throw createError({ statusCode: 409, statusMessage: 'Cette adresse e-mail est déjà utilisée.' })
     }
     throw err
   }

@@ -2,11 +2,11 @@ import { z } from 'zod'
 
 export const calendarEventCreateSchema = z
   .object({
-    studentId: z.string().uuid(),
+    studentId: z.guid(),
     title: z.string().trim().min(1).max(200),
     startTime: z.coerce.date(),
     endTime: z.coerce.date(),
-    courseAssignmentId: z.string().uuid().nullable().optional()
+    courseAssignmentId: z.guid().nullable().optional()
   })
   .refine((d) => d.endTime > d.startTime, {
     message: 'endTime must be after startTime',
@@ -18,7 +18,7 @@ export const calendarEventUpdateSchema = z
     title: z.string().trim().min(1).max(200).optional(),
     startTime: z.coerce.date().optional(),
     endTime: z.coerce.date().optional(),
-    courseAssignmentId: z.string().uuid().nullable().optional()
+    courseAssignmentId: z.guid().nullable().optional()
   })
   .refine(
     (d) => {

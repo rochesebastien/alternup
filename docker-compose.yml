@@ -6,6 +6,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-alternup}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alternup}
       POSTGRES_DB: ${POSTGRES_DB:-alternup}
+    ports:
+      - "5432:5432"          # pour t'y connecter depuis le host si besoin
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -13,13 +15,14 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+      # pas de `port:` ici
 
   alternup:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "${APP_PORT:-3000}:3000"
+      - "${APP_PORT:-3000}:3000"    # 3000, pas 5432
     environment:
       NODE_ENV: production
       DATABASE_URL: ${DATABASE_URL:-postgresql://alternup:alternup@postgres:5432/alternup}
