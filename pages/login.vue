@@ -10,7 +10,7 @@
       <UForm
         :state="state"
         :schema="loginInputSchema"
-        :validate-on="['blur', 'change', 'submit']"
+        :validate-on="['blur', 'change']"
         class="space-y-5"
         @submit="onSubmit"
       >
