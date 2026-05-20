@@ -7,7 +7,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-alternup}
       POSTGRES_DB: ${POSTGRES_DB:-alternup}
     ports:
-      - "5432:5432"          # pour t'y connecter depuis le host si besoin
+      - "5432:5432" 
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
