@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 export const addLearnerBodySchema = z.union([
-  z.object({ userId: z.string().uuid() }),
+  z.object({ userId: z.guid() }),
   z.object({ email: z.string().trim().toLowerCase().email() })
 ])
 

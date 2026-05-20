@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid login payload',
+      statusMessage: 'Données de connexion invalides.',
       data: { issues: formatZodIssues(parsed.error) }
     })
   }
@@ -16,7 +16,7 @@ export default defineEventHandler(async (event) => {
   const user = await prisma.user.findUnique({ where: { email } })
 
   if (!user || !(await bcrypt.compare(password, user.passwordHash))) {
-    throw createError({ statusCode: 401, statusMessage: 'Invalid credentials' })
+    throw createError({ statusCode: 401, statusMessage: 'Identifiants invalides.' })
   }
 
   const publicUser = {

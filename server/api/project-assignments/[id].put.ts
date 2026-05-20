@@ -26,7 +26,7 @@ export default defineEventHandler(async (event) => {
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid assignment payload',
+      statusMessage: 'Données d\'affectation invalides.',
       data: { issues: formatZodIssues(parsed.error) }
     })
   }

@@ -22,3 +22,17 @@
 **Erreur :** Polluer des artefacts partagés (PR, commits) avec un lien interne sans valeur pour le projet ni pour les co-équipiers.
 **Correction utilisateur :** « Pas la peine de me mettre le lien de la session » dans les PR.
 **Règle à appliquer :** Sur ce projet Alternup, **jamais** de ligne `https://claude.ai/code/session_...` dans : bodies/comments de PR, bodies/comments d'issues, messages de commit, descriptions de release. La règle vaut pour tout artefact poussé sur GitHub.
+
+### 2026-05-20 — UAuthForm de @nuxt/ui ignore la prop `state`
+
+**Contexte :** Le formulaire de login utilisait `UAuthForm` avec `:state="state"` côté parent. L'utilisateur voyait des erreurs Zod « expected string, received undefined » même quand les champs étaient remplis.
+**Erreur :** Le composant `UAuthForm` (v4.7) **crée son propre state interne** à partir de `props.fields` et **ignore complètement** la prop `state` passée par le parent. Conséquence : le state du parent n'est jamais lu pour les inputs et le payload de submit vient d'un state que le parent ne contrôle pas. Cela peut aussi rater certaines updates (autofill navigateur, modifications externes), d'où des champs « vides » envoyés au serveur.
+**Correction utilisateur :** Refactor avec `UForm` + `UFormField` + `UInput` v-model explicite (state contrôlé par le parent).
+**Règle à appliquer :** Sur ce projet, ne pas utiliser `UAuthForm`. Utiliser `UForm` + `UFormField` avec v-model explicite sur chaque input. Pour Zod en FR : `import { fr } from 'zod/locales'; z.config(fr())` dans un plugin Nuxt (client/SSR) **et** un plugin Nitro (serveur).
+
+### 2026-05-20 — Zod v4 : `z.string().uuid()` est devenu strict RFC 9562
+
+**Contexte :** Après migration Zod v3 → v4, 5 tests Vitest échouaient sur des schémas validant des UUID de test du type `'11111111-1111-1111-1111-111111111111'`.
+**Erreur :** En Zod v4, `z.string().uuid()` (et `z.uuid()`) impose la conformité RFC 9562 stricte : le 3e groupe doit commencer par `1-8` (version) et le 4e par `8/9/a/b` (variant). Les UUID « didactiques » avec tous les chiffres identiques sont rejetés.
+**Correction :** Remplacer par `z.guid()` qui accepte n'importe quelle chaîne UUID-like (8-4-4-4-12 hex). Garder `z.uuid()` uniquement quand on **veut** garantir un vrai UUID RFC valide (rare pour de la validation d'entrée HTTP).
+**Règle à appliquer :** Sur ce projet, par défaut utiliser `z.guid()` pour valider des IDs en entrée d'API ou de formulaire. N'utiliser `z.uuid({ version: 'v4' })` que si on veut vraiment refuser les variantes non-v4.

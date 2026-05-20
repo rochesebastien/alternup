@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   if (!parsed.success) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Invalid payload',
+      statusMessage: 'Données invalides.',
       data: { issues: formatZodIssues(parsed.error) }
     })
   }
