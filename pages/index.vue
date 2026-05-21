@@ -1,9 +1,9 @@
 <template>
-  <div class="overflow-x-hidden">
+  <div ref="rootRef" class="overflow-x-hidden">
     <!-- ============== HERO ============== -->
     <header class="relative pt-12 sm:pt-20 pb-16 sm:pb-24">
       <!-- Funnel décoratif en arrière-plan -->
-      <div class="absolute inset-0 pointer-events-none z-0" aria-hidden="true">
+      <div class="anim-funnel absolute inset-0 pointer-events-none z-0" aria-hidden="true">
         <svg
           class="w-full h-full"
           viewBox="0 0 1400 900"
@@ -103,8 +103,8 @@
           <span class="inline-block text-xs font-bold tracking-[0.18em] uppercase bg-brand-500 text-black px-3.5 py-1.5 rounded-full mb-6">
             Le problème
           </span>
-          <h2 class="text-3xl sm:text-4xl lg:text-[56px] leading-[1.05] font-extrabold tracking-[-0.03em] mb-5">
-            Marre de courir après tes alternants&nbsp;?
+          <h2 id="product_anchor" class="text-3xl sm:text-4xl lg:text-[56px] leading-[1.05] font-extrabold tracking-[-0.03em] mb-5">
+            Marre de courir après tes alternants ?
           </h2>
           <p class="text-[17px] leading-[1.55] text-[var(--ui-text-muted)] max-w-[600px] mx-auto">
             Le suivi par mail, Excel et Teams, ça tient plus.

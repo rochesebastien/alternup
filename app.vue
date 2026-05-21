@@ -25,9 +25,9 @@
 
             <div class="hidden md:flex items-center gap-6 text-sm font-medium">
               <template v-if="!loggedIn">
-                <NuxtLink to="/" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Produit</NuxtLink>
-                <NuxtLink to="/" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Fonctionnalités</NuxtLink>
-                <NuxtLink to="/" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Tarifs</NuxtLink>
+                <NuxtLink to="/product_anchor" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Produit</NuxtLink>
+                <NuxtLink to="/features" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Fonctionnalités</NuxtLink>
+                <NuxtLink to="/pricing" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Tarifs</NuxtLink>
               </template>
               <template v-else>
                 <NuxtLink
