@@ -2,8 +2,8 @@
   <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
     <div class="flex items-start justify-between gap-4 flex-wrap">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Calendrier</h1>
-        <p class="text-sm text-gray-500">
+        <h1 class="text-2xl font-bold text-[var(--ui-text)]">Calendrier</h1>
+        <p class="text-sm text-[var(--ui-text-muted)]">
           {{ isTutor ? 'Sessions et rendez-vous avec vos learners.' : 'Vos cours et rendez-vous à venir.' }}
         </p>
       </div>
@@ -40,7 +40,7 @@
     <UModal v-model:open="noteModalOpen" :title="noteModalTitle">
       <template #body>
         <div v-if="selectedEvent" class="space-y-4">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-[var(--ui-text-muted)]">
             {{ formatDate(selectedEvent.startTime) }} ·
             {{ formatTimeRange(selectedEvent.startTime, selectedEvent.endTime) }}
           </p>
@@ -95,7 +95,7 @@
           </UForm>
 
           <div v-else>
-            <p class="text-sm text-gray-600">{{ selectedEvent.title }}</p>
+            <p class="text-sm text-[var(--ui-text-muted)]">{{ selectedEvent.title }}</p>
             <div v-if="isTutor" class="flex justify-end gap-2 mt-6">
               <UButton color="neutral" variant="ghost" @click="noteModalOpen = false">
                 Fermer
