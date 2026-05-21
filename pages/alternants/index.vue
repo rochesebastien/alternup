@@ -2,8 +2,8 @@
   <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
     <div class="flex items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Mes alternants &amp; stagiaires</h1>
-        <p class="text-sm text-gray-500">
+        <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes alternants &amp; stagiaires</h1>
+        <p class="text-sm text-[var(--ui-text-muted)]">
           {{ learners.length }} {{ learners.length > 1 ? 'personnes rattachées' : 'personne rattachée' }}
         </p>
       </div>
@@ -30,7 +30,7 @@
         <template #fullName-cell="{ row }">
           <NuxtLink
             :to="`/alternants/${row.original.id}`"
-            class="font-medium text-gray-900 hover:text-primary-600"
+            class="font-medium text-[var(--ui-text)] hover:text-[var(--ui-primary)]"
           >
             {{ row.original.firstName }} {{ row.original.lastName }}
           </NuxtLink>
@@ -46,7 +46,7 @@
         </template>
 
         <template #addedAt-cell="{ row }">
-          <span class="text-sm text-gray-500">{{ formatDate(row.original.addedAt) }}</span>
+          <span class="text-sm text-[var(--ui-text-muted)]">{{ formatDate(row.original.addedAt) }}</span>
         </template>
 
         <template #actions-cell="{ row }">
@@ -80,7 +80,7 @@
             />
           </UFormField>
 
-          <p class="text-xs text-gray-500">
+          <p class="text-xs text-[var(--ui-text-muted)]">
             Le compte doit déjà exister avec le rôle Alternant ou Stagiaire.
           </p>
 
@@ -105,7 +105,7 @@
 
     <UModal v-model:open="removeOpen" title="Retirer ce learner ?">
       <template #body>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-[var(--ui-text-muted)]">
           Vous êtes sur le point de retirer
           <span class="font-semibold">
             {{ pendingRemove?.firstName }} {{ pendingRemove?.lastName }}

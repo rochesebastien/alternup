@@ -2,8 +2,8 @@
   <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
     <div class="flex items-center justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Mes projets</h1>
-        <p class="text-sm text-gray-500">
+        <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes projets</h1>
+        <p class="text-sm text-[var(--ui-text-muted)]">
           {{ projects.length }} projet{{ projects.length > 1 ? 's' : '' }}
         </p>
       </div>
@@ -30,7 +30,7 @@
         <template #title-cell="{ row }">
           <NuxtLink
             :to="`/projects/${row.original.id}`"
-            class="font-medium text-gray-900 hover:text-primary-600"
+            class="font-medium text-[var(--ui-text)] hover:text-[var(--ui-primary)]"
           >
             {{ row.original.title }}
           </NuxtLink>
@@ -46,7 +46,7 @@
         </template>
 
         <template #createdAt-cell="{ row }">
-          <span class="text-sm text-gray-500">{{ formatDate(row.original.createdAt) }}</span>
+          <span class="text-sm text-[var(--ui-text-muted)]">{{ formatDate(row.original.createdAt) }}</span>
         </template>
 
         <template #actions-cell="{ row }">
@@ -116,7 +116,7 @@
 
     <UModal v-model:open="removeOpen" title="Supprimer ce projet ?">
       <template #body>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-[var(--ui-text-muted)]">
           Le projet <span class="font-semibold">{{ pendingRemove?.title }}</span> et
           toutes ses missions associées seront supprimés. Cette action est
           irréversible.

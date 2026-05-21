@@ -1,8 +1,8 @@
 <template>
   <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Mes cours</h1>
-      <p class="text-sm text-gray-500">
+      <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes cours</h1>
+      <p class="text-sm text-[var(--ui-text-muted)]">
         Sessions à venir et passées avec leurs notes personnelles.
       </p>
     </div>
@@ -20,7 +20,7 @@
     </div>
 
     <UCard v-else-if="sessions.length === 0">
-      <p class="text-gray-500 text-center py-6">
+      <p class="text-[var(--ui-text-muted)] text-center py-6">
         Aucun cours n'est pour le moment programmé dans votre agenda.
       </p>
     </UCard>
@@ -29,10 +29,10 @@
       <template #header>
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h2 class="text-lg font-semibold text-gray-900">
+            <h2 class="text-lg font-semibold text-[var(--ui-text)]">
               {{ session.courseAssignment?.course.title ?? session.title }}
             </h2>
-            <p class="text-sm text-gray-500 mt-1">
+            <p class="text-sm text-[var(--ui-text-muted)] mt-1">
               {{ formatDate(session.startTime) }} · {{ formatTimeRange(session.startTime, session.endTime) }}
             </p>
           </div>
@@ -73,7 +73,7 @@
               class="w-full"
             />
             <template #help>
-              <span class="text-xs text-gray-500">Séparées par des virgules.</span>
+              <span class="text-xs text-[var(--ui-text-muted)]">Séparées par des virgules.</span>
             </template>
           </UFormField>
         </div>

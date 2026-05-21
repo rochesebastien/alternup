@@ -21,7 +21,7 @@
         <template #header>
           <div class="flex items-start justify-between gap-4">
             <div>
-              <h1 class="text-2xl font-bold text-gray-900">{{ project.title }}</h1>
+              <h1 class="text-2xl font-bold text-[var(--ui-text)]">{{ project.title }}</h1>
               <UBadge
                 class="mt-1"
                 :color="project.internal ? 'primary' : 'neutral'"
@@ -33,18 +33,18 @@
           </div>
         </template>
 
-        <p v-if="project.description" class="text-gray-700 whitespace-pre-line">
+        <p v-if="project.description" class="text-[var(--ui-text-toned)] whitespace-pre-line">
           {{ project.description }}
         </p>
-        <p v-else class="text-gray-400 italic">Aucune description.</p>
+        <p v-else class="text-[var(--ui-text-dimmed)] italic">Aucune description.</p>
       </UCard>
 
       <UCard>
         <template #header>
           <div class="flex items-center justify-between gap-4">
             <div>
-              <h2 class="text-lg font-semibold text-gray-900">Missions</h2>
-              <p class="text-sm text-gray-500">
+              <h2 class="text-lg font-semibold text-[var(--ui-text)]">Missions</h2>
+              <p class="text-sm text-[var(--ui-text-muted)]">
                 {{ project.assignments.length }} mission{{ project.assignments.length > 1 ? 's' : '' }}
               </p>
             </div>
@@ -54,7 +54,7 @@
           </div>
         </template>
 
-        <div v-if="project.assignments.length === 0" class="text-gray-500 text-sm py-4 text-center">
+        <div v-if="project.assignments.length === 0" class="text-[var(--ui-text-muted)] text-sm py-4 text-center">
           Aucune mission n'est encore attribuée pour ce projet.
         </div>
 
@@ -66,10 +66,10 @@
           >
             <div class="flex items-center justify-between gap-4 flex-wrap">
               <div>
-                <p class="font-medium text-gray-900">
+                <p class="font-medium text-[var(--ui-text)]">
                   {{ assignment.student.firstName }} {{ assignment.student.lastName }}
                 </p>
-                <p class="text-sm text-gray-500">{{ assignment.student.email }}</p>
+                <p class="text-sm text-[var(--ui-text-muted)]">{{ assignment.student.email }}</p>
               </div>
               <div class="flex items-center gap-2">
                 <UBadge
@@ -97,16 +97,16 @@
               </div>
             </div>
 
-            <div v-if="assignment.tutorComment" class="bg-gray-50 rounded-md p-3">
-              <p class="text-xs text-gray-500 uppercase tracking-wide">Commentaire tuteur</p>
-              <p class="text-sm text-gray-700 whitespace-pre-line">
+            <div v-if="assignment.tutorComment" class="bg-[var(--ui-bg-muted)] rounded-md p-3">
+              <p class="text-xs text-[var(--ui-text-muted)] uppercase tracking-wide">Commentaire tuteur</p>
+              <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
                 {{ assignment.tutorComment }}
               </p>
             </div>
 
             <div v-if="assignment.studentComment" class="bg-primary-50 rounded-md p-3">
               <p class="text-xs text-primary-700 uppercase tracking-wide">Note du learner</p>
-              <p class="text-sm text-gray-700 whitespace-pre-line">
+              <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
                 {{ assignment.studentComment }}
               </p>
             </div>
@@ -216,7 +216,7 @@
     <!-- Retirer mission -->
     <UModal v-model:open="removeAssignOpen" title="Retirer cette mission ?">
       <template #body>
-        <p class="text-sm text-gray-600">
+        <p class="text-sm text-[var(--ui-text-muted)]">
           La mission sera retirée. Le compte du learner n'est pas affecté.
         </p>
         <UAlert

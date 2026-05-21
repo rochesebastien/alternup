@@ -24,7 +24,7 @@
     <UCard v-else-if="alternant">
       <template #header>
         <div>
-          <h1 class="text-2xl font-bold text-gray-900">
+          <h1 class="text-2xl font-bold text-[var(--ui-text)]">
             {{ alternant.firstName }} {{ alternant.lastName }}
           </h1>
           <UBadge class="mt-1" color="primary" variant="subtle">
@@ -35,16 +35,16 @@
 
       <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <dt class="text-sm text-gray-500">Email</dt>
-          <dd class="text-gray-900">{{ alternant.email }}</dd>
+          <dt class="text-sm text-[var(--ui-text-muted)]">Email</dt>
+          <dd class="text-[var(--ui-text)]">{{ alternant.email }}</dd>
         </div>
         <div>
-          <dt class="text-sm text-gray-500">Créé le</dt>
-          <dd class="text-gray-900">{{ formatDate(alternant.createdAt) }}</dd>
+          <dt class="text-sm text-[var(--ui-text-muted)]">Créé le</dt>
+          <dd class="text-[var(--ui-text)]">{{ formatDate(alternant.createdAt) }}</dd>
         </div>
         <div>
-          <dt class="text-sm text-gray-500">Dernière mise à jour</dt>
-          <dd class="text-gray-900">{{ formatDate(alternant.updatedAt) }}</dd>
+          <dt class="text-sm text-[var(--ui-text-muted)]">Dernière mise à jour</dt>
+          <dd class="text-[var(--ui-text)]">{{ formatDate(alternant.updatedAt) }}</dd>
         </div>
       </dl>
     </UCard>
