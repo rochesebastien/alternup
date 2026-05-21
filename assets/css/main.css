@@ -1,16 +1,104 @@
 @import "tailwindcss";
 @import "@nuxt/ui";
 
-@theme {
-  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, 'Helvetica Neue', Arial, sans-serif;
+@theme static {
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+
+  /* Palette de marque construite autour de #F1DE02 */
+  --color-brand-50:  #FFFEE5;
+  --color-brand-100: #FFFBB3;
+  --color-brand-200: #FFF780;
+  --color-brand-300: #FFF34D;
+  --color-brand-400: #F9EA1A;
+  --color-brand-500: #F1DE02;
+  --color-brand-600: #C7B600;
+  --color-brand-700: #9C8E00;
+  --color-brand-800: #726700;
+  --color-brand-900: #483F00;
+  --color-brand-950: #2A2500;
+
+  /* Rayons */
+  --radius-pill: 999px;
+  --radius-card: 20px;
 }
 
+/* Design tokens — Light theme */
+:root {
+  --ui-radius: 0.5rem;
+
+  --ui-bg: #F9F9F9;
+  --ui-bg-muted: #F1F1EE;
+  --ui-bg-elevated: #FFFFFF;
+  --ui-bg-accented: #E7E7E4;
+  --ui-bg-inverted: #1F1F1E;
+
+  --ui-text: #000000;
+  --ui-text-highlighted: #000000;
+  --ui-text-toned: #1F1F1E;
+  --ui-text-muted: #6B6B6A;
+  --ui-text-dimmed: #9A9A98;
+  --ui-text-inverted: #FFFFFF;
+
+  --ui-border: #E7E7E4;
+  --ui-border-muted: #EFEFEC;
+  --ui-border-accented: #CFCFCB;
+  --ui-border-inverted: #1F1F1E;
+
+  /* Couleurs sémantiques effectives (alias) */
+  --ui-primary: var(--ui-color-primary-500);
+  --ui-secondary: var(--ui-color-secondary-500);
+  --ui-success: var(--ui-color-success-500);
+  --ui-info: var(--ui-color-info-500);
+  --ui-warning: var(--ui-color-warning-500);
+  --ui-error: var(--ui-color-error-500);
+}
+
+/* Design tokens — Dark theme */
+.dark {
+  --ui-bg: #1F1F1E;
+  --ui-bg-muted: #161615;
+  --ui-bg-elevated: #2B2B29;
+  --ui-bg-accented: #3A3A39;
+  --ui-bg-inverted: #F9F9F9;
+
+  --ui-text: #FFFFFF;
+  --ui-text-highlighted: #FFFFFF;
+  --ui-text-toned: #F4F4F3;
+  --ui-text-muted: #A8A8A6;
+  --ui-text-dimmed: #6B6B6A;
+  --ui-text-inverted: #1F1F1E;
+
+  --ui-border: #2B2B29;
+  --ui-border-muted: #2B2B29;
+  --ui-border-accented: #3A3A39;
+  --ui-border-inverted: #F9F9F9;
+
+  /* Le jaune reste la primaire en dark (lisible sur fond noir) */
+  --ui-primary: var(--ui-color-primary-500);
+  --ui-secondary: var(--ui-color-secondary-400);
+  --ui-success: var(--ui-color-success-400);
+  --ui-info: var(--ui-color-info-400);
+  --ui-warning: var(--ui-color-warning-400);
+  --ui-error: var(--ui-color-error-400);
+}
+
+html, body {
+  background-color: var(--ui-bg);
+  color: var(--ui-text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Transitions douces lors du switch de thème */
+:root, .dark {
+  transition: background-color .25s ease, color .25s ease;
+}
+
+/* Page transitions */
 .page-enter-active,
 .page-leave-active {
   transition: opacity 0.2s;
 }
-
 .page-enter-from,
 .page-leave-to {
   opacity: 0;

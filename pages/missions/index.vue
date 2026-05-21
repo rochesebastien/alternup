@@ -1,8 +1,8 @@
 <template>
   <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-gray-900">Mes missions</h1>
-      <p class="text-sm text-gray-500">
+      <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes missions</h1>
+      <p class="text-sm text-[var(--ui-text-muted)]">
         {{ missions.length }} mission{{ missions.length > 1 ? 's' : '' }} en cours ou passées.
       </p>
     </div>
@@ -20,7 +20,7 @@
     </div>
 
     <UCard v-else-if="missions.length === 0">
-      <p class="text-gray-500 text-center py-6">
+      <p class="text-[var(--ui-text-muted)] text-center py-6">
         Aucune mission ne vous est encore attribuée.
       </p>
     </UCard>
@@ -29,7 +29,7 @@
       <template #header>
         <div class="flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h2 class="text-lg font-semibold text-gray-900">{{ mission.project.title }}</h2>
+            <h2 class="text-lg font-semibold text-[var(--ui-text)]">{{ mission.project.title }}</h2>
             <UBadge
               class="mt-1"
               :color="mission.project.internal ? 'primary' : 'neutral'"
@@ -48,9 +48,9 @@
         </div>
       </template>
 
-      <div v-if="mission.tutorComment" class="mb-4 bg-gray-50 rounded-md p-3">
-        <p class="text-xs text-gray-500 uppercase tracking-wide">Commentaire tuteur</p>
-        <p class="text-sm text-gray-700 whitespace-pre-line">
+      <div v-if="mission.tutorComment" class="mb-4 bg-[var(--ui-bg-muted)] rounded-md p-3">
+        <p class="text-xs text-[var(--ui-text-muted)] uppercase tracking-wide">Commentaire tuteur</p>
+        <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
           {{ mission.tutorComment }}
         </p>
       </div>

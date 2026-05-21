@@ -2,8 +2,8 @@
   <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
     <div class="flex items-start justify-between gap-4 flex-wrap">
       <div>
-        <h1 class="text-2xl font-bold text-gray-900">Calendrier</h1>
-        <p class="text-sm text-gray-500">
+        <h1 class="text-2xl font-bold text-[var(--ui-text)]">Calendrier</h1>
+        <p class="text-sm text-[var(--ui-text-muted)]">
           {{ isTutor ? 'Sessions et rendez-vous avec vos learners.' : 'Vos cours et rendez-vous à venir.' }}
         </p>
       </div>
@@ -30,7 +30,7 @@
         <FullCalendar v-if="calendarOptions" :options="calendarOptions" />
         <template #fallback>
           <div class="flex justify-center py-12">
-            <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-primary-500" />
+            <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-[var(--ui-primary)]" />
           </div>
         </template>
       </ClientOnly>
@@ -40,7 +40,7 @@
     <UModal v-model:open="noteModalOpen" :title="noteModalTitle">
       <template #body>
         <div v-if="selectedEvent" class="space-y-4">
-          <p class="text-sm text-gray-500">
+          <p class="text-sm text-[var(--ui-text-muted)]">
             {{ formatDate(selectedEvent.startTime) }} ·
             {{ formatTimeRange(selectedEvent.startTime, selectedEvent.endTime) }}
           </p>
@@ -95,7 +95,7 @@
           </UForm>
 
           <div v-else>
-            <p class="text-sm text-gray-600">{{ selectedEvent.title }}</p>
+            <p class="text-sm text-[var(--ui-text-muted)]">{{ selectedEvent.title }}</p>
             <div v-if="isTutor" class="flex justify-end gap-2 mt-6">
               <UButton color="neutral" variant="ghost" @click="noteModalOpen = false">
                 Fermer
@@ -423,24 +423,74 @@ function readErrorMessage(err: unknown): string | null {
 </script>
 
 <style>
+/* FullCalendar — mapping sur les tokens UI (clair / sombre) */
 .fc {
   font-family: inherit;
+  color: var(--ui-text);
+
+  --fc-border-color: var(--ui-border);
+  --fc-page-bg-color: var(--ui-bg);
+  --fc-neutral-bg-color: var(--ui-bg-muted);
+  --fc-list-event-hover-bg-color: var(--ui-bg-elevated);
+  --fc-today-bg-color: color-mix(in oklab, var(--ui-primary) 12%, transparent);
+  --fc-now-indicator-color: #ef4444;
+
+  /* Boutons toolbar */
+  --fc-button-bg-color: var(--ui-bg-elevated);
+  --fc-button-border-color: var(--ui-border);
+  --fc-button-text-color: var(--ui-text);
+  --fc-button-hover-bg-color: var(--ui-bg-accented);
+  --fc-button-hover-border-color: var(--ui-border-accented);
+  --fc-button-active-bg-color: var(--ui-primary);
+  --fc-button-active-border-color: var(--ui-primary);
+
+  /* Évènements (par défaut → primaire jaune avec texte noir) */
+  --fc-event-bg-color: var(--ui-primary);
+  --fc-event-border-color: var(--ui-primary);
+  --fc-event-text-color: #000;
 }
+
 .fc .fc-toolbar-title {
   font-size: 1.15rem;
   font-weight: 600;
 }
+
 .fc .fc-button {
-  background-color: #047857;
-  border-color: #047857;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.45rem 0.95rem;
+  text-transform: none;
+  box-shadow: none;
 }
-.fc .fc-button:hover {
-  background-color: #065f46;
-  border-color: #065f46;
+.fc .fc-button:focus,
+.fc .fc-button:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ui-primary) 35%, transparent);
 }
+/* Le bouton actif (vue courante + Aujourd'hui) → jaune sur texte noir */
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-  background-color: #065f46;
-  border-color: #065f46;
+  color: #000;
+}
+
+/* Cellules / headers */
+.fc-theme-standard td,
+.fc-theme-standard th,
+.fc-theme-standard .fc-scrollgrid {
+  border-color: var(--ui-border);
+}
+.fc .fc-col-header-cell-cushion,
+.fc .fc-daygrid-day-number,
+.fc .fc-list-day-text,
+.fc .fc-list-day-side-text,
+.fc .fc-timegrid-axis-cushion,
+.fc .fc-timegrid-slot-label-cushion {
+  color: var(--ui-text);
+}
+.fc .fc-day-other .fc-daygrid-day-number {
+  color: var(--ui-text-dimmed);
+}
+.fc .fc-list-empty {
+  color: var(--ui-text-muted);
+  background: var(--ui-bg-muted);
 }
 </style>

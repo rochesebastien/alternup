@@ -5,9 +5,15 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vueuse/nuxt',
     '@nuxt/image',
+    '@nuxt/fonts',
     'nuxt-auth-utils'
   ],
   css: ['~/assets/css/main.css'],
+  fonts: {
+    families: [
+      { name: 'Inter', provider: 'google', weights: [400, 500, 600, 700, 800, 900] }
+    ]
+  },
   typescript: {
     strict: true,
     shim: false,
@@ -24,14 +30,15 @@ export default defineNuxtConfig({
   },
   app: {
     head: {
-      title: 'Alternup - Gestion des alternances',
+      title: "Manage internships and apprenticeships - Alternup",
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'Application de gestion des alternances avec NuxtJS et PostgreSQL' }
+        { name: 'description', content: "alternup centralise le suivi de tes alternants et stagiaires — visites, livrables, rapports, compétences." },
+        { name: 'theme-color', content: '#F1DE02' }
       ],
       link: [
-        { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' }
+        { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }
       ]
     }
   },
@@ -40,7 +47,9 @@ export default defineNuxtConfig({
     timing: process.env.NODE_ENV === 'development'
   },
   colorMode: {
-    classSuffix: ''
+    classSuffix: '',
+    preference: 'system',
+    fallback: 'light'
   },
   image: {
     provider: 'ipx'
