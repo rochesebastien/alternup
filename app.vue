@@ -31,6 +31,12 @@
               </template>
               <template v-else>
                 <NuxtLink
+                  to="/dashboard"
+                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                >
+                  Tableau de bord
+                </NuxtLink>
+                <NuxtLink
                   v-if="isTutor"
                   to="/alternants"
                   class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
@@ -146,6 +152,7 @@
                 <NuxtLink to="/" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Tarifs</NuxtLink>
               </template>
               <template v-else>
+                <NuxtLink to="/dashboard" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Tableau de bord</NuxtLink>
                 <NuxtLink v-if="isTutor" to="/alternants" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes alternants</NuxtLink>
                 <NuxtLink v-if="isTutor" to="/projects" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes projets</NuxtLink>
                 <NuxtLink v-if="isLearner" to="/courses" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes cours</NuxtLink>

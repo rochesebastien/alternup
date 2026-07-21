@@ -3,13 +3,12 @@ import { Role } from '@prisma/client'
 import { landingPageFor, resolvePostLoginPath } from '~/shared/utils/auth-redirect'
 
 describe('landingPageFor', () => {
-  it('sends tutors to the learners list', () => {
-    expect(landingPageFor(Role.Tutor)).toBe('/alternants')
-  })
-
-  it.each([Role.Alternant, Role.Stagiaire])('sends %s to their missions', (role) => {
-    expect(landingPageFor(role)).toBe('/missions')
-  })
+  it.each([Role.Tutor, Role.Alternant, Role.Stagiaire])(
+    'sends %s to the dashboard',
+    (role) => {
+      expect(landingPageFor(role)).toBe('/dashboard')
+    }
+  )
 })
 
 describe('resolvePostLoginPath', () => {
@@ -17,9 +16,9 @@ describe('resolvePostLoginPath', () => {
     expect(resolvePostLoginPath(Role.Tutor, '/projects/42')).toBe('/projects/42')
   })
 
-  it('falls back to the default landing when no path is requested', () => {
-    expect(resolvePostLoginPath(Role.Tutor)).toBe('/alternants')
-    expect(resolvePostLoginPath(Role.Alternant, null)).toBe('/missions')
+  it('falls back to the dashboard when no path is requested', () => {
+    expect(resolvePostLoginPath(Role.Tutor)).toBe('/dashboard')
+    expect(resolvePostLoginPath(Role.Alternant, null)).toBe('/dashboard')
   })
 
   it.each([
@@ -28,6 +27,6 @@ describe('resolvePostLoginPath', () => {
     'javascript:alert(1)',
     'relative-no-slash'
   ])('rejects unsafe redirect %s', (target) => {
-    expect(resolvePostLoginPath(Role.Tutor, target)).toBe('/alternants')
+    expect(resolvePostLoginPath(Role.Tutor, target)).toBe('/dashboard')
   })
 })

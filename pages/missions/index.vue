@@ -28,7 +28,7 @@
       v-for="mission in missions"
       v-else
       :key="mission.id"
-      class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 space-y-4"
+      class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 space-y-5"
     >
       <div class="flex items-start justify-between gap-4 flex-wrap">
         <div>
@@ -53,9 +53,10 @@
         </p>
       </div>
 
+      <!-- Publier un nouveau retour -->
       <UForm
         :state="formStateFor(mission)"
-        :schema="missionUpdateSchema"
+        :schema="updateFormSchema"
         class="space-y-3"
         @submit="onSubmit(mission)"
       >
@@ -68,12 +69,12 @@
           />
         </UFormField>
 
-        <UFormField label="Mes notes" name="studentComment">
+        <UFormField label="Nouveau retour" name="body">
           <UTextarea
-            v-model="formStateFor(mission).studentComment"
+            v-model="formStateFor(mission).body"
             :rows="3"
             class="w-full"
-            placeholder="Notez ce que vous avez fait, ce que vous comptez faire…"
+            placeholder="Où en êtes-vous ? Ce que vous avez fait, ce qui bloque, la suite…"
           />
         </UFormField>
 
@@ -85,28 +86,44 @@
         />
 
         <div class="flex justify-end">
-          <UButton type="submit" color="neutral" :loading="pending[mission.id]">
-            Mettre à jour
+          <UButton type="submit" color="neutral" icon="i-lucide-send" :loading="pending[mission.id]">
+            Publier le retour
           </UButton>
         </div>
       </UForm>
+
+      <!-- Journal des retours -->
+      <div v-if="mission.updates.length" class="pt-1">
+        <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-3">
+          Journal ({{ mission.updates.length }})
+        </p>
+        <UpdateTimeline :items="mission.updates" />
+      </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { z } from 'zod'
 import { ProjectStatus, Role } from '@prisma/client'
 import {
   PROJECT_STATUS_OPTIONS,
   projectStatusColor,
   projectStatusLabel
 } from '~/shared/utils/projects'
+import { projectUpdateCreateSchema } from '~/shared/utils/project-updates'
 
 definePageMeta({
   middleware: ['role'],
   requireRole: [Role.Alternant, Role.Stagiaire]
 })
+
+interface MissionUpdate {
+  id: string
+  body: string
+  status: ProjectStatus | null
+  createdAt: string
+  author: { id: string; firstName: string; lastName: string; role: Role }
+}
 
 interface Mission {
   id: string
@@ -118,6 +135,7 @@ interface Mission {
   startedAt: string | null
   updatedAt: string
   project: { id: string; title: string; internal: boolean; createdById: string | null }
+  updates: MissionUpdate[]
 }
 
 const toast = useToast()
@@ -132,28 +150,21 @@ const {
 const missions = computed(() => data.value ?? [])
 
 const statusItems = PROJECT_STATUS_OPTIONS
+const updateFormSchema = projectUpdateCreateSchema
 
-const missionUpdateSchema = z.object({
-  status: z.nativeEnum(ProjectStatus),
-  studentComment: z.string().trim().max(5000).nullable().optional()
-})
-
-interface MissionFormState {
+interface UpdateFormState {
   status: ProjectStatus
-  studentComment: string
+  body: string
 }
 
-const states = reactive<Record<string, MissionFormState>>({})
+const states = reactive<Record<string, UpdateFormState>>({})
 const pending = reactive<Record<string, boolean>>({})
 const errors = reactive<Record<string, string | null>>({})
 
-function formStateFor(mission: Mission): MissionFormState {
+function formStateFor(mission: Mission): UpdateFormState {
   let current = states[mission.id]
   if (!current) {
-    current = {
-      status: mission.status,
-      studentComment: mission.studentComment ?? ''
-    }
+    current = { status: mission.status, body: '' }
     states[mission.id] = current
   }
   return current
@@ -164,18 +175,15 @@ async function onSubmit(mission: Mission) {
   pending[mission.id] = true
   errors[mission.id] = null
   try {
-    await $fetch(`/api/project-assignments/${mission.id}`, {
-      method: 'PUT',
-      body: {
-        status: state.status,
-        studentComment:
-          state.studentComment.trim() === '' ? null : state.studentComment
-      }
+    await $fetch(`/api/project-assignments/${mission.id}/updates`, {
+      method: 'POST',
+      body: { body: state.body, status: state.status }
     })
-    toast.add({ title: 'Mission mise à jour', color: 'success' })
+    state.body = ''
+    toast.add({ title: 'Retour publié', color: 'success' })
     await refresh()
   } catch (err: unknown) {
-    errors[mission.id] = readErrorMessage(err) ?? 'Impossible d\'enregistrer.'
+    errors[mission.id] = readErrorMessage(err) ?? 'Impossible de publier le retour.'
   } finally {
     pending[mission.id] = false
   }

@@ -97,11 +97,11 @@
               </p>
             </div>
 
-            <div v-if="assignment.studentComment" class="rounded-md border-l-2 border-[var(--ui-border-accented)] bg-[var(--ui-bg-muted)] p-3">
-              <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-1">Note du learner</p>
-              <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
-                {{ assignment.studentComment }}
+            <div v-if="assignment.updates.length" class="rounded-md bg-[var(--ui-bg-muted)] p-3">
+              <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-3">
+                Journal des retours ({{ assignment.updates.length }})
               </p>
+              <UpdateTimeline :items="assignment.updates" />
             </div>
           </li>
         </ul>
@@ -247,6 +247,14 @@ definePageMeta({
   requireRole: 'Tutor'
 })
 
+interface AssignmentUpdate {
+  id: string
+  body: string
+  status: ProjectStatus | null
+  createdAt: string
+  author: { id: string; firstName: string; lastName: string; role: string }
+}
+
 interface AssignmentWithStudent {
   id: string
   projectId: string
@@ -257,6 +265,7 @@ interface AssignmentWithStudent {
   startedAt: string | null
   updatedAt: string
   student: { id: string; firstName: string; lastName: string; email: string }
+  updates: AssignmentUpdate[]
 }
 
 interface ProjectDetail {

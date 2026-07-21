@@ -52,3 +52,10 @@
 - **Police** : self-héberger via le paquet npm `@fontsource-variable/mona-sans` et importer sa CSS (`@fontsource-variable/mona-sans/wght.css`) dans `nuxt.config.css`. Les woff2 sont dans `node_modules`, Vite les bundle → zéro réseau.
 - **Désactiver l'intégration fonts de Nuxt UI** : `ui: { fonts: false }` dans `nuxt.config` (sinon `@nuxt/fonts`, tiré par `@nuxt/ui`, retente le réseau et crashe sur le woff2 variable).
 **Règle à appliquer :** Sur ce projet (déploiement Dokploy, réseau potentiellement restreint), toujours self-héberger polices et icônes via des paquets npm ; ne jamais dépendre d'un fetch de font/icône au runtime.
+
+### 2026-07-21 — Composants Nuxt en sous-dossier = préfixe automatique dans le nom
+
+**Contexte :** Les composants graphiques du dashboard avaient été placés dans `components/stats/` (StatCard, TrendChart, BarChart, UpdateTimeline). La page dashboard les référençait `<StatCard>`, `<TrendChart>`… Résultat : tout compilait (typecheck + build verts) mais les composants **ne s'affichaient pas** — cartes KPI, graphiques et timeline vides.
+**Erreur :** Nuxt auto-importe les composants en **préfixant par le chemin du dossier** : `components/stats/StatCard.vue` devient `<StatsStatCard>`, pas `<StatCard>`. Vue tolère les composants inconnus dans les templates (rendus comme éléments natifs vides), donc **ni vue-tsc ni le build ne signalent l'erreur** — seul un `WARN [Vue warn]: Failed to resolve component` apparaît au runtime, et le rendu est vide.
+**Correction :** Remonter les composants à la racine `components/` (nom = nom de fichier), OU les référencer avec le préfixe (`<StatsStatCard>`), OU configurer `components: [{ path: '~/components', pathPrefix: false }]` dans nuxt.config.
+**Règle à appliquer :** Sur ce projet, ne jamais se fier au seul typecheck/build pour valider qu'un composant s'affiche — **vérifier le rendu réel** (screenshot) et surveiller `Failed to resolve component` dans les logs du dev server. Placer les composants partagés à la racine de `components/` ou aligner le nom référencé sur le préfixe de dossier.

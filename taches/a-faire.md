@@ -557,3 +557,31 @@ Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_e
 
 ### Note hors-scope
 - Le calendrier peut apparaître vide en vue Semaine selon les données/fuseaux — comportement **pré-existant** (déjà présent avant la refonte), non lié à ces changements.
+
+---
+
+## 2026-07-21 — Dashboards, journal de retours & enrichissement fonctionnel
+
+> Branche : `claude/features-app-status-nkwh0u` — construit via un workflow d'agents (front) + backend fait à la main.
+
+### 1. Journal de retours (avancement des missions)
+Remplacement du champ unique `studentComment` (écrasé à chaque fois) par un **journal append-only**.
+- **Modèle** `ProjectUpdate` (assignmentId, authorId, body, status?, createdAt) + migration `20260721000000_project_updates`.
+- **API** : `GET/POST /api/project-assignments/[id]/updates` (auth via `loadAssignmentVisibleTo`). Le POST ajoute une entrée et, si un statut est fourni, met aussi à jour le statut courant de la mission (transaction).
+- `updates` inclus dans `GET /api/project-assignments` et `loadProjectVisibleTo`.
+- **UI** : `pages/missions` = formulaire « Publier le retour » (statut + texte) + timeline `JOURNAL`. `pages/projects/[id]` = journal en lecture pour le tuteur. Composant réutilisable `components/UpdateTimeline.vue`.
+
+### 2. Dashboards (notes, évolution, stats)
+- **API** `GET /api/dashboard/summary` role-aware : KPIs, note moyenne, courbe d'évolution mensuelle (8 mois), missions par statut, derniers retours (tuteur), dernières notes (learner), prochaines sessions.
+- **Page** `pages/dashboard.vue` role-aware, devient la landing post-login (nav + `resolvePostLoginPath` → `/dashboard`).
+- **Composants graphiques SVG faits main (offline, aucune lib)** : `StatCard`, `TrendChart` (courbe lissée Catmull-Rom + aire, gère les trous, `useId()` anti-mismatch), `BarChart`, `UpdateTimeline`. Style monochrome ShadcnUI, clair/sombre via tokens.
+
+### 3. Workflow d'agents
+Les 4 composants + la page dashboard ont été générés en parallèle par un workflow d'agents Opus contre des contrats figés (formes d'API + contrats de props), puis intégrés/corrigés/vérifiés à la main.
+
+### Vérifications
+- [x] Migration appliquée ; seed enrichi (notes mensuelles Jan→Juil, 6 retours) pour des graphes crédibles
+- [x] `npm test` : 98 tests verts (test `auth-redirect` mis à jour → `/dashboard`)
+- [x] `npx vue-tsc --noEmit` : 0 erreur ; `npm run build` : succès
+- [x] Screenshots : dashboards tuteur + alternant (KPIs, courbe, barres, timeline), journal missions, journal projet
+- [x] Test end-to-end : POST d'un retour → ajout au journal + statut mission synchronisé

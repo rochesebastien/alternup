@@ -1,0 +1,280 @@
+<script setup lang="ts">
+definePageMeta({
+  // Authentifié seulement — aucune contrainte de rôle
+})
+
+interface Stat {
+  key: string
+  label: string
+  value: string | number
+}
+
+interface TrendPoint {
+  label: string
+  value: number | null
+}
+
+interface MissionStatus {
+  status: string
+  label: string
+  count: number
+}
+
+interface Person {
+  firstName: string
+  lastName: string
+}
+
+interface RecentUpdate {
+  id: string
+  body: string
+  status: string | null
+  createdAt: string
+  author: {
+    firstName: string
+    lastName: string
+    role: string
+  }
+  project: string
+  student: Person
+}
+
+interface RecentNote {
+  id: string
+  grade: number | null
+  sessionDate: string
+  course: string
+}
+
+interface UpcomingSession {
+  id: string
+  title: string
+  startTime: string
+  student: Person | null
+}
+
+interface TutorSummary {
+  role: 'Tutor'
+  stats: Stat[]
+  avgGrade: number | null
+  gradeTrend: TrendPoint[]
+  missionsByStatus: MissionStatus[]
+  recentUpdates: RecentUpdate[]
+  upcomingSessions: UpcomingSession[]
+}
+
+interface LearnerSummary {
+  role: 'Alternant' | 'Stagiaire'
+  stats: Stat[]
+  avgGrade: number | null
+  gradeTrend: TrendPoint[]
+  missionsByStatus: MissionStatus[]
+  recentNotes: RecentNote[]
+  upcomingSessions: UpcomingSession[]
+}
+
+type DashboardSummary = TutorSummary | LearnerSummary
+
+const { data: summary } = await useFetch<DashboardSummary>('/api/dashboard/summary')
+
+const isTutor = computed<boolean>(() => summary.value?.role === 'Tutor')
+
+const subtitle = computed<string>(() =>
+  isTutor.value
+    ? "Vue d'ensemble de vos alternants et stagiaires."
+    : 'Votre progression et vos échéances.',
+)
+
+const tutorSummary = computed<TutorSummary | null>(() =>
+  summary.value && summary.value.role === 'Tutor' ? summary.value : null,
+)
+
+const learnerSummary = computed<LearnerSummary | null>(() =>
+  summary.value && summary.value.role !== 'Tutor' ? summary.value : null,
+)
+
+function iconFor(key: string): string {
+  const map: Record<string, string> = {
+    grade: 'i-lucide-graduation-cap',
+    projects: 'i-lucide-folder',
+    learners: 'i-lucide-users',
+    active: 'i-lucide-list-checks',
+    missions: 'i-lucide-list-checks',
+    notes: 'i-lucide-clipboard-list',
+    sessions: 'i-lucide-calendar',
+  }
+  return map[key] ?? 'i-lucide-activity'
+}
+
+const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+})
+
+const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+})
+
+function formatDate(value: string): string {
+  return dateFormatter.format(new Date(value))
+}
+
+function formatDateTime(value: string): string {
+  return dateTimeFormatter.format(new Date(value))
+}
+
+function fullName(person: Person): string {
+  return `${person.firstName} ${person.lastName}`
+}
+</script>
+
+<template>
+  <div
+    v-if="summary"
+    class="mx-auto max-w-6xl px-6 py-10 space-y-6"
+  >
+    <PageHeader
+      title="Tableau de bord"
+      :subtitle="subtitle"
+    />
+
+    <!-- KPI -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <StatCard
+        v-for="s in summary.stats"
+        :key="s.key"
+        :label="s.label"
+        :value="s.value"
+        :icon="iconFor(s.key)"
+      />
+    </div>
+
+    <!-- Notes + missions -->
+    <div class="grid gap-6 lg:grid-cols-3">
+      <div class="lg:col-span-2 rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
+        <div class="flex items-start justify-between mb-4">
+          <h2 class="text-sm font-semibold text-[var(--ui-text)]">
+            Évolution des notes
+          </h2>
+          <span class="text-2xl font-semibold tracking-tight text-[var(--ui-text)]">
+            {{ summary.avgGrade != null ? summary.avgGrade + '/20' : '—' }}
+          </span>
+        </div>
+        <TrendChart
+          :data="summary.gradeTrend"
+          suffix="/20"
+        />
+      </div>
+
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
+        <h2 class="text-sm font-semibold text-[var(--ui-text)] mb-4">
+          Missions par statut
+        </h2>
+        <BarChart :data="summary.missionsByStatus.map((m) => ({ label: m.label, value: m.count }))" />
+      </div>
+    </div>
+
+    <!-- TUTEUR -->
+    <template v-if="tutorSummary">
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
+        <h2 class="text-sm font-semibold text-[var(--ui-text)] mb-4">
+          Derniers retours
+        </h2>
+        <UpdateTimeline
+          :items="tutorSummary.recentUpdates.map((u) => ({ ...u, context: u.project + ' · ' + u.student.firstName + ' ' + u.student.lastName }))"
+          empty-text="Aucun retour récent."
+        />
+      </div>
+
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
+        <h2 class="text-sm font-semibold text-[var(--ui-text)] mb-4">
+          Prochaines sessions
+        </h2>
+        <ul
+          v-if="tutorSummary.upcomingSessions.length"
+          class="space-y-3"
+        >
+          <li
+            v-for="s in tutorSummary.upcomingSessions"
+            :key="s.id"
+            class="flex flex-col"
+          >
+            <span class="font-medium text-[var(--ui-text)]">{{ s.title }}</span>
+            <span class="text-sm text-[var(--ui-text-muted)]">
+              {{ formatDateTime(s.startTime) }}<template v-if="s.student"> · {{ fullName(s.student) }}</template>
+            </span>
+          </li>
+        </ul>
+        <div
+          v-else
+          class="rounded-md border border-dashed border-[var(--ui-border)] p-6 text-center text-sm text-[var(--ui-text-muted)]"
+        >
+          Aucune session à venir.
+        </div>
+      </div>
+    </template>
+
+    <!-- LEARNER -->
+    <template v-else-if="learnerSummary">
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
+        <h2 class="text-sm font-semibold text-[var(--ui-text)] mb-4">
+          Dernières notes
+        </h2>
+        <ul
+          v-if="learnerSummary.recentNotes.length"
+          class="space-y-3"
+        >
+          <li
+            v-for="n in learnerSummary.recentNotes"
+            :key="n.id"
+            class="flex items-start justify-between gap-4"
+          >
+            <div class="flex flex-col">
+              <span class="font-medium text-[var(--ui-text)]">{{ n.course }}</span>
+              <span class="text-sm text-[var(--ui-text-muted)]">{{ formatDate(n.sessionDate) }}</span>
+            </div>
+            <span class="text-sm font-medium text-[var(--ui-text)] whitespace-nowrap">
+              {{ n.grade != null ? n.grade + '/20' : '—' }}
+            </span>
+          </li>
+        </ul>
+        <div
+          v-else
+          class="rounded-md border border-dashed border-[var(--ui-border)] p-6 text-center text-sm text-[var(--ui-text-muted)]"
+        >
+          Aucune note récente.
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
+        <h2 class="text-sm font-semibold text-[var(--ui-text)] mb-4">
+          Prochaines sessions
+        </h2>
+        <ul
+          v-if="learnerSummary.upcomingSessions.length"
+          class="space-y-3"
+        >
+          <li
+            v-for="s in learnerSummary.upcomingSessions"
+            :key="s.id"
+            class="flex flex-col"
+          >
+            <span class="font-medium text-[var(--ui-text)]">{{ s.title }}</span>
+            <span class="text-sm text-[var(--ui-text-muted)]">{{ formatDateTime(s.startTime) }}</span>
+          </li>
+        </ul>
+        <div
+          v-else
+          class="rounded-md border border-dashed border-[var(--ui-border)] p-6 text-center text-sm text-[var(--ui-text-muted)]"
+        >
+          Aucune session à venir.
+        </div>
+      </div>
+    </template>
+  </div>
+</template>
