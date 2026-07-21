@@ -70,6 +70,24 @@
                 >
                   Calendrier
                 </NuxtLink>
+                <NuxtLink
+                  to="/presences"
+                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                >
+                  Présences
+                </NuxtLink>
+                <NuxtLink
+                  to="/rapports"
+                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                >
+                  Rapports
+                </NuxtLink>
+                <NuxtLink
+                  to="/annonces"
+                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                >
+                  Annonces
+                </NuxtLink>
               </template>
             </div>
           </div>
@@ -158,6 +176,9 @@
                 <NuxtLink v-if="isLearner" to="/courses" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes cours</NuxtLink>
                 <NuxtLink v-if="isLearner" to="/missions" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes missions</NuxtLink>
                 <NuxtLink to="/calendar" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Calendrier</NuxtLink>
+                <NuxtLink to="/presences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Présences</NuxtLink>
+                <NuxtLink to="/rapports" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Rapports</NuxtLink>
+                <NuxtLink to="/annonces" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Annonces</NuxtLink>
               </template>
             </div>
           </div>

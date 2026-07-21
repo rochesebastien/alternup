@@ -585,3 +585,25 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
 - [x] `npx vue-tsc --noEmit` : 0 erreur ; `npm run build` : succès
 - [x] Screenshots : dashboards tuteur + alternant (KPIs, courbe, barres, timeline), journal missions, journal projet
 - [x] Test end-to-end : POST d'un retour → ajout au journal + statut mission synchronisé
+
+---
+
+## 2026-07-21 — Lot 1 « PRONOTE pour l'alternance » (Présences · Rapports d'étape · Annonces)
+
+> Branche `claude/features-app-status-nkwh0u`. Planifié via un agent Fable 5, implémenté via un workflow d'agents Opus (pipeline API→UI par module), socle + intégration à la main.
+
+### Modules livrés
+- **A. Présences** — pointage d'assiduité sur les sessions du calendrier (présent/absent/retard/excusé), taux + stats. Table `Attendance` (1 par `CalendarEvent`). Pages : `/presences` (tuteur = pointage inline via `AttendanceControl` ; learner = KPIs + historique via `AttendanceBadge`). Routes : `POST/DELETE /api/events/:id/attendance`, `GET /api/attendance`, `GET /api/users/:id/attendance`.
+- **B. Rapports d'étape** — livret d'apprentissage : l'alternant soumet un CR périodique, le tuteur valide / demande révision (machine à états `brouillon→soumis→valide|a_revoir`, appliquée serveur). Table `ProgressReport`. Pages : `/rapports` (liste role-aware + file « à valider ») et `/rapports/:id` (lecture + édition + revue). Routes CRUD + `submit` + `review`.
+- **C. Annonces** — canal tuteur→étudiants avec accusé de lecture. Tables `Announcement` + `AnnouncementRecipient`. Page `/annonces` (composition tuteur multi-destinataires ; lecture learner avec marquage lu). Routes CRUD + `read`.
+
+### Socle & intégration (à la main)
+- Migration `20260721120000_lot1_pronote` (2 enums, 4 tables, FK, index). Helpers de visibilité `server/utils/{network,attendance,reports,announcements}.ts` (pattern 404 comme `projects.ts`). Schémas Zod partagés `shared/utils/{attendance,progress-reports,announcements}.ts`.
+- Dashboard : 2 nouveaux KPIs (tuteur « Rapports à valider », learner « Taux de présence »). Nav : liens Présences/Rapports/Annonces (desktop + mobile). Seed de démo enrichi (sessions passées pointées, rapports multi-statuts, annonces lues/non-lues).
+
+### Vérifications
+- [x] `npm test` : 98 verts · `vue-tsc` : 0 erreur · `npm run build` : OK
+- [x] Rendu réel des 3 modules (tuteur + learner) vérifié par screenshots — après correction d'un crash d'hydratation (enum Prisma évalué au runtime dans du code partagé, cf. `taches/lecons.md`).
+
+### Lots suivants (non faits)
+- Lot 2 : Bulletins périodiques + Visites tuteur · Lot 3 : Référentiel de compétences + Messagerie · Lot 4 : Casier de documents (stockage fichiers).

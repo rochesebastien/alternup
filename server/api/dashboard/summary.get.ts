@@ -1,4 +1,4 @@
-import { Role, ProjectStatus } from '@prisma/client'
+import { Role, ProjectStatus, ReportStatus, AttendanceStatus } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { requireAuth } from '~/server/utils/require-role'
 import { projectStatusLabel } from '~/shared/utils/projects'
@@ -90,7 +90,7 @@ export default defineEventHandler(async (event) => {
     const learnerIds = learnerLinks.map((l) => l.studentId)
     const projectIds = projects.map((p) => p.id)
 
-    const [assignments, notes] = await Promise.all([
+    const [assignments, notes, reportsPending] = await Promise.all([
       prisma.projectAssignment.findMany({
         where: { projectId: { in: projectIds } },
         select: { status: true }
@@ -98,7 +98,8 @@ export default defineEventHandler(async (event) => {
       prisma.courseNote.findMany({
         where: { grade: { not: null }, assignment: { studentId: { in: learnerIds } } },
         select: { grade: true, sessionDate: true }
-      })
+      }),
+      prisma.progressReport.count({ where: { tutorId: user.id, status: ReportStatus.soumis } })
     ])
 
     const statuses = assignments.map((a) => a.status)
@@ -110,6 +111,7 @@ export default defineEventHandler(async (event) => {
         { key: 'learners', label: 'Alternants & stagiaires', value: learnerIds.length },
         { key: 'projects', label: 'Projets', value: projectIds.length },
         { key: 'active', label: 'Missions en cours', value: statuses.filter((s) => s === ProjectStatus.en_cours).length },
+        { key: 'reports', label: 'Rapports à valider', value: reportsPending },
         { key: 'grade', label: 'Note moyenne réseau', value: avg != null ? `${avg}/20` : '—' }
       ],
       avgGrade: avg,
@@ -134,7 +136,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // ─────────────────────────── ALTERNANT / STAGIAIRE ───────────────────────────
-  const [assignments, notes, recentNotes, upcoming] = await Promise.all([
+  const [assignments, notes, recentNotes, upcoming, attendances] = await Promise.all([
     prisma.projectAssignment.findMany({ where: { studentId: user.id }, select: { status: true } }),
     prisma.courseNote.findMany({
       where: { grade: { not: null }, assignment: { studentId: user.id } },
@@ -152,6 +154,10 @@ export default defineEventHandler(async (event) => {
       orderBy: { startTime: 'asc' },
       take: 5,
       include: { courseAssignment: { include: { course: { select: { title: true } } } } }
+    }),
+    prisma.attendance.findMany({
+      where: { event: { studentId: user.id } },
+      select: { status: true }
     })
   ])
 
@@ -159,12 +165,18 @@ export default defineEventHandler(async (event) => {
   const done = statuses.filter((s) => s === ProjectStatus.termine).length
   const avg = average(notes)
 
+  const presentCount = attendances.filter(
+    (a) => a.status === AttendanceStatus.present || a.status === AttendanceStatus.retard
+  ).length
+  const attendanceRate =
+    attendances.length > 0 ? Math.round((presentCount / attendances.length) * 100) : null
+
   return {
     role: user.role,
     stats: [
       { key: 'grade', label: 'Note moyenne', value: avg != null ? `${avg}/20` : '—' },
+      { key: 'attendance', label: 'Taux de présence', value: attendanceRate != null ? `${attendanceRate}%` : '—' },
       { key: 'missions', label: 'Missions terminées', value: `${done}/${statuses.length}` },
-      { key: 'notes', label: 'Notes saisies', value: notes.length },
       { key: 'sessions', label: 'Sessions à venir', value: upcoming.length }
     ],
     avgGrade: avg,
