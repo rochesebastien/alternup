@@ -1,16 +1,15 @@
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes projets</h1>
-        <p class="text-sm text-[var(--ui-text-muted)]">
-          {{ projects.length }} projet{{ projects.length > 1 ? 's' : '' }}
-        </p>
-      </div>
-      <UButton color="primary" icon="i-lucide-plus" @click="openCreate">
-        Nouveau projet
-      </UButton>
-    </div>
+  <div class="mx-auto max-w-5xl px-6 py-10 space-y-6">
+    <PageHeader
+      title="Projets"
+      :subtitle="`${projects.length} projet${projects.length > 1 ? 's' : ''}`"
+    >
+      <template #actions>
+        <UButton color="neutral" icon="i-lucide-plus" @click="openCreate">
+          Nouveau projet
+        </UButton>
+      </template>
+    </PageHeader>
 
     <UAlert
       v-if="error"
@@ -20,7 +19,7 @@
       :description="error.message"
     />
 
-    <UCard>
+    <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden">
       <UTable
         :columns="columns"
         :data="projects"
@@ -30,17 +29,14 @@
         <template #title-cell="{ row }">
           <NuxtLink
             :to="`/projects/${row.original.id}`"
-            class="font-medium text-[var(--ui-text)] hover:text-[var(--ui-primary)]"
+            class="font-medium text-[var(--ui-text)] hover:underline underline-offset-4"
           >
             {{ row.original.title }}
           </NuxtLink>
         </template>
 
         <template #internal-cell="{ row }">
-          <UBadge
-            :color="row.original.internal ? 'primary' : 'neutral'"
-            variant="subtle"
-          >
+          <UBadge color="neutral" variant="subtle" class="font-normal">
             {{ row.original.internal ? 'Interne' : 'Externe' }}
           </UBadge>
         </template>
@@ -61,7 +57,7 @@
             />
             <UButton
               variant="ghost"
-              color="error"
+              color="neutral"
               icon="i-lucide-trash-2"
               size="sm"
               :aria-label="`Supprimer ${row.original.title}`"
@@ -70,7 +66,7 @@
           </div>
         </template>
       </UTable>
-    </UCard>
+    </div>
 
     <UModal
       v-model:open="formOpen"
@@ -106,7 +102,7 @@
             <UButton color="neutral" variant="ghost" @click="formOpen = false">
               Annuler
             </UButton>
-            <UButton type="submit" color="primary" :loading="formPending">
+            <UButton type="submit" color="neutral" :loading="formPending">
               {{ editing ? 'Enregistrer' : 'Créer' }}
             </UButton>
           </div>

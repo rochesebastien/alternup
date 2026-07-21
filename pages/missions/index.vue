@@ -1,11 +1,9 @@
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes missions</h1>
-      <p class="text-sm text-[var(--ui-text-muted)]">
-        {{ missions.length }} mission{{ missions.length > 1 ? 's' : '' }} en cours ou passées.
-      </p>
-    </div>
+  <div class="mx-auto max-w-4xl px-6 py-10 space-y-6">
+    <PageHeader
+      title="Mes missions"
+      :subtitle="`${missions.length} mission${missions.length > 1 ? 's' : ''} en cours ou passées`"
+    />
 
     <UAlert
       v-if="error"
@@ -16,40 +14,40 @@
     />
 
     <div v-if="status === 'pending'" class="flex justify-center py-12">
-      <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-primary-500" />
+      <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
     </div>
 
-    <UCard v-else-if="missions.length === 0">
-      <p class="text-[var(--ui-text-muted)] text-center py-6">
-        Aucune mission ne vous est encore attribuée.
-      </p>
-    </UCard>
+    <div
+      v-else-if="missions.length === 0"
+      class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
+    >
+      Aucune mission ne vous est encore attribuée.
+    </div>
 
-    <UCard v-for="mission in missions" v-else :key="mission.id">
-      <template #header>
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h2 class="text-lg font-semibold text-[var(--ui-text)]">{{ mission.project.title }}</h2>
-            <UBadge
-              class="mt-1"
-              :color="mission.project.internal ? 'primary' : 'neutral'"
-              variant="subtle"
-            >
-              {{ mission.project.internal ? 'Interne' : 'Externe' }}
-            </UBadge>
-          </div>
-          <UBadge
-            :color="projectStatusColor(mission.status)"
-            variant="solid"
-            size="lg"
-          >
-            {{ projectStatusLabel(mission.status) }}
-          </UBadge>
+    <div
+      v-for="mission in missions"
+      v-else
+      :key="mission.id"
+      class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 space-y-4"
+    >
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-base font-semibold text-[var(--ui-text)]">{{ mission.project.title }}</h2>
+          <p class="text-xs text-[var(--ui-text-muted)] mt-0.5">
+            {{ mission.project.internal ? 'Projet interne' : 'Projet externe' }}
+          </p>
         </div>
-      </template>
+        <UBadge
+          :color="projectStatusColor(mission.status)"
+          variant="subtle"
+          class="font-normal"
+        >
+          {{ projectStatusLabel(mission.status) }}
+        </UBadge>
+      </div>
 
-      <div v-if="mission.tutorComment" class="mb-4 bg-[var(--ui-bg-muted)] rounded-md p-3">
-        <p class="text-xs text-[var(--ui-text-muted)] uppercase tracking-wide">Commentaire tuteur</p>
+      <div v-if="mission.tutorComment" class="rounded-md bg-[var(--ui-bg-muted)] p-3">
+        <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-1">Commentaire tuteur</p>
         <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
           {{ mission.tutorComment }}
         </p>
@@ -87,12 +85,12 @@
         />
 
         <div class="flex justify-end">
-          <UButton type="submit" color="primary" :loading="pending[mission.id]">
+          <UButton type="submit" color="neutral" :loading="pending[mission.id]">
             Mettre à jour
           </UButton>
         </div>
       </UForm>
-    </UCard>
+    </div>
   </div>
 </template>
 

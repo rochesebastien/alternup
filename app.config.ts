@@ -6,8 +6,9 @@ export default defineAppConfig({
     },
     button: {
       slots: {
-        // Pill + semibold partout dans l'app
-        base: 'rounded-full font-semibold'
+        // Style minimaliste (ShadcnUI) : coins doux, poids medium.
+        // La landing (pages/index.vue) force `rounded-full` en inline → pills préservés.
+        base: 'rounded-md font-medium'
       },
       variants: {
         // Padding horizontal plus généreux pour matcher la respiration de la home

@@ -516,3 +516,44 @@ Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_e
 - [x] `README.md` : badge CI
 
 **Hors scope (à suivre dans une PR dédiée)** : la commande `npm run lint` casse car ESLint v10 attend une `eslint.config.*` flat config, absente du repo. Lint donc retiré du CI pour ne pas bloquer ; ticket à ouvrir pour migrer la config.
+
+---
+
+## 2026-07-21 — Refonte UI (pages internes) + police Mona Sans + fix SSR
+
+> Branche : `claude/features-app-status-nkwh0u`
+
+**Objectif** : passer les pages applicatives (hors landing `/`) d'un style « pill jaune partout » à un style **minimaliste type ShadcnUI**, changer la police pour **Mona Sans**, et corriger un bug SSR sur `/projects/[id]`.
+
+### Fondations (design system)
+- **Police** : `@fontsource-variable/mona-sans` self-hostée (`nuxt.config.css` importe `wght.css`), `--font-sans` mis à jour. `ui: { fonts: false }` pour désactiver `@nuxt/fonts` (crashait sur le woff2 variable + fetch réseau bloqué).
+- **Icônes** : `@iconify-json/lucide` en local (fin des 403 `api.iconify.design`).
+- **Boutons** (`app.config.ts`) : base `rounded-full font-semibold` → `rounded-md font-medium`. La landing force `rounded-full` en inline → pills **préservés** sur `/`.
+- **Rayon** : `--ui-radius` 0.5rem → 0.375rem (feel plus net).
+- **Footer** (`app.vue`) : footer marketing complet **uniquement** sur `/`, `/features`, `/pricing` ; footer minimal ailleurs (fin du gros footer noir répété = « slop »).
+- **Composant** `components/PageHeader.vue` : en-tête cohérent (titre + sous-titre + slot actions + séparateur) réutilisé sur toutes les pages.
+
+### Parti pris visuel
+- Action principale = bouton **neutre foncé** (signature Shadcn) au lieu du jaune. Le jaune reste un accent (logo, `today` du calendrier).
+- Tables/listes dans des conteneurs bordés fins ; cartes `border` + `bg-elevated` ; badges `variant="subtle"` neutres ; badge de statut de mission passé de `solid`/`lg` (gros jaune) à `subtle`.
+- FullCalendar : boutons `rounded-md`, actif foncé, events en chips foncés.
+
+### Pages refondues
+`login`, `register`, `forbidden`, `alternants/index`, `alternants/[id]`, `projects/index`, `projects/[id]`, `missions/index`, `courses/index`, `calendar`. Landing `/` **inchangée** (hors police).
+
+### Fix SSR (`/projects/[id]` + `/calendar`)
+- Cause : `$fetch('/api/tutors/:id/learners')` dans un `watch` immediate → tourne au SSR sans cookie → 401 plein écran au hard-load.
+- Correctif : `useRequestFetch()` (forwarde les cookies au SSR). Cf. `taches/lecons.md`.
+
+### Vérifications
+- [x] `npm test` : 98 tests verts
+- [x] `npx vue-tsc --noEmit` : 0 erreur
+- [x] `npm run build` : succès
+- [x] Screenshots des 11 vues (Postgres local + seed de démo) : rendu cohérent, Mona Sans partout, hard-load `/projects/[id]` = 200 (fix SSR confirmé)
+- [x] Landing `/` vérifiée : CTA jaunes en pill + footer marketing préservés
+
+### Aussi
+- [x] Issue #18 (CI/CD) clôturée en `completed`.
+
+### Note hors-scope
+- Le calendrier peut apparaître vide en vue Semaine selon les données/fuseaux — comportement **pré-existant** (déjà présent avant la refonte), non lié à ces changements.

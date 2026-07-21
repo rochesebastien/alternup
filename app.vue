@@ -162,7 +162,8 @@
       </main>
 
       <!-- ============== FOOTER ============== -->
-      <footer class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16">
+      <!-- Footer marketing complet uniquement sur les pages publiques -->
+      <footer v-if="isMarketing" class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16">
         <div class="max-w-7xl mx-auto px-6 text-center">
           <NuxtLink to="/" class="inline-flex items-center gap-2" aria-label="alternup, accueil">
             <img
@@ -174,9 +175,16 @@
             >
           </NuxtLink>
           <p class="text-sm text-[#8a8a86] mt-6">
-            © 2026 Alternup — Le suivi des alternants et des stagiaires réinventé. Tous droits réservés.
+            © 2026 Alternup — Le suivi des alternants et des stagiaires réinventé.
           </p>
-          <p class="text-xs text-[#6b6b6a] mt-2">Version {{ appVersion }}</p>
+        </div>
+      </footer>
+
+      <!-- Footer minimal sur les pages applicatives -->
+      <footer v-else class="mt-auto border-t border-[var(--ui-border)]">
+        <div class="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between text-xs text-[var(--ui-text-dimmed)]">
+          <span>© 2026 Alternup</span>
+          <span>v{{ appVersion }}</span>
         </div>
       </footer>
     </div>
@@ -210,6 +218,9 @@ const mobileOpen = ref(false)
 
 const route = useRoute()
 watch(() => route.fullPath, () => { mobileOpen.value = false })
+
+// Footer marketing complet uniquement sur les pages publiques (landing, features, tarifs)
+const isMarketing = computed(() => ['/', '/features', '/pricing'].includes(route.path))
 
 async function onLogout() {
   loggingOut.value = true

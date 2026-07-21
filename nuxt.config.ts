@@ -5,14 +5,14 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@vueuse/nuxt',
     '@nuxt/image',
-    '@nuxt/fonts',
     'nuxt-auth-utils'
   ],
-  css: ['~/assets/css/main.css'],
-  fonts: {
-    families: [
-      { name: 'Inter', provider: 'google', weights: [400, 500, 600, 700, 800, 900] }
-    ]
+  // Police self-hostée (woff2 locaux via @fontsource-variable, aucun fetch réseau)
+  css: ['@fontsource-variable/mona-sans/wght.css', '~/assets/css/main.css'],
+  // Désactive l'intégration @nuxt/fonts de Nuxt UI : on gère la police nous-mêmes
+  // (sinon @nuxt/fonts tente de générer des fallbacks depuis le woff2 variable → crash).
+  ui: {
+    fonts: false
   },
   typescript: {
     strict: true,

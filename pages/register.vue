@@ -1,26 +1,37 @@
 <template>
-  <div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
-    <UCard class="w-full max-w-md">
-      <div class="flex flex-col items-center text-center mb-6">
-        <span class="iconify i-lucide:user-plus size-8 text-primary mb-2" aria-hidden="true" />
-        <h1 class="text-xl font-semibold">Créer un compte</h1>
-        <p class="text-sm text-muted mt-1">Choisissez votre rôle pour commencer.</p>
+  <div class="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-16">
+    <div class="w-full max-w-sm">
+      <div class="mb-8">
+        <h1 class="text-2xl font-semibold tracking-tight text-[var(--ui-text)]">Créer un compte</h1>
+        <p class="text-sm text-[var(--ui-text-muted)] mt-1.5">
+          Choisissez votre rôle pour commencer.
+        </p>
       </div>
+
+      <UAlert
+        v-if="serverError"
+        class="mb-5"
+        color="error"
+        variant="soft"
+        :title="serverError"
+      />
 
       <UForm
         :state="state"
         :schema="registerInputSchema"
         :validate-on="['blur', 'change']"
-        class="space-y-5"
+        class="space-y-4"
         @submit="onSubmit"
       >
-        <UFormField label="Prénom" name="firstName" required>
-          <UInput v-model="state.firstName" autocomplete="given-name" class="w-full" />
-        </UFormField>
+        <div class="grid grid-cols-2 gap-3">
+          <UFormField label="Prénom" name="firstName" required>
+            <UInput v-model="state.firstName" autocomplete="given-name" size="lg" class="w-full" />
+          </UFormField>
 
-        <UFormField label="Nom" name="lastName" required>
-          <UInput v-model="state.lastName" autocomplete="family-name" class="w-full" />
-        </UFormField>
+          <UFormField label="Nom" name="lastName" required>
+            <UInput v-model="state.lastName" autocomplete="family-name" size="lg" class="w-full" />
+          </UFormField>
+        </div>
 
         <UFormField label="Email" name="email" required>
           <UInput
@@ -28,6 +39,7 @@
             type="email"
             placeholder="vous@exemple.com"
             autocomplete="email"
+            size="lg"
             class="w-full"
           />
         </UFormField>
@@ -37,6 +49,7 @@
             v-model="state.password"
             type="password"
             autocomplete="new-password"
+            size="lg"
             class="w-full"
           />
         </UFormField>
@@ -46,34 +59,29 @@
             v-model="state.role"
             value-key="value"
             :items="roleItems"
+            size="lg"
             class="w-full"
           />
         </UFormField>
 
         <UButton
           type="submit"
-          color="primary"
+          color="neutral"
           block
+          size="lg"
+          class="mt-2"
           :loading="pending"
           label="Créer mon compte"
         />
       </UForm>
 
-      <p class="text-sm text-center text-muted mt-4">
+      <p class="text-sm text-[var(--ui-text-muted)] mt-6">
         Déjà inscrit ?
-        <NuxtLink to="/login" class="text-primary-600 hover:underline">
+        <NuxtLink to="/login" class="font-medium text-[var(--ui-text)] underline underline-offset-4 hover:no-underline">
           Se connecter
         </NuxtLink>
       </p>
-
-      <UAlert
-        v-if="serverError"
-        class="mt-4"
-        color="error"
-        variant="soft"
-        :title="serverError"
-      />
-    </UCard>
+    </div>
   </div>
 </template>
 

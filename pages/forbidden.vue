@@ -1,15 +1,15 @@
 <template>
-  <div class="min-h-[70vh] flex items-center justify-center px-4">
-    <UCard class="max-w-md text-center">
-      <UIcon name="i-lucide-shield-alert" class="h-12 w-12 text-[var(--ui-primary)] mx-auto" />
-      <h1 class="mt-4 text-2xl font-semibold text-[var(--ui-text)]">Accès refusé</h1>
-      <p class="mt-2 text-[var(--ui-text-muted)]">
+  <div class="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4">
+    <div class="max-w-sm text-center">
+      <p class="text-sm font-medium text-[var(--ui-text-dimmed)]">Erreur 403</p>
+      <h1 class="mt-2 text-2xl font-semibold tracking-tight text-[var(--ui-text)]">Accès refusé</h1>
+      <p class="mt-2 text-sm text-[var(--ui-text-muted)]">
         Vous n'avez pas les droits nécessaires pour consulter cette page.
       </p>
-      <UButton class="mt-6" color="primary" to="/">
+      <UButton class="mt-6" color="neutral" icon="i-lucide-arrow-left" to="/">
         Retour à l'accueil
       </UButton>
-    </UCard>
+    </div>
   </div>
 </template>
 

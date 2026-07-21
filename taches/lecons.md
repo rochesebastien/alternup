@@ -36,3 +36,19 @@
 **Erreur :** En Zod v4, `z.string().uuid()` (et `z.uuid()`) impose la conformité RFC 9562 stricte : le 3e groupe doit commencer par `1-8` (version) et le 4e par `8/9/a/b` (variant). Les UUID « didactiques » avec tous les chiffres identiques sont rejetés.
 **Correction :** Remplacer par `z.guid()` qui accepte n'importe quelle chaîne UUID-like (8-4-4-4-12 hex). Garder `z.uuid()` uniquement quand on **veut** garantir un vrai UUID RFC valide (rare pour de la validation d'entrée HTTP).
 **Règle à appliquer :** Sur ce projet, par défaut utiliser `z.guid()` pour valider des IDs en entrée d'API ou de formulaire. N'utiliser `z.uuid({ version: 'v4' })` que si on veut vraiment refuser les variantes non-v4.
+
+### 2026-07-21 — `$fetch` dans un `watch` immediate → 401 au rendu serveur (SSR)
+
+**Contexte :** La page `/projects/[id]` plantait avec une erreur 401 plein écran (`[GET] /api/tutors/:id/learners: Authentification requise`) au premier chargement (F5 / lien direct), mais marchait en navigation client depuis la liste.
+**Erreur :** Un `watch(..., { immediate: true })` qui appelle `$fetch('/api/…')` s'exécute **aussi pendant le SSR**. Or `$fetch` (global) **ne transmet pas les cookies de la requête entrante** côté serveur → la route protégée répond 401 et l'erreur non catchée fait planter la page. `useFetch`, lui, forwarde les cookies au SSR automatiquement — d'où le fait que le fetch principal passait mais pas le `$fetch` du watch.
+**Correction :** Utiliser `const requestFetch = useRequestFetch()` puis `requestFetch('/api/…')` pour tout appel qui peut tourner au SSR (watch immediate, setup direct). Même correctif appliqué à `pages/calendar.vue`.
+**Règle à appliquer :** Sur ce projet, dès qu'un appel API peut s'exécuter pendant le SSR (setup, `watch` immediate), passer par `useFetch` ou `useRequestFetch()` — **jamais** `$fetch` nu. Réserver `$fetch` aux handlers déclenchés côté client (onSubmit, onClick).
+
+### 2026-07-21 — Réseau restreint : self-héberger police + icônes (pas de fetch runtime)
+
+**Contexte :** En environnement à proxy strict, les icônes Lucide (@nuxt/icon) étaient fetchées depuis `api.iconify.design` (403 → icônes cassées) et `@nuxt/fonts` tentait Google/Fontsource/Bunny (403). Une police variable (`woff2-variations`) faisait aussi crasher `@nuxt/fonts` (`Unknown font format`) lors de la génération des fallbacks.
+**Correction :**
+- **Icônes** : installer la collection en local `@iconify-json/lucide` (devDependency, bundlée au build) → plus aucun fetch runtime.
+- **Police** : self-héberger via le paquet npm `@fontsource-variable/mona-sans` et importer sa CSS (`@fontsource-variable/mona-sans/wght.css`) dans `nuxt.config.css`. Les woff2 sont dans `node_modules`, Vite les bundle → zéro réseau.
+- **Désactiver l'intégration fonts de Nuxt UI** : `ui: { fonts: false }` dans `nuxt.config` (sinon `@nuxt/fonts`, tiré par `@nuxt/ui`, retente le réseau et crashe sur le woff2 variable).
+**Règle à appliquer :** Sur ce projet (déploiement Dokploy, réseau potentiellement restreint), toujours self-héberger polices et icônes via des paquets npm ; ne jamais dépendre d'un fetch de font/icône au runtime.
