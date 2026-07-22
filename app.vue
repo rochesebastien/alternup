@@ -70,24 +70,15 @@
                 >
                   Calendrier
                 </NuxtLink>
-                <NuxtLink
-                  to="/presences"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
-                  Présences
-                </NuxtLink>
-                <NuxtLink
-                  to="/rapports"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
-                  Rapports
-                </NuxtLink>
-                <NuxtLink
-                  to="/annonces"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
-                  Annonces
-                </NuxtLink>
+                <UDropdownMenu :items="suiviItems" :content="{ align: 'start' }">
+                  <button
+                    type="button"
+                    class="flex items-center gap-1 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                  >
+                    Suivi
+                    <UIcon name="i-lucide-chevron-down" class="size-4" />
+                  </button>
+                </UDropdownMenu>
               </template>
             </div>
           </div>
@@ -179,6 +170,8 @@
                 <NuxtLink to="/presences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Présences</NuxtLink>
                 <NuxtLink to="/rapports" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Rapports</NuxtLink>
                 <NuxtLink to="/annonces" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Annonces</NuxtLink>
+                <NuxtLink to="/bulletins" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Bulletins</NuxtLink>
+                <NuxtLink to="/visites" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Visites</NuxtLink>
               </template>
             </div>
           </div>
@@ -230,6 +223,15 @@ const isTutor = computed(() => user.value?.role === Role.Tutor)
 const isLearner = computed(
   () => user.value?.role === Role.Alternant || user.value?.role === Role.Stagiaire
 )
+
+// Modules de suivi regroupés dans un menu déroulant (nav desktop).
+const suiviItems = [[
+  { label: 'Présences', icon: 'i-lucide-clipboard-check', to: '/presences' },
+  { label: 'Rapports', icon: 'i-lucide-file-text', to: '/rapports' },
+  { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
+  { label: 'Bulletins', icon: 'i-lucide-graduation-cap', to: '/bulletins' },
+  { label: 'Visites', icon: 'i-lucide-map-pin', to: '/visites' }
+]]
 
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')

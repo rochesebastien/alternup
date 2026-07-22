@@ -607,3 +607,24 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
 
 ### Lots suivants (non faits)
 - Lot 2 : Bulletins périodiques + Visites tuteur · Lot 3 : Référentiel de compétences + Messagerie · Lot 4 : Casier de documents (stockage fichiers).
+
+---
+
+## 2026-07-22 — Lot 2 « PRONOTE » (Bulletins périodiques · Visites tuteur)
+
+> Branche `claude/features-app-status-nkwh0u`. Même méthode : socle à la main → workflow d'agents Opus (pipeline API→UI) → intégration + vérif.
+
+### Modules livrés
+- **Bulletins périodiques** — le tuteur crée des périodes, puis **publie** le bulletin de chaque alternant : le contenu (moyennes par cours + moyenne générale + assiduité) est **calculé puis figé** (`snapshot` JSON) à la publication. L'alternant consulte ses bulletins publiés. Tables `ReportPeriod` + `ReportCard`. Pages `/bulletins` (role-aware) et `/bulletins/[id]` (détail période, publication par learner). Composant `ReportCardView` (moyenne générale + `BarChart` des moyennes par cours + assiduité + appréciation).
+- **Visites tuteur** — planification (entreprise/école/visio) + compte-rendu structuré (résumé, prochaines étapes, statut planifiée/réalisée/annulée). Table `TutorVisit`. Page `/visites` (tuteur = planif + compte-rendu ; learner = lecture). Composant `VisitStatusBadge`.
+
+### Socle & intégration (à la main)
+- Migration `20260721140000_lot2_bulletins_visites` (1 enum `VisitStatus`, 3 tables). Helper `computeSnapshot` (moyennes + assiduité sur la fenêtre de période) + helpers de visibilité (`report-cards.ts`, `tutor-visits.ts`). Schémas Zod partagés (string-literal).
+- Nav : les 5 modules de suivi regroupés sous un menu déroulant **« Suivi »** (desktop) — évite une barre surchargée ; liens à plat en mobile.
+
+### Vérifications
+- [x] `npm test` : 98 verts · `vue-tsc` : 0 erreur (après cast `snapshot` → `Prisma.InputJsonValue`) · `npm run build` : OK
+- [x] Rendu réel des 4 vues (tuteur + learner) vérifié par screenshots (bulletin figé + graphe, visites + comptes-rendus).
+
+### Reste (lots suivants)
+- Lot 3 : Référentiel de compétences + Messagerie · Lot 4 : Casier de documents (stockage fichiers).

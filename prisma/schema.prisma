@@ -58,6 +58,12 @@ model User {
   announcementsAuthored  Announcement[]          @relation("AnnouncementAuthor")
   announcementsReceived  AnnouncementRecipient[] @relation("AnnouncementRecipient")
 
+  // Relations: modules PRONOTE lot 2 (bulletins, visites)
+  reportPeriods    ReportPeriod[] @relation("PeriodTutor")
+  reportCards      ReportCard[]   @relation("CardStudent")
+  visitsAsTutor    TutorVisit[]   @relation("VisitTutor")
+  visitsAsStudent  TutorVisit[]   @relation("VisitStudent")
+
   @@index([role])
   @@map("users")
 }
@@ -274,4 +280,70 @@ model AnnouncementRecipient {
   @@id([announcementId, studentId])
   @@index([studentId])
   @@map("announcement_recipients")
+}
+
+// ─────────────────────── Modules PRONOTE — Lot 2 ───────────────────────
+
+enum VisitStatus {
+  planifiee
+  realisee
+  annulee
+}
+
+// D. Bulletins périodiques — une période de bulletin définie par le tuteur.
+model ReportPeriod {
+  id        String    @id @default(uuid()) @db.Uuid
+  tutorId   String    @map("tutor_id") @db.Uuid
+  label     String
+  startDate DateTime  @map("start_date") @db.Date
+  endDate   DateTime  @map("end_date") @db.Date
+  closedAt  DateTime? @map("closed_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor User         @relation("PeriodTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  cards ReportCard[]
+
+  @@index([tutorId])
+  @@map("report_periods")
+}
+
+// Bulletin d'un étudiant pour une période. `snapshot` fige les moyennes + assiduité à la publication.
+model ReportCard {
+  id             String    @id @default(uuid()) @db.Uuid
+  periodId       String    @map("period_id") @db.Uuid
+  studentId      String    @map("student_id") @db.Uuid
+  generalComment String?   @map("general_comment")
+  snapshot       Json?
+  publishedAt    DateTime? @map("published_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  period  ReportPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  student User         @relation("CardStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([periodId, studentId])
+  @@index([studentId])
+  @@map("report_cards")
+}
+
+// G. Visites tuteur — visite planifiée (entreprise/école/visio) avec compte-rendu.
+model TutorVisit {
+  id          String      @id @default(uuid()) @db.Uuid
+  studentId   String      @map("student_id") @db.Uuid
+  tutorId     String      @map("tutor_id") @db.Uuid
+  scheduledAt DateTime    @map("scheduled_at") @db.Timestamptz
+  mode        String?
+  location    String?
+  status      VisitStatus @default(planifiee)
+  summary     String?
+  nextSteps   String?     @map("next_steps")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  student User @relation("VisitStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor   User @relation("VisitTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId, scheduledAt])
+  @@index([studentId])
+  @@map("tutor_visits")
 }
