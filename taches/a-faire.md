@@ -628,3 +628,24 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
 
 ### Reste (lots suivants)
 - Lot 3 : Référentiel de compétences + Messagerie · Lot 4 : Casier de documents (stockage fichiers).
+
+---
+
+## 2026-07-22 — Lot 3 « PRONOTE » (Référentiel de compétences · Messagerie)
+
+> Branche `claude/features-app-status-nkwh0u`. Socle à la main → workflow d'agents Opus (pipeline API→UI) → intégration + vérif.
+
+### Modules livrés
+- **Compétences** — le tuteur définit un **référentiel** (domaines → compétences) et **évalue** chaque alternant par compétence (niveau : découverte / en cours / acquis / maîtrise). L'alternant visualise sa **carte de compétences** : progression globale + par domaine (barres) + niveau par compétence. Tables `CompetencyDomain`, `Competency`, `CompetencyAssessment` (append-only, le plus récent fait foi). Helper `studentCompetencyMap`. Page `/competences` (role-aware), composant `CompetencyLevelBadge`.
+- **Messagerie** — un fil unique par couple tuteur/étudiant, avec accusé de lecture. Tables `Conversation` + `Message`. Pages `/messages` (liste + non-lus) et `/messages/[id]` (fil de discussion type chat + composer). Pas de temps réel (rafraîchissement au chargement, cohérent avec le réseau restreint).
+
+### Socle & intégration (à la main)
+- Migration `20260722000000_lot3_competences_messagerie` (1 enum `CompetencyLevel`, 5 tables). Helpers de visibilité + agrégation (`competencies.ts`, `messages.ts`). Schémas Zod partagés (string-literal).
+- Nav : « Suivi » regroupe désormais les 7 modules (Présences, Rapports, Bulletins, Compétences, Visites, Annonces, Messages).
+
+### Vérifications
+- [x] `npm test` : 98 verts · `vue-tsc` : 0 erreur · `npm run build` : OK
+- [x] Rendu réel des 4 vues vérifié (carte de compétences + barres, fil de messages).
+
+### Reste (lot suivant)
+- Lot 4 : Casier de documents (convention, attestations) — nécessite du stockage de fichiers (à isoler).

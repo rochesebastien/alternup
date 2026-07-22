@@ -64,6 +64,14 @@ model User {
   visitsAsTutor    TutorVisit[]   @relation("VisitTutor")
   visitsAsStudent  TutorVisit[]   @relation("VisitStudent")
 
+  // Relations: modules PRONOTE lot 3 (compétences, messagerie)
+  competencyDomains     CompetencyDomain[]     @relation("DomainTutor")
+  competencyAssessments CompetencyAssessment[] @relation("AssessmentStudent")
+  assessmentsGiven      CompetencyAssessment[] @relation("AssessmentAssessor")
+  conversationsAsTutor   Conversation[] @relation("ConvTutor")
+  conversationsAsStudent Conversation[] @relation("ConvStudent")
+  messagesAuthored       Message[]      @relation("MessageAuthor")
+
   @@index([role])
   @@map("users")
 }
@@ -346,4 +354,91 @@ model TutorVisit {
   @@index([tutorId, scheduledAt])
   @@index([studentId])
   @@map("tutor_visits")
+}
+
+// ─────────────────────── Modules PRONOTE — Lot 3 ───────────────────────
+
+enum CompetencyLevel {
+  decouverte
+  en_cours
+  acquis
+  maitrise
+}
+
+// E. Référentiel de compétences — domaines et compétences définis par le tuteur.
+model CompetencyDomain {
+  id        String   @id @default(uuid()) @db.Uuid
+  tutorId   String   @map("tutor_id") @db.Uuid
+  label     String
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor        User         @relation("DomainTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  competencies Competency[]
+
+  @@index([tutorId])
+  @@map("competency_domains")
+}
+
+model Competency {
+  id        String   @id @default(uuid()) @db.Uuid
+  domainId  String   @map("domain_id") @db.Uuid
+  label     String
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  domain      CompetencyDomain       @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  assessments CompetencyAssessment[]
+
+  @@index([domainId])
+  @@map("competencies")
+}
+
+// Évaluation d'une compétence pour un étudiant (append-only : le plus récent fait foi).
+model CompetencyAssessment {
+  id           String          @id @default(uuid()) @db.Uuid
+  competencyId String          @map("competency_id") @db.Uuid
+  studentId    String          @map("student_id") @db.Uuid
+  level        CompetencyLevel
+  comment      String?
+  assessedById String          @map("assessed_by") @db.Uuid
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  competency Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  student    User       @relation("AssessmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  assessedBy User       @relation("AssessmentAssessor", fields: [assessedById], references: [id], onDelete: Cascade)
+
+  @@index([studentId, competencyId, createdAt])
+  @@map("competency_assessments")
+}
+
+// F. Messagerie — un fil unique par couple tuteur/étudiant.
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  tutorId   String   @map("tutor_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  tutor    User      @relation("ConvTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  student  User      @relation("ConvStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([tutorId, studentId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  authorId       String    @map("author_id") @db.Uuid
+  body           String
+  readAt         DateTime? @map("read_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User         @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
 }

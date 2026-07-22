@@ -171,7 +171,9 @@
                 <NuxtLink to="/rapports" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Rapports</NuxtLink>
                 <NuxtLink to="/annonces" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Annonces</NuxtLink>
                 <NuxtLink to="/bulletins" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Bulletins</NuxtLink>
+                <NuxtLink to="/competences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Compétences</NuxtLink>
                 <NuxtLink to="/visites" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Visites</NuxtLink>
+                <NuxtLink to="/messages" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Messages</NuxtLink>
               </template>
             </div>
           </div>
@@ -228,9 +230,11 @@ const isLearner = computed(
 const suiviItems = [[
   { label: 'Présences', icon: 'i-lucide-clipboard-check', to: '/presences' },
   { label: 'Rapports', icon: 'i-lucide-file-text', to: '/rapports' },
-  { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
   { label: 'Bulletins', icon: 'i-lucide-graduation-cap', to: '/bulletins' },
-  { label: 'Visites', icon: 'i-lucide-map-pin', to: '/visites' }
+  { label: 'Compétences', icon: 'i-lucide-target', to: '/competences' },
+  { label: 'Visites', icon: 'i-lucide-map-pin', to: '/visites' },
+  { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
+  { label: 'Messages', icon: 'i-lucide-mail', to: '/messages' }
 ]]
 
 const colorMode = useColorMode()
