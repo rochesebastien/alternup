@@ -172,7 +172,12 @@ const learnerItems = computed<Array<{ label: string; value: string }>>(() =>
   }))
 )
 
-const selectedId = ref<string | undefined>(undefined)
+// Pré-sélection possible depuis la fiche 360° d'un alternant :
+// /competences?student=<id>.
+const route = useRoute()
+const selectedId = ref<string | undefined>(
+  typeof route.query.student === 'string' ? route.query.student : undefined
+)
 
 const {
   data: evalMap,
@@ -182,7 +187,7 @@ const {
   () => (selectedId.value ? `/api/users/${selectedId.value}/competencies` : ''),
   {
     default: emptyMap,
-    immediate: false
+    immediate: isTutor.value && !!selectedId.value
   }
 )
 

@@ -669,7 +669,7 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
   événements existants (annonce publiée, rapport soumis/validé/à revoir, bulletin publié,
   visite planifiée) + relances d'échéances calculées (rapport en retard, visite à venir).
   Gain de temps n°1 cité chez tous les concurrents.
-- [ ] **F3 — Vue 360° de l'alternant** : enrichir `/alternants/[id]` en fiche complète —
+- [x] **F3 — Vue 360° de l'alternant** : enrichir `/alternants/[id]` en fiche complète —
   KPIs, score de risque, timeline unifiée (notes, retours missions, rapports, visites,
   présences, bulletins, évaluations de compétences), accès rapides. L'écran « préparation
   d'entretien » plébiscité chez Studea.
