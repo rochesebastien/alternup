@@ -708,6 +708,42 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
     chaîne, aucun enum Prisma côté partagé), helpers de visibilité dans `server/utils/profiles.ts`
     et `server/utils/courses.ts` — 404 systématique, jamais 403, pour ne pas divulguer l'existence.
 
+### Vérifications (relecture transverse F1→F5)
+
+- `npx prisma generate` ✅ — Prisma Client v7.8.0.
+- `npx vue-tsc --noEmit` ✅ — aucune erreur.
+- `npm test` ✅ — 15 fichiers, 207 tests (dont 7 nouveaux modules purs : `risk`,
+  `notifications`, `overview`, `livret`, `signatures`, `profiles`, `courses`).
+- `npm run build` ✅ — build Nitro complet.
+- `npm run lint` ✅ — après correction d'une erreur `vue/no-deprecated-filter`
+  **préexistante** dans `pages/competences/index.vue` : l'union TS
+  `CompetencyLevel | undefined` écrite dans le template était lue par ESLint comme
+  un filtre Vue 2. Cast extrait dans une fonction `cellLevel()` du `<script setup>`.
+
+Contrôles de conformité passés en revue sur le diff complet `origin/main...HEAD` :
+
+- **Leçon 6** (enums Prisma) : les 7 nouveaux modules `shared/**` n'importent que `zod`
+  au runtime ; `SignatureDocumentType` et `CompetencyLevel` y sont en `import type`.
+  Aucun nouveau composant n'importe de valeur d'enum. *(Reste connu et préexistant,
+  hors périmètre : 11 pages importent `Role`/`ProjectStatus` en valeur — build OK.)*
+- **Leçon 4** (`$fetch` SSR) : les 5 nouvelles pages chargent via `useFetch` ; les
+  `$fetch` nus sont tous dans des gestionnaires d'événements (clic), jamais au setup.
+- **Leçon 3** : aucun `z.uuid()`, `z.guid()` partout.
+- **Routes API** : les 35 routes touchées passent toutes par `requireAuth`/`requireRole`,
+  puis par un helper de visibilité renvoyant 404. Seul `signDocument()` renvoie 403/409,
+  volontairement : la visibilité y est déjà tranchée en amont, l'existence n'est pas divulguée.
+- **Migrations** : `prisma migrate diff --from-empty --to-schema` (Prisma 7 a renommé
+  `--to-schema-datamodel`) confirme que `notifications`, `document_signatures` et l'enum
+  `SignatureDocumentType` sont générés à l'identique des deux fichiers de migration écrits
+  à la main (colonnes, index, FK `ON DELETE CASCADE`).
+- **Nav** : `NotificationBell` est monté dans la barre d'actions (visible aussi en mobile),
+  ce qui alimente `useNotificationCountState()` et donc le badge du menu mobile — une seule
+  requête. Le lien `/notifications` du menu mobile est bien dans la branche « connecté »,
+  tous rôles confondus. `print:hidden` sur nav/footers pour l'export PDF.
+- **UI** : aucun texte anglais résiduel dans le diff `pages/` + `components/`.
+- **Route déplacée** : `pages/alternants/[id].vue` → `[id]/index.vue`, aucune référence
+  périmée (le `server/api/alternants/[id].get.ts` restant est une route API, sans rapport).
+
 ### P1 — backlog (features suivantes)
 
 - [ ] **Questionnaires / campagnes d'évaluation personnalisables** signés par le trinôme (cœur de Studea).
