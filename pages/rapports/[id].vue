@@ -116,6 +116,14 @@
           </UButton>
         </div>
       </div>
+
+      <DocumentSignatures
+        :block="report.signatures"
+        :current-user-id="user?.id ?? null"
+        :pending="signPending"
+        :error-message="signError"
+        @sign="onSign"
+      />
     </template>
 
     <!-- Modale d'édition (auteur) -->
@@ -180,6 +188,7 @@ import {
   type ReportCreateInput,
   type ReportReviewInput
 } from '~/shared/utils/progress-reports'
+import type { SignatureBlock } from '~/shared/utils/signatures'
 
 definePageMeta({})
 
@@ -208,6 +217,7 @@ interface ProgressReportDetail {
   updatedAt: string
   student: PersonRef
   tutor: PersonRef | null
+  signatures: SignatureBlock
 }
 
 const route = useRoute()
@@ -306,6 +316,25 @@ async function onReview(decision: 'valide' | 'a_revoir') {
   } finally {
     reviewPending.value = false
     pendingDecision.value = null
+  }
+}
+
+/* --- Signature (tuteur ET alternant, une fois le rapport validé) --- */
+const signPending = ref(false)
+const signError = ref<string | null>(null)
+
+async function onSign() {
+  if (!report.value) return
+  signPending.value = true
+  signError.value = null
+  try {
+    await $fetch(`/api/progress-reports/${report.value.id}/sign`, { method: 'POST' })
+    await refresh()
+    toast.add({ title: 'Rapport signé', color: 'success' })
+  } catch (err: unknown) {
+    signError.value = readErrorMessage(err) ?? 'La signature a échoué.'
+  } finally {
+    signPending.value = false
   }
 }
 

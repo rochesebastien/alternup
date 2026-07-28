@@ -33,6 +33,14 @@
               {{ overview.student.role }}
             </UBadge>
             <RiskBadge :level="overview.risk.level" :score="overview.risk.score" />
+            <UButton
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-book-open"
+              :to="`/alternants/${overview.student.id}/livret`"
+            >
+              Livret
+            </UButton>
           </div>
         </template>
       </PageHeader>

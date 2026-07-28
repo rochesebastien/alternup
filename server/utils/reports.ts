@@ -6,6 +6,8 @@ const reportInclude = {
   tutor: { select: { id: true, firstName: true, lastName: true } }
 } as const
 
+export type VisibleProgressReport = Awaited<ReturnType<typeof loadReportVisibleTo>>
+
 /**
  * Charge un rapport d'étape visible par l'utilisateur : soit l'étudiant auteur,
  * soit le tuteur destinataire. 404 sinon (on ne divulgue pas l'existence).

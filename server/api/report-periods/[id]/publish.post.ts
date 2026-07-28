@@ -60,15 +60,15 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  // La page `/bulletins/[id]` est réservée au tuteur : l'étudiant consulte ses
-  // bulletins depuis l'index.
+  // `/bulletins/[id]` est la page de PÉRIODE, réservée au tuteur. L'étudiant est
+  // envoyé sur la fiche du bulletin, qu'il peut consulter, signer et imprimer.
   await notifyUser(studentId, {
     type: 'bulletin_publie',
     title: `Bulletin publié : ${period.label}`,
     body: generalComment
       ? excerpt(generalComment)
-      : 'Votre bulletin est disponible dans vos bulletins.',
-    link: '/bulletins'
+      : 'Votre bulletin est disponible et peut être signé.',
+    link: `/bulletins/carte/${card.id}`
   })
 
   return card

@@ -103,3 +103,79 @@ html, body {
 .page-leave-to {
   opacity: 0;
 }
+
+/* ═══════════════ Impression — export PDF via le navigateur ═══════════════ */
+/*
+  Les bulletins et le livret de l'alternant s'exportent en PDF par l'impression
+  du navigateur : aucune librairie PDF, aucun appel réseau (cf. taches/lecons.md
+  n°5). Le chrome applicatif (nav, footer, boutons, formulaires) porte la classe
+  utilitaire Tailwind `print:hidden`. Ici on neutralise le thème pour obtenir un
+  document lisible en noir sur blanc, y compris quand l'écran est en mode sombre.
+*/
+
+/* Blocs réservés à la version imprimée (en-tête de document, mentions). */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Les tokens de couleur sont réécrits en une fois : tous les composants qui
+     s'appuient dessus (cartes, badges, bordures) suivent sans modification. */
+  :root,
+  .dark {
+    --ui-bg: #ffffff;
+    --ui-bg-muted: #ffffff;
+    --ui-bg-elevated: #ffffff;
+    --ui-bg-accented: #ffffff;
+    --ui-bg-inverted: #000000;
+
+    --ui-text: #000000;
+    --ui-text-highlighted: #000000;
+    --ui-text-toned: #000000;
+    --ui-text-muted: #333333;
+    --ui-text-dimmed: #555555;
+    --ui-text-inverted: #ffffff;
+
+    --ui-border: #bbbbbb;
+    --ui-border-muted: #dddddd;
+    --ui-border-accented: #888888;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Une section documentaire ne doit pas être coupée en deux pages. */
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+
+  /* Saut de page forcé (un bulletin par page dans le livret). */
+  .print-page-break {
+    break-before: page;
+  }
+
+  /* Sur papier, un lien interne n'est plus cliquable : on le rend neutre. */
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /* Pas d'animation ni d'ombre à l'impression. */
+  * {
+    box-shadow: none !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}

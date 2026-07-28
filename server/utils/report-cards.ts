@@ -78,15 +78,35 @@ export async function loadPeriodOwnedBy(id: string, user: User) {
   return period
 }
 
+// Le tuteur de la période est embarqué : c'est l'un des deux signataires du
+// bulletin, et l'écran de détail l'affiche dans le bloc « Signatures ».
 const cardInclude = {
-  period: { select: { id: true, label: true, startDate: true, endDate: true, tutorId: true } },
+  period: {
+    select: {
+      id: true,
+      label: true,
+      startDate: true,
+      endDate: true,
+      tutorId: true,
+      tutor: { select: { id: true, firstName: true, lastName: true } }
+    }
+  },
   student: { select: { id: true, firstName: true, lastName: true } }
 } as const
 
-/** Charge un bulletin visible par l'étudiant concerné ou le tuteur de la période. */
+export type VisibleReportCard = Awaited<ReturnType<typeof loadCardVisibleTo>>
+
+/**
+ * Charge un bulletin visible par l'étudiant concerné ou le tuteur de la période.
+ * Un bulletin non publié reste un brouillon du tuteur : l'étudiant reçoit 404,
+ * comme si le bulletin n'existait pas.
+ */
 export async function loadCardVisibleTo(id: string, user: User) {
   const card = await prisma.reportCard.findUnique({ where: { id }, include: cardInclude })
-  if (!card || (card.studentId !== user.id && card.period.tutorId !== user.id)) {
+  const isTutor = card?.period.tutorId === user.id
+  const isStudent = card?.studentId === user.id
+
+  if (!card || (!isTutor && !isStudent) || (isStudent && !isTutor && card.publishedAt === null)) {
     throw createError({ statusCode: 404, statusMessage: 'Bulletin introuvable' })
   }
   return card

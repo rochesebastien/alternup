@@ -673,10 +673,18 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
   KPIs, score de risque, timeline unifiée (notes, retours missions, rapports, visites,
   présences, bulletins, évaluations de compétences), accès rapides. L'écran « préparation
   d'entretien » plébiscité chez Studea.
-- [ ] **F4 — Signature tripartite + export PDF** : signatures horodatées (tuteur + alternant)
+- [x] **F4 — Signature tripartite + export PDF** : signatures horodatées (tuteur + alternant)
   sur bulletins et rapports d'étape (table `DocumentSignature`), affichage des signatures,
   vue imprimable (CSS print) du bulletin et du « livret » de l'alternant → export PDF via
   impression navigateur. Exigence OPCO/financeurs, standard Studea/Ypareo.
+  - Fiche de bulletin dédiée `/bulletins/carte/[id]` (accessible aux deux parties) :
+    `/bulletins/[id]` est la page de PÉRIODE, réservée au tuteur et listant N alternants —
+    elle ne pouvait porter ni la signature de l'étudiant ni un PDF « un bulletin ».
+  - Livret imprimable `/alternants/[id]/livret` alimenté par un endpoint d'agrégation dédié
+    (`/api/users/[id]/livret`) : aucune route de liste n'exposait au tuteur les bulletins et
+    rapports d'UN étudiant, et les signatures sont jointes en lot (2 requêtes).
+  - `pages/alternants/[id].vue` déplacée en `pages/alternants/[id]/index.vue` pour que le
+    livret soit une route sœur et non une route enfant (Nuxt exigerait sinon un `<NuxtPage />`).
 - [ ] **F5 — Durcissement des routes héritées** : `profiles/*`, `alternants/*`, `courses/*`,
   `course-assignments/*` passent sous `requireRole` + contrôles d'ownership/réseau
   (pré-requis de crédibilité avant toute mise en avant « conformité »).

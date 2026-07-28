@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Role } from '@prisma/client'
 import type { ReportCardSnapshot } from '~/shared/utils/report-periods'
+import { signedCount, type SignatureBlock } from '~/shared/utils/signatures'
 
 definePageMeta({
   middleware: ['role'],
@@ -37,6 +38,7 @@ interface Card {
   createdAt: string
   updatedAt: string
   student: Learner
+  signatures: SignatureBlock
 }
 
 interface PeriodDetail {
@@ -59,6 +61,11 @@ function cardFor(studentId: string): Card | undefined {
 
 function fullName(person: Learner): string {
   return `${person.firstName} ${person.lastName}`
+}
+
+/** « 2/2 signatures » — état de signature du bulletin d'un alternant. */
+function signatureSummary(card: Card): string {
+  return `${signedCount(card.signatures.parties)}/${card.signatures.parties.length} signatures`
 }
 
 // --- Dates ------------------------------------------------------------------
@@ -167,14 +174,36 @@ async function onPublishSubmit(): Promise<void> {
                 <template v-else>Pas encore de bulletin</template>
               </p>
             </div>
-            <UButton
-              color="neutral"
-              :variant="cardFor(learner.id) ? 'outline' : 'solid'"
-              class="shrink-0"
-              @click="openPublish(learner)"
-            >
-              {{ cardFor(learner.id) ? 'Republier' : 'Publier' }}
-            </UButton>
+            <div class="flex items-center gap-2 shrink-0">
+              <UBadge
+                v-if="cardFor(learner.id)"
+                :color="
+                  signedCount(cardFor(learner.id)!.signatures.parties) === 2
+                    ? 'success'
+                    : 'neutral'
+                "
+                variant="subtle"
+                class="font-normal"
+              >
+                {{ signatureSummary(cardFor(learner.id)!) }}
+              </UBadge>
+              <UButton
+                v-if="cardFor(learner.id)"
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-file-text"
+                :to="`/bulletins/carte/${cardFor(learner.id)!.id}`"
+              >
+                Ouvrir
+              </UButton>
+              <UButton
+                color="neutral"
+                :variant="cardFor(learner.id) ? 'outline' : 'solid'"
+                @click="openPublish(learner)"
+              >
+                {{ cardFor(learner.id) ? 'Republier' : 'Publier' }}
+              </UButton>
+            </div>
           </div>
 
           <ReportCardView

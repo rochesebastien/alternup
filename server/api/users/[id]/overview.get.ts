@@ -238,7 +238,6 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
         take: PER_SOURCE_LIMIT,
         select: {
           id: true,
-          periodId: true,
           publishedAt: true,
           generalComment: true,
           period: { select: { label: true } }
@@ -327,7 +326,9 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'bulletin',
     title: `Bulletin — ${card.period.label}`,
     description: excerpt(card.generalComment),
-    link: `/bulletins/${card.periodId}`
+    // Fiche du bulletin (accessible aux deux parties), et non la page de
+    // période `/bulletins/[id]` qui est réservée au tuteur.
+    link: `/bulletins/carte/${card.id}`
   }))
 
   const assessmentEvents: OverviewEvent[] = assessments.map((assessment) => ({

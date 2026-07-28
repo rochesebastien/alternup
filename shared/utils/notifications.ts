@@ -26,6 +26,7 @@ export type NotificationType =
   | 'bulletin_publie'
   | 'visite_planifiee'
   | 'message'
+  | 'document_signe'
 
 /** Types calculés à la volée, jamais persistés. */
 export type ReminderType = 'relance_rapport' | 'relance_visite' | 'relance_revue'
@@ -46,6 +47,7 @@ export const NOTIFICATION_META: Record<FeedItemType, FeedItemMeta> = {
   bulletin_publie: { label: 'Bulletin publié', icon: 'i-lucide-graduation-cap' },
   visite_planifiee: { label: 'Visite planifiée', icon: 'i-lucide-map-pin' },
   message: { label: 'Message', icon: 'i-lucide-mail' },
+  document_signe: { label: 'Signature', icon: 'i-lucide-pen-line' },
   relance_rapport: { label: 'Relance', icon: 'i-lucide-clock' },
   relance_visite: { label: 'Rappel', icon: 'i-lucide-calendar-clock' },
   relance_revue: { label: 'Relance', icon: 'i-lucide-inbox' }

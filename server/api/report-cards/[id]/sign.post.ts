@@ -1,8 +1,11 @@
 import { z } from 'zod'
 import { requireAuth } from '~/server/utils/require-role'
-import { loadReportVisibleTo } from '~/server/utils/reports'
-import { signableReportOf, signatureBlockOf } from '~/server/utils/signatures'
+import { loadSignableCard, signDocument } from '~/server/utils/signatures'
 
+/**
+ * Signature horodatée d'un bulletin par l'une des deux parties (tuteur émetteur
+ * ou étudiant concerné). Le bulletin doit être publié.
+ */
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
 
@@ -11,8 +14,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Identifiant invalide.' })
   }
 
-  const report = await loadReportVisibleTo(idp.data, user)
-  const signatures = await signatureBlockOf(signableReportOf(report))
-
-  return { ...report, signatures }
+  const document = await loadSignableCard(idp.data, user)
+  return signDocument(document, user)
 })

@@ -3,7 +3,7 @@
     <div class="min-h-screen flex flex-col bg-[var(--ui-bg)] text-[var(--ui-text)]">
       <!-- ============== NAV (Linear-style) ============== -->
       <nav
-        class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/85 backdrop-blur"
+        class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/85 backdrop-blur print:hidden"
         aria-label="Principal"
       >
         <div class="mx-auto max-w-7xl h-full px-6 flex items-center justify-between gap-6">
@@ -190,13 +190,13 @@
         </Transition>
       </nav>
 
-      <main class="flex-grow pt-14">
+      <main class="flex-grow pt-14 print:pt-0">
         <NuxtPage />
       </main>
 
       <!-- ============== FOOTER ============== -->
       <!-- Footer marketing complet uniquement sur les pages publiques -->
-      <footer v-if="isMarketing" class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16">
+      <footer v-if="isMarketing" class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16 print:hidden">
         <div class="max-w-7xl mx-auto px-6 text-center">
           <NuxtLink to="/" class="inline-flex items-center gap-2" aria-label="alternup, accueil">
             <img
@@ -214,7 +214,7 @@
       </footer>
 
       <!-- Footer minimal sur les pages applicatives -->
-      <footer v-else class="mt-auto border-t border-[var(--ui-border)]">
+      <footer v-else class="mt-auto border-t border-[var(--ui-border)] print:hidden">
         <div class="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between text-xs text-[var(--ui-text-dimmed)]">
           <span>© 2026 Alternup</span>
           <span>v{{ appVersion }}</span>
