@@ -649,3 +649,42 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
 
 ### Reste (lot suivant)
 - Lot 4 : Casier de documents (convention, attestations) — nécessite du stockage de fichiers (à isoler).
+
+---
+
+## 2026-07-28 — Roadmap « game breakers » (issue de l'étude de marché)
+
+> Étude de marché complète : `taches/etude-marche.md`. Concurrents analysés : Studea, Ypareo,
+> Edusign/Sowesign, Bloom Alternance, Loop Formations, SIRH (SIGMA-RH, Kammi…).
+> Branche `claude/market-research-game-breaker-features-20u03q`.
+
+### P0 — à implémenter maintenant (workflow d'agents Opus)
+
+- [ ] **F1 — Alertes de décrochage (early warning)** : score de risque par alternant calculé
+  côté serveur (assiduité 30 j, retards, rapports en retard/à revoir, tendance des notes,
+  inactivité), niveaux `ok / vigilance / alerte`, badge + section dédiée sur le dashboard
+  tuteur et dans la liste des alternants. Différenciant fort (Edusign, Loop Formations).
+- [ ] **F2 — Centre de notifications & relances automatiques** : table `Notification`,
+  cloche dans la nav (compteur non-lus), page `/notifications` ; notifications émises par les
+  événements existants (annonce publiée, rapport soumis/validé/à revoir, bulletin publié,
+  visite planifiée) + relances d'échéances calculées (rapport en retard, visite à venir).
+  Gain de temps n°1 cité chez tous les concurrents.
+- [ ] **F3 — Vue 360° de l'alternant** : enrichir `/alternants/[id]` en fiche complète —
+  KPIs, score de risque, timeline unifiée (notes, retours missions, rapports, visites,
+  présences, bulletins, évaluations de compétences), accès rapides. L'écran « préparation
+  d'entretien » plébiscité chez Studea.
+- [ ] **F4 — Signature tripartite + export PDF** : signatures horodatées (tuteur + alternant)
+  sur bulletins et rapports d'étape (table `DocumentSignature`), affichage des signatures,
+  vue imprimable (CSS print) du bulletin et du « livret » de l'alternant → export PDF via
+  impression navigateur. Exigence OPCO/financeurs, standard Studea/Ypareo.
+- [ ] **F5 — Durcissement des routes héritées** : `profiles/*`, `alternants/*`, `courses/*`,
+  `course-assignments/*` passent sous `requireRole` + contrôles d'ownership/réseau
+  (pré-requis de crédibilité avant toute mise en avant « conformité »).
+
+### P1 — backlog (features suivantes)
+
+- [ ] **Questionnaires / campagnes d'évaluation personnalisables** signés par le trinôme (cœur de Studea).
+- [ ] **Émargement par QR code / code de session** (preuve d'assiduité conforme financeurs).
+- [ ] **Rôle École / organisation & pilotage par promotion** (espace tripartite complet — gros chantier de schéma).
+- [ ] **Casier de documents** (Lot 4 existant — stockage fichiers).
+- [ ] **Notifications email** (relances hors connexion) — nécessite un SMTP en prod.
