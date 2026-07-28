@@ -72,6 +72,9 @@ model User {
   conversationsAsStudent Conversation[] @relation("ConvStudent")
   messagesAuthored       Message[]      @relation("MessageAuthor")
 
+  // Relations: centre de notifications
+  notifications Notification[] @relation("UserNotifications")
+
   @@index([role])
   @@map("users")
 }
@@ -441,4 +444,29 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@map("messages")
+}
+
+// ─────────────────────── Centre de notifications ───────────────────────
+
+// H. Notifications — un événement adressé à un utilisateur (annonce publiée,
+// rapport soumis/relu, bulletin publié, visite planifiée, message reçu).
+// `type` reste une String libre : les valeurs sont typées côté application
+// (`shared/utils/notifications.ts`), ce qui évite une migration d'enum à chaque
+// nouvel événement. Les RELANCES d'échéances ne sont pas stockées ici : elles
+// sont recalculées à la volée à chaque lecture.
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime? @map("read_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
 }

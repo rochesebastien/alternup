@@ -664,7 +664,7 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
   côté serveur (assiduité 30 j, retards, rapports en retard/à revoir, tendance des notes,
   inactivité), niveaux `ok / vigilance / alerte`, badge + section dédiée sur le dashboard
   tuteur et dans la liste des alternants. Différenciant fort (Edusign, Loop Formations).
-- [ ] **F2 — Centre de notifications & relances automatiques** : table `Notification`,
+- [x] **F2 — Centre de notifications & relances automatiques** : table `Notification`,
   cloche dans la nav (compteur non-lus), page `/notifications` ; notifications émises par les
   événements existants (annonce publiée, rapport soumis/validé/à revoir, bulletin publié,
   visite planifiée) + relances d'échéances calculées (rapport en retard, visite à venir).

@@ -95,6 +95,7 @@
             />
 
             <template v-if="loggedIn && user">
+              <NotificationBell />
               <span class="hidden lg:inline text-sm text-[var(--ui-text-muted)] mr-1">
                 {{ user.firstName }} {{ user.lastName }}
               </span>
@@ -174,6 +175,15 @@
                 <NuxtLink to="/competences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Compétences</NuxtLink>
                 <NuxtLink to="/visites" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Visites</NuxtLink>
                 <NuxtLink to="/messages" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Messages</NuxtLink>
+                <NuxtLink to="/notifications" class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">
+                  Notifications
+                  <span
+                    v-if="notificationCount > 0"
+                    class="min-w-4 h-4 px-1 rounded-full bg-[var(--ui-error)] text-white text-[10px] font-semibold leading-4 text-center"
+                  >
+                    {{ notificationCount > 99 ? '99+' : notificationCount }}
+                  </span>
+                </NuxtLink>
               </template>
             </div>
           </div>
@@ -236,6 +246,10 @@ const suiviItems = [[
   { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
   { label: 'Messages', icon: 'i-lucide-mail', to: '/messages' }
 ]]
+
+// Compteur du centre de notifications, alimenté par <NotificationBell /> (nav
+// desktop) et réutilisé tel quel dans le menu mobile — aucune requête en double.
+const notificationCount = useNotificationCountState()
 
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')

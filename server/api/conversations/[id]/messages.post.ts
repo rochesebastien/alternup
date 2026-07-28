@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '~/server/utils/prisma'
 import { requireAuth } from '~/server/utils/require-role'
 import { loadConversationVisibleTo } from '~/server/utils/messages'
+import { excerpt, notifyUser } from '~/server/utils/notifications'
 import { messageCreateSchema } from '~/shared/utils/messages'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
 
@@ -12,7 +13,7 @@ export default defineEventHandler(async (event) => {
   if (!idp.success) throw createError({ statusCode: 400, statusMessage: 'Identifiant invalide' })
   const id = idp.data
 
-  await loadConversationVisibleTo(id, user)
+  const conversation = await loadConversationVisibleTo(id, user)
 
   const parsed = messageCreateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
@@ -31,6 +32,16 @@ export default defineEventHandler(async (event) => {
   await prisma.conversation.update({
     where: { id },
     data: { updatedAt: new Date() }
+  })
+
+  const recipientId
+    = conversation.tutorId === user.id ? conversation.studentId : conversation.tutorId
+
+  await notifyUser(recipientId, {
+    type: 'message',
+    title: `Message de ${user.firstName} ${user.lastName}`,
+    body: excerpt(body),
+    link: `/messages/${id}`
   })
 
   return msg
