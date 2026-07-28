@@ -1,41 +1,71 @@
 import { z } from 'zod'
-import { Prisma } from '@prisma/client'
+import { Prisma, Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
-
-const bodySchema = z.object({
-  studentId: z.string().uuid().optional(),
-  courseId: z.string().uuid().optional(),
-  startDate: z.coerce.date().optional(),
-  endDate: z.coerce.date().nullable().optional()
-})
+import { requireRole } from '~/server/utils/require-role'
+import {
+  assertLearnerInNetwork,
+  coursePersonSelect,
+  loadCourseAssignmentOwnedBy,
+  loadCourseOwnedBy
+} from '~/server/utils/courses'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
+import {
+  assignmentRangeIsValid,
+  courseAssignmentUpdateSchema
+} from '~/shared/utils/courses'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Assignment ID is required' })
+  const tutor = await requireRole(event, Role.Tutor)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'affectation invalide." })
   }
 
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const existing = await loadCourseAssignmentOwnedBy(id.data, tutor)
+
+  const parsed = courseAssignmentUpdateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Données d'affectation invalides.",
+      data: { issues: formatZodIssues(parsed.error) }
+    })
+  }
+
+  // Un déplacement vers un autre cours / étudiant reste borné au périmètre du tuteur.
+  if (parsed.data.courseId) {
+    await loadCourseOwnedBy(parsed.data.courseId, tutor)
+  }
+  if (parsed.data.studentId) {
+    await assertLearnerInNetwork(tutor, parsed.data.studentId)
+  }
+
+  const startDate = parsed.data.startDate ?? existing.startDate
+  const endDate =
+    parsed.data.endDate === undefined ? existing.endDate : parsed.data.endDate
+  if (!assignmentRangeIsValid(startDate, endDate)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'La date de fin doit être postérieure à la date de début.'
+    })
   }
 
   try {
     return await prisma.courseAssignment.update({
-      where: { id },
+      where: { id: id.data },
       data: parsed.data,
       include: {
-        student: {
-          select: { id: true, firstName: true, lastName: true, email: true, role: true }
-        },
+        student: { select: coursePersonSelect },
         course: true
       }
     })
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
-      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Assignment already exists for this student, course and start date' })
-      if (err.code === 'P2003') throw createError({ statusCode: 400, statusMessage: 'Invalid studentId or courseId reference' })
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Cette affectation existe déjà pour cet étudiant, ce cours et cette date.'
+      })
     }
     throw err
   }

@@ -1,30 +1,15 @@
-import { prisma } from '~/server/utils/prisma'
+import { z } from 'zod'
+import { requireAuth } from '~/server/utils/require-role'
+import { loadCourseVisibleTo } from '~/server/utils/courses'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Course ID is required' })
+  const user = await requireAuth(event)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant de cours invalide.' })
   }
 
-  const course = await prisma.course.findUnique({
-    where: { id },
-    include: {
-      createdBy: {
-        select: { id: true, firstName: true, lastName: true, email: true, role: true }
-      },
-      assignments: {
-        include: {
-          student: {
-            select: { id: true, firstName: true, lastName: true, email: true, role: true }
-          }
-        }
-      }
-    }
-  })
-
-  if (!course) {
-    throw createError({ statusCode: 404, statusMessage: 'Course not found' })
-  }
-
-  return course
+  // Tuteur créateur (toutes les affectations) ou learner affecté (les siennes). 404 sinon.
+  return loadCourseVisibleTo(id.data, user)
 })

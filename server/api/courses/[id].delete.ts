@@ -1,19 +1,19 @@
-import { Prisma } from '@prisma/client'
+import { z } from 'zod'
+import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireRole } from '~/server/utils/require-role'
+import { loadCourseOwnedBy } from '~/server/utils/courses'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Course ID is required' })
+  const tutor = await requireRole(event, Role.Tutor)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant de cours invalide.' })
   }
 
-  try {
-    await prisma.course.delete({ where: { id } })
-    return { message: 'Course deleted successfully' }
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
-      throw createError({ statusCode: 404, statusMessage: 'Course not found' })
-    }
-    throw err
-  }
+  await loadCourseOwnedBy(id.data, tutor)
+
+  await prisma.course.delete({ where: { id: id.data } })
+  return { message: 'Cours supprimé.' }
 })

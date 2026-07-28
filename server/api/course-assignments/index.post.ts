@@ -1,34 +1,44 @@
-import { z } from 'zod'
-import { Prisma } from '@prisma/client'
+import { Prisma, Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
-
-const bodySchema = z.object({
-  studentId: z.string().uuid(),
-  courseId: z.string().uuid(),
-  startDate: z.coerce.date(),
-  endDate: z.coerce.date().nullable().optional()
-})
+import { requireRole } from '~/server/utils/require-role'
+import {
+  assertLearnerInNetwork,
+  coursePersonSelect,
+  loadCourseOwnedBy
+} from '~/server/utils/courses'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
+import { courseAssignmentCreateSchema } from '~/shared/utils/courses'
 
 export default defineEventHandler(async (event) => {
-  const parsed = bodySchema.safeParse(await readBody(event))
+  const tutor = await requireRole(event, Role.Tutor)
+
+  const parsed = courseAssignmentCreateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Données d'affectation invalides.",
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
+
+  // Le cours doit appartenir au tuteur et l'étudiant à son réseau (404 sinon).
+  await loadCourseOwnedBy(parsed.data.courseId, tutor)
+  await assertLearnerInNetwork(tutor, parsed.data.studentId)
 
   try {
     return await prisma.courseAssignment.create({
       data: parsed.data,
       include: {
-        student: {
-          select: { id: true, firstName: true, lastName: true, email: true, role: true }
-        },
+        student: { select: coursePersonSelect },
         course: true
       }
     })
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Assignment already exists for this student, course and start date' })
-      if (err.code === 'P2003') throw createError({ statusCode: 400, statusMessage: 'Invalid studentId or courseId reference' })
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Cette affectation existe déjà pour cet étudiant, ce cours et cette date.'
+      })
     }
     throw err
   }

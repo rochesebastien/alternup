@@ -685,9 +685,28 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
     rapports d'UN étudiant, et les signatures sont jointes en lot (2 requêtes).
   - `pages/alternants/[id].vue` déplacée en `pages/alternants/[id]/index.vue` pour que le
     livret soit une route sœur et non une route enfant (Nuxt exigerait sinon un `<NuxtPage />`).
-- [ ] **F5 — Durcissement des routes héritées** : `profiles/*`, `alternants/*`, `courses/*`,
+- [x] **F5 — Durcissement des routes héritées** : `profiles/*`, `alternants/*`, `courses/*`,
   `course-assignments/*` passent sous `requireRole` + contrôles d'ownership/réseau
   (pré-requis de crédibilité avant toute mise en avant « conformité »).
+  - Les 17 routes ne passaient que par l'`auth-guard` global : `POST /api/profiles` créait un
+    compte avec un rôle arbitraire (donc `Tutor`), `GET /api/profiles` et `GET /api/alternants`
+    listaient toute la base, `courses/*` et `course-assignments/*` étaient un CRUD ouvert avec
+    `createdById` accepté depuis le body.
+  - Recensement préalable des consommateurs : **aucune page/composant/composable n'appelle ces
+    routes**. La liste des alternants passe par `GET /api/tutors/[id]/learners` et l'ajout par
+    e-mail par `POST /api/tutors/[id]/learners` (inchangés) ; `pages/courses` et `pages/calendar`
+    ne consomment que `/api/course-notes` et `/api/users/[id]/calendar`. Aucun usage à préserver,
+    donc aucune régression fonctionnelle possible ; les routes sont conservées (domaine vivant :
+    `CourseAssignment` porte les sessions du calendrier, les notes de cours et les bulletins).
+  - Règles appliquées : `profiles` GET/POST/DELETE → `Tutor` (liste bornée au réseau + soi-même,
+    création limitée à `Alternant|Stagiaire` avec rattachement automatique au réseau du créateur
+    dans une transaction, suppression réservée à un learner du réseau) ; `profiles` GET/PUT par id
+    → soi-même ou tuteur du profil, sans changement de rôle possible ; `alternants/*` → `Tutor`
+    filtré sur son réseau ; `courses`/`course-assignments` → écriture `Tutor` + ownership du cours
+    (`createdById` forcé depuis la session), lecture tuteur = ses cours / learner = ses affectations.
+  - Schémas Zod déplacés dans `shared/utils/profiles.ts` et `shared/utils/courses.ts` (littéraux de
+    chaîne, aucun enum Prisma côté partagé), helpers de visibilité dans `server/utils/profiles.ts`
+    et `server/utils/courses.ts` — 404 systématique, jamais 403, pour ne pas divulguer l'existence.
 
 ### P1 — backlog (features suivantes)
 

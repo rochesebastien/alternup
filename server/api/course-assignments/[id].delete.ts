@@ -1,19 +1,19 @@
-import { Prisma } from '@prisma/client'
+import { z } from 'zod'
+import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { requireRole } from '~/server/utils/require-role'
+import { loadCourseAssignmentOwnedBy } from '~/server/utils/courses'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Assignment ID is required' })
+  const tutor = await requireRole(event, Role.Tutor)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'affectation invalide." })
   }
 
-  try {
-    await prisma.courseAssignment.delete({ where: { id } })
-    return { message: 'Assignment deleted successfully' }
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
-      throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
-    }
-    throw err
-  }
+  await loadCourseAssignmentOwnedBy(id.data, tutor)
+
+  await prisma.courseAssignment.delete({ where: { id: id.data } })
+  return { message: 'Affectation supprimée.' }
 })

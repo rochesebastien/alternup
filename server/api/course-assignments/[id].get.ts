@@ -1,25 +1,15 @@
-import { prisma } from '~/server/utils/prisma'
+import { z } from 'zod'
+import { requireAuth } from '~/server/utils/require-role'
+import { loadCourseAssignmentVisibleTo } from '~/server/utils/courses'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Assignment ID is required' })
+  const user = await requireAuth(event)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'affectation invalide." })
   }
 
-  const assignment = await prisma.courseAssignment.findUnique({
-    where: { id },
-    include: {
-      student: {
-        select: { id: true, firstName: true, lastName: true }
-      },
-      course: true,
-      notes: true
-    }
-  })
-
-  if (!assignment) {
-    throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
-  }
-
-  return assignment
+  // Étudiant concerné, tuteur créateur du cours, ou tuteur de l'étudiant. 404 sinon.
+  return loadCourseAssignmentVisibleTo(id.data, user)
 })
