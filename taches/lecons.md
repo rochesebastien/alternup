@@ -36,3 +36,33 @@
 **Erreur :** En Zod v4, `z.string().uuid()` (et `z.uuid()`) impose la conformité RFC 9562 stricte : le 3e groupe doit commencer par `1-8` (version) et le 4e par `8/9/a/b` (variant). Les UUID « didactiques » avec tous les chiffres identiques sont rejetés.
 **Correction :** Remplacer par `z.guid()` qui accepte n'importe quelle chaîne UUID-like (8-4-4-4-12 hex). Garder `z.uuid()` uniquement quand on **veut** garantir un vrai UUID RFC valide (rare pour de la validation d'entrée HTTP).
 **Règle à appliquer :** Sur ce projet, par défaut utiliser `z.guid()` pour valider des IDs en entrée d'API ou de formulaire. N'utiliser `z.uuid({ version: 'v4' })` que si on veut vraiment refuser les variantes non-v4.
+
+### 2026-07-21 — `$fetch` dans un `watch` immediate → 401 au rendu serveur (SSR)
+
+**Contexte :** La page `/projects/[id]` plantait avec une erreur 401 plein écran (`[GET] /api/tutors/:id/learners: Authentification requise`) au premier chargement (F5 / lien direct), mais marchait en navigation client depuis la liste.
+**Erreur :** Un `watch(..., { immediate: true })` qui appelle `$fetch('/api/…')` s'exécute **aussi pendant le SSR**. Or `$fetch` (global) **ne transmet pas les cookies de la requête entrante** côté serveur → la route protégée répond 401 et l'erreur non catchée fait planter la page. `useFetch`, lui, forwarde les cookies au SSR automatiquement — d'où le fait que le fetch principal passait mais pas le `$fetch` du watch.
+**Correction :** Utiliser `const requestFetch = useRequestFetch()` puis `requestFetch('/api/…')` pour tout appel qui peut tourner au SSR (watch immediate, setup direct). Même correctif appliqué à `pages/calendar.vue`.
+**Règle à appliquer :** Sur ce projet, dès qu'un appel API peut s'exécuter pendant le SSR (setup, `watch` immediate), passer par `useFetch` ou `useRequestFetch()` — **jamais** `$fetch` nu. Réserver `$fetch` aux handlers déclenchés côté client (onSubmit, onClick).
+
+### 2026-07-21 — Réseau restreint : self-héberger police + icônes (pas de fetch runtime)
+
+**Contexte :** En environnement à proxy strict, les icônes Lucide (@nuxt/icon) étaient fetchées depuis `api.iconify.design` (403 → icônes cassées) et `@nuxt/fonts` tentait Google/Fontsource/Bunny (403). Une police variable (`woff2-variations`) faisait aussi crasher `@nuxt/fonts` (`Unknown font format`) lors de la génération des fallbacks.
+**Correction :**
+- **Icônes** : installer la collection en local `@iconify-json/lucide` (devDependency, bundlée au build) → plus aucun fetch runtime.
+- **Police** : self-héberger via le paquet npm `@fontsource-variable/mona-sans` et importer sa CSS (`@fontsource-variable/mona-sans/wght.css`) dans `nuxt.config.css`. Les woff2 sont dans `node_modules`, Vite les bundle → zéro réseau.
+- **Désactiver l'intégration fonts de Nuxt UI** : `ui: { fonts: false }` dans `nuxt.config` (sinon `@nuxt/fonts`, tiré par `@nuxt/ui`, retente le réseau et crashe sur le woff2 variable).
+**Règle à appliquer :** Sur ce projet (déploiement Dokploy, réseau potentiellement restreint), toujours self-héberger polices et icônes via des paquets npm ; ne jamais dépendre d'un fetch de font/icône au runtime.
+
+### 2026-07-21 — Composants Nuxt en sous-dossier = préfixe automatique dans le nom
+
+**Contexte :** Les composants graphiques du dashboard avaient été placés dans `components/stats/` (StatCard, TrendChart, BarChart, UpdateTimeline). La page dashboard les référençait `<StatCard>`, `<TrendChart>`… Résultat : tout compilait (typecheck + build verts) mais les composants **ne s'affichaient pas** — cartes KPI, graphiques et timeline vides.
+**Erreur :** Nuxt auto-importe les composants en **préfixant par le chemin du dossier** : `components/stats/StatCard.vue` devient `<StatsStatCard>`, pas `<StatCard>`. Vue tolère les composants inconnus dans les templates (rendus comme éléments natifs vides), donc **ni vue-tsc ni le build ne signalent l'erreur** — seul un `WARN [Vue warn]: Failed to resolve component` apparaît au runtime, et le rendu est vide.
+**Correction :** Remonter les composants à la racine `components/` (nom = nom de fichier), OU les référencer avec le préfixe (`<StatsStatCard>`), OU configurer `components: [{ path: '~/components', pathPrefix: false }]` dans nuxt.config.
+**Règle à appliquer :** Sur ce projet, ne jamais se fier au seul typecheck/build pour valider qu'un composant s'affiche — **vérifier le rendu réel** (screenshot) et surveiller `Failed to resolve component` dans les logs du dev server. Placer les composants partagés à la racine de `components/` ou aligner le nom référencé sur le préfixe de dossier.
+
+### 2026-07-21 — Ne pas évaluer un enum Prisma (runtime) au chargement d'un module partagé/client
+
+**Contexte :** Ajout des modules PRONOTE. Les pages `/presences` et `/rapports` plantaient à l'HYDRATATION (SSR 200 mais page 500 côté navigateur) : « Cannot convert undefined or null to object » et « Cannot read properties of undefined (reading 'soumis') ».
+**Erreur :** Les utils partagés `shared/utils/attendance.ts` et `progress-reports.ts` évaluaient des VALEURS d'enum Prisma au chargement du module : `Object.values(AttendanceStatus)`, `z.nativeEnum(AttendanceStatus)`, et `REPORT_TRANSITIONS = { brouillon: [ReportStatus.soumis] }`. Dans le bundle CLIENT, l'objet enum Prisma nouvellement ajouté est `undefined` au moment où le module s'évalue → crash. (Le build browser `index-browser.js` contient bien l'enum, mais l'objet n'est pas fiable au runtime client pour du code partagé — a fortiori juste après ajout.)
+**Correction :** Dans tout module partagé (client+serveur), n'importer l'enum Prisma qu'en `import type { X }` et n'utiliser QUE des littéraux de chaîne : `z.enum(['present','absent',...])` au lieu de `z.nativeEnum`, tableaux d'options codés en dur, `switch (status) { case 'present': ... }` au lieu de `case AttendanceStatus.present`, et maps de transitions avec des valeurs string littérales. Les VALEURS d'enum Prisma restent réservées au code purement serveur (routes API, `server/utils`, `server/api/**`).
+**Règle à appliquer :** Sur ce projet, jamais de `Object.values(EnumPrisma)` ni de valeur `EnumPrisma.membre` dans `shared/**` ou un composant. Type only côté partagé/client, littéraux de chaîne pour les valeurs.

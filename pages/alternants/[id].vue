@@ -1,16 +1,17 @@
 <template>
-  <div class="max-w-3xl mx-auto px-4 py-8 space-y-6">
+  <div class="mx-auto max-w-3xl px-6 py-10 space-y-6">
     <UButton
-      variant="ghost"
+      variant="link"
       color="neutral"
       icon="i-lucide-arrow-left"
       to="/alternants"
+      class="-ml-2 px-2 text-[var(--ui-text-muted)]"
     >
       Retour à la liste
     </UButton>
 
     <div v-if="status === 'pending'" class="flex justify-center py-12">
-      <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-primary-500" />
+      <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
     </div>
 
     <UAlert
@@ -21,33 +22,30 @@
       :description="error.message"
     />
 
-    <UCard v-else-if="alternant">
-      <template #header>
-        <div>
-          <h1 class="text-2xl font-bold text-[var(--ui-text)]">
-            {{ alternant.firstName }} {{ alternant.lastName }}
-          </h1>
-          <UBadge class="mt-1" color="primary" variant="subtle">
+    <template v-else-if="alternant">
+      <PageHeader :title="`${alternant.firstName} ${alternant.lastName}`">
+        <template #actions>
+          <UBadge color="neutral" variant="subtle" class="font-normal">
             {{ alternant.role }}
           </UBadge>
-        </div>
-      </template>
+        </template>
+      </PageHeader>
 
-      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <dt class="text-sm text-[var(--ui-text-muted)]">Email</dt>
-          <dd class="text-[var(--ui-text)]">{{ alternant.email }}</dd>
+      <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-5">
+        <div class="space-y-1">
+          <dt class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide">Email</dt>
+          <dd class="text-sm text-[var(--ui-text)]">{{ alternant.email }}</dd>
         </div>
-        <div>
-          <dt class="text-sm text-[var(--ui-text-muted)]">Créé le</dt>
-          <dd class="text-[var(--ui-text)]">{{ formatDate(alternant.createdAt) }}</dd>
+        <div class="space-y-1">
+          <dt class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide">Créé le</dt>
+          <dd class="text-sm text-[var(--ui-text)]">{{ formatDate(alternant.createdAt) }}</dd>
         </div>
-        <div>
-          <dt class="text-sm text-[var(--ui-text-muted)]">Dernière mise à jour</dt>
-          <dd class="text-[var(--ui-text)]">{{ formatDate(alternant.updatedAt) }}</dd>
+        <div class="space-y-1">
+          <dt class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide">Dernière mise à jour</dt>
+          <dd class="text-sm text-[var(--ui-text)]">{{ formatDate(alternant.updatedAt) }}</dd>
         </div>
       </dl>
-    </UCard>
+    </template>
 
     <UAlert
       v-else

@@ -516,3 +516,136 @@ Ajout d'une clef étrangère **nullable** `course_assignment_id` sur `calendar_e
 - [x] `README.md` : badge CI
 
 **Hors scope (à suivre dans une PR dédiée)** : la commande `npm run lint` casse car ESLint v10 attend une `eslint.config.*` flat config, absente du repo. Lint donc retiré du CI pour ne pas bloquer ; ticket à ouvrir pour migrer la config.
+
+---
+
+## 2026-07-21 — Refonte UI (pages internes) + police Mona Sans + fix SSR
+
+> Branche : `claude/features-app-status-nkwh0u`
+
+**Objectif** : passer les pages applicatives (hors landing `/`) d'un style « pill jaune partout » à un style **minimaliste type ShadcnUI**, changer la police pour **Mona Sans**, et corriger un bug SSR sur `/projects/[id]`.
+
+### Fondations (design system)
+- **Police** : `@fontsource-variable/mona-sans` self-hostée (`nuxt.config.css` importe `wght.css`), `--font-sans` mis à jour. `ui: { fonts: false }` pour désactiver `@nuxt/fonts` (crashait sur le woff2 variable + fetch réseau bloqué).
+- **Icônes** : `@iconify-json/lucide` en local (fin des 403 `api.iconify.design`).
+- **Boutons** (`app.config.ts`) : base `rounded-full font-semibold` → `rounded-md font-medium`. La landing force `rounded-full` en inline → pills **préservés** sur `/`.
+- **Rayon** : `--ui-radius` 0.5rem → 0.375rem (feel plus net).
+- **Footer** (`app.vue`) : footer marketing complet **uniquement** sur `/`, `/features`, `/pricing` ; footer minimal ailleurs (fin du gros footer noir répété = « slop »).
+- **Composant** `components/PageHeader.vue` : en-tête cohérent (titre + sous-titre + slot actions + séparateur) réutilisé sur toutes les pages.
+
+### Parti pris visuel
+- Action principale = bouton **neutre foncé** (signature Shadcn) au lieu du jaune. Le jaune reste un accent (logo, `today` du calendrier).
+- Tables/listes dans des conteneurs bordés fins ; cartes `border` + `bg-elevated` ; badges `variant="subtle"` neutres ; badge de statut de mission passé de `solid`/`lg` (gros jaune) à `subtle`.
+- FullCalendar : boutons `rounded-md`, actif foncé, events en chips foncés.
+
+### Pages refondues
+`login`, `register`, `forbidden`, `alternants/index`, `alternants/[id]`, `projects/index`, `projects/[id]`, `missions/index`, `courses/index`, `calendar`. Landing `/` **inchangée** (hors police).
+
+### Fix SSR (`/projects/[id]` + `/calendar`)
+- Cause : `$fetch('/api/tutors/:id/learners')` dans un `watch` immediate → tourne au SSR sans cookie → 401 plein écran au hard-load.
+- Correctif : `useRequestFetch()` (forwarde les cookies au SSR). Cf. `taches/lecons.md`.
+
+### Vérifications
+- [x] `npm test` : 98 tests verts
+- [x] `npx vue-tsc --noEmit` : 0 erreur
+- [x] `npm run build` : succès
+- [x] Screenshots des 11 vues (Postgres local + seed de démo) : rendu cohérent, Mona Sans partout, hard-load `/projects/[id]` = 200 (fix SSR confirmé)
+- [x] Landing `/` vérifiée : CTA jaunes en pill + footer marketing préservés
+
+### Aussi
+- [x] Issue #18 (CI/CD) clôturée en `completed`.
+
+### Note hors-scope
+- Le calendrier peut apparaître vide en vue Semaine selon les données/fuseaux — comportement **pré-existant** (déjà présent avant la refonte), non lié à ces changements.
+
+---
+
+## 2026-07-21 — Dashboards, journal de retours & enrichissement fonctionnel
+
+> Branche : `claude/features-app-status-nkwh0u` — construit via un workflow d'agents (front) + backend fait à la main.
+
+### 1. Journal de retours (avancement des missions)
+Remplacement du champ unique `studentComment` (écrasé à chaque fois) par un **journal append-only**.
+- **Modèle** `ProjectUpdate` (assignmentId, authorId, body, status?, createdAt) + migration `20260721000000_project_updates`.
+- **API** : `GET/POST /api/project-assignments/[id]/updates` (auth via `loadAssignmentVisibleTo`). Le POST ajoute une entrée et, si un statut est fourni, met aussi à jour le statut courant de la mission (transaction).
+- `updates` inclus dans `GET /api/project-assignments` et `loadProjectVisibleTo`.
+- **UI** : `pages/missions` = formulaire « Publier le retour » (statut + texte) + timeline `JOURNAL`. `pages/projects/[id]` = journal en lecture pour le tuteur. Composant réutilisable `components/UpdateTimeline.vue`.
+
+### 2. Dashboards (notes, évolution, stats)
+- **API** `GET /api/dashboard/summary` role-aware : KPIs, note moyenne, courbe d'évolution mensuelle (8 mois), missions par statut, derniers retours (tuteur), dernières notes (learner), prochaines sessions.
+- **Page** `pages/dashboard.vue` role-aware, devient la landing post-login (nav + `resolvePostLoginPath` → `/dashboard`).
+- **Composants graphiques SVG faits main (offline, aucune lib)** : `StatCard`, `TrendChart` (courbe lissée Catmull-Rom + aire, gère les trous, `useId()` anti-mismatch), `BarChart`, `UpdateTimeline`. Style monochrome ShadcnUI, clair/sombre via tokens.
+
+### 3. Workflow d'agents
+Les 4 composants + la page dashboard ont été générés en parallèle par un workflow d'agents Opus contre des contrats figés (formes d'API + contrats de props), puis intégrés/corrigés/vérifiés à la main.
+
+### Vérifications
+- [x] Migration appliquée ; seed enrichi (notes mensuelles Jan→Juil, 6 retours) pour des graphes crédibles
+- [x] `npm test` : 98 tests verts (test `auth-redirect` mis à jour → `/dashboard`)
+- [x] `npx vue-tsc --noEmit` : 0 erreur ; `npm run build` : succès
+- [x] Screenshots : dashboards tuteur + alternant (KPIs, courbe, barres, timeline), journal missions, journal projet
+- [x] Test end-to-end : POST d'un retour → ajout au journal + statut mission synchronisé
+
+---
+
+## 2026-07-21 — Lot 1 « PRONOTE pour l'alternance » (Présences · Rapports d'étape · Annonces)
+
+> Branche `claude/features-app-status-nkwh0u`. Planifié via un agent Fable 5, implémenté via un workflow d'agents Opus (pipeline API→UI par module), socle + intégration à la main.
+
+### Modules livrés
+- **A. Présences** — pointage d'assiduité sur les sessions du calendrier (présent/absent/retard/excusé), taux + stats. Table `Attendance` (1 par `CalendarEvent`). Pages : `/presences` (tuteur = pointage inline via `AttendanceControl` ; learner = KPIs + historique via `AttendanceBadge`). Routes : `POST/DELETE /api/events/:id/attendance`, `GET /api/attendance`, `GET /api/users/:id/attendance`.
+- **B. Rapports d'étape** — livret d'apprentissage : l'alternant soumet un CR périodique, le tuteur valide / demande révision (machine à états `brouillon→soumis→valide|a_revoir`, appliquée serveur). Table `ProgressReport`. Pages : `/rapports` (liste role-aware + file « à valider ») et `/rapports/:id` (lecture + édition + revue). Routes CRUD + `submit` + `review`.
+- **C. Annonces** — canal tuteur→étudiants avec accusé de lecture. Tables `Announcement` + `AnnouncementRecipient`. Page `/annonces` (composition tuteur multi-destinataires ; lecture learner avec marquage lu). Routes CRUD + `read`.
+
+### Socle & intégration (à la main)
+- Migration `20260721120000_lot1_pronote` (2 enums, 4 tables, FK, index). Helpers de visibilité `server/utils/{network,attendance,reports,announcements}.ts` (pattern 404 comme `projects.ts`). Schémas Zod partagés `shared/utils/{attendance,progress-reports,announcements}.ts`.
+- Dashboard : 2 nouveaux KPIs (tuteur « Rapports à valider », learner « Taux de présence »). Nav : liens Présences/Rapports/Annonces (desktop + mobile). Seed de démo enrichi (sessions passées pointées, rapports multi-statuts, annonces lues/non-lues).
+
+### Vérifications
+- [x] `npm test` : 98 verts · `vue-tsc` : 0 erreur · `npm run build` : OK
+- [x] Rendu réel des 3 modules (tuteur + learner) vérifié par screenshots — après correction d'un crash d'hydratation (enum Prisma évalué au runtime dans du code partagé, cf. `taches/lecons.md`).
+
+### Lots suivants (non faits)
+- Lot 2 : Bulletins périodiques + Visites tuteur · Lot 3 : Référentiel de compétences + Messagerie · Lot 4 : Casier de documents (stockage fichiers).
+
+---
+
+## 2026-07-22 — Lot 2 « PRONOTE » (Bulletins périodiques · Visites tuteur)
+
+> Branche `claude/features-app-status-nkwh0u`. Même méthode : socle à la main → workflow d'agents Opus (pipeline API→UI) → intégration + vérif.
+
+### Modules livrés
+- **Bulletins périodiques** — le tuteur crée des périodes, puis **publie** le bulletin de chaque alternant : le contenu (moyennes par cours + moyenne générale + assiduité) est **calculé puis figé** (`snapshot` JSON) à la publication. L'alternant consulte ses bulletins publiés. Tables `ReportPeriod` + `ReportCard`. Pages `/bulletins` (role-aware) et `/bulletins/[id]` (détail période, publication par learner). Composant `ReportCardView` (moyenne générale + `BarChart` des moyennes par cours + assiduité + appréciation).
+- **Visites tuteur** — planification (entreprise/école/visio) + compte-rendu structuré (résumé, prochaines étapes, statut planifiée/réalisée/annulée). Table `TutorVisit`. Page `/visites` (tuteur = planif + compte-rendu ; learner = lecture). Composant `VisitStatusBadge`.
+
+### Socle & intégration (à la main)
+- Migration `20260721140000_lot2_bulletins_visites` (1 enum `VisitStatus`, 3 tables). Helper `computeSnapshot` (moyennes + assiduité sur la fenêtre de période) + helpers de visibilité (`report-cards.ts`, `tutor-visits.ts`). Schémas Zod partagés (string-literal).
+- Nav : les 5 modules de suivi regroupés sous un menu déroulant **« Suivi »** (desktop) — évite une barre surchargée ; liens à plat en mobile.
+
+### Vérifications
+- [x] `npm test` : 98 verts · `vue-tsc` : 0 erreur (après cast `snapshot` → `Prisma.InputJsonValue`) · `npm run build` : OK
+- [x] Rendu réel des 4 vues (tuteur + learner) vérifié par screenshots (bulletin figé + graphe, visites + comptes-rendus).
+
+### Reste (lots suivants)
+- Lot 3 : Référentiel de compétences + Messagerie · Lot 4 : Casier de documents (stockage fichiers).
+
+---
+
+## 2026-07-22 — Lot 3 « PRONOTE » (Référentiel de compétences · Messagerie)
+
+> Branche `claude/features-app-status-nkwh0u`. Socle à la main → workflow d'agents Opus (pipeline API→UI) → intégration + vérif.
+
+### Modules livrés
+- **Compétences** — le tuteur définit un **référentiel** (domaines → compétences) et **évalue** chaque alternant par compétence (niveau : découverte / en cours / acquis / maîtrise). L'alternant visualise sa **carte de compétences** : progression globale + par domaine (barres) + niveau par compétence. Tables `CompetencyDomain`, `Competency`, `CompetencyAssessment` (append-only, le plus récent fait foi). Helper `studentCompetencyMap`. Page `/competences` (role-aware), composant `CompetencyLevelBadge`.
+- **Messagerie** — un fil unique par couple tuteur/étudiant, avec accusé de lecture. Tables `Conversation` + `Message`. Pages `/messages` (liste + non-lus) et `/messages/[id]` (fil de discussion type chat + composer). Pas de temps réel (rafraîchissement au chargement, cohérent avec le réseau restreint).
+
+### Socle & intégration (à la main)
+- Migration `20260722000000_lot3_competences_messagerie` (1 enum `CompetencyLevel`, 5 tables). Helpers de visibilité + agrégation (`competencies.ts`, `messages.ts`). Schémas Zod partagés (string-literal).
+- Nav : « Suivi » regroupe désormais les 7 modules (Présences, Rapports, Bulletins, Compétences, Visites, Annonces, Messages).
+
+### Vérifications
+- [x] `npm test` : 98 verts · `vue-tsc` : 0 erreur · `npm run build` : OK
+- [x] Rendu réel des 4 vues vérifié (carte de compétences + barres, fil de messages).
+
+### Reste (lot suivant)
+- Lot 4 : Casier de documents (convention, attestations) — nécessite du stockage de fichiers (à isoler).

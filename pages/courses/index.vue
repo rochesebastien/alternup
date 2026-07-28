@@ -1,11 +1,9 @@
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes cours</h1>
-      <p class="text-sm text-[var(--ui-text-muted)]">
-        Sessions à venir et passées avec leurs notes personnelles.
-      </p>
-    </div>
+  <div class="mx-auto max-w-4xl px-6 py-10 space-y-6">
+    <PageHeader
+      title="Mes cours"
+      subtitle="Sessions à venir et passées avec leurs notes personnelles."
+    />
 
     <UAlert
       v-if="eventsError"
@@ -16,36 +14,41 @@
     />
 
     <div v-if="eventsStatus === 'pending'" class="flex justify-center py-12">
-      <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-primary-500" />
+      <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
     </div>
 
-    <UCard v-else-if="sessions.length === 0">
-      <p class="text-[var(--ui-text-muted)] text-center py-6">
-        Aucun cours n'est pour le moment programmé dans votre agenda.
-      </p>
-    </UCard>
+    <div
+      v-else-if="sessions.length === 0"
+      class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
+    >
+      Aucun cours n'est pour le moment programmé dans votre agenda.
+    </div>
 
-    <UCard v-for="session in sessions" v-else :key="session.id">
-      <template #header>
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h2 class="text-lg font-semibold text-[var(--ui-text)]">
-              {{ session.courseAssignment?.course.title ?? session.title }}
-            </h2>
-            <p class="text-sm text-[var(--ui-text-muted)] mt-1">
-              {{ formatDate(session.startTime) }} · {{ formatTimeRange(session.startTime, session.endTime) }}
-            </p>
-          </div>
-          <UBadge
-            v-if="existingNoteFor(session)"
-            color="success"
-            variant="subtle"
-            icon="i-lucide-check"
-          >
-            Note enregistrée
-          </UBadge>
+    <div
+      v-for="session in sessions"
+      v-else
+      :key="session.id"
+      class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 space-y-4"
+    >
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-base font-semibold text-[var(--ui-text)]">
+            {{ session.courseAssignment?.course.title ?? session.title }}
+          </h2>
+          <p class="text-sm text-[var(--ui-text-muted)] mt-0.5">
+            {{ formatDate(session.startTime) }} · {{ formatTimeRange(session.startTime, session.endTime) }}
+          </p>
         </div>
-      </template>
+        <UBadge
+          v-if="existingNoteFor(session)"
+          color="success"
+          variant="subtle"
+          icon="i-lucide-check"
+          class="font-normal"
+        >
+          Note enregistrée
+        </UBadge>
+      </div>
 
       <UForm
         :state="stateFor(session)"
@@ -95,12 +98,12 @@
         />
 
         <div class="flex justify-end">
-          <UButton type="submit" color="primary" :loading="pending[session.id]">
+          <UButton type="submit" color="neutral" :loading="pending[session.id]">
             Enregistrer
           </UButton>
         </div>
       </UForm>
-    </UCard>
+    </div>
   </div>
 </template>
 

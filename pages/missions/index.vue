@@ -1,11 +1,9 @@
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-    <div>
-      <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes missions</h1>
-      <p class="text-sm text-[var(--ui-text-muted)]">
-        {{ missions.length }} mission{{ missions.length > 1 ? 's' : '' }} en cours ou passées.
-      </p>
-    </div>
+  <div class="mx-auto max-w-4xl px-6 py-10 space-y-6">
+    <PageHeader
+      title="Mes missions"
+      :subtitle="`${missions.length} mission${missions.length > 1 ? 's' : ''} en cours ou passées`"
+    />
 
     <UAlert
       v-if="error"
@@ -16,48 +14,49 @@
     />
 
     <div v-if="status === 'pending'" class="flex justify-center py-12">
-      <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-primary-500" />
+      <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
     </div>
 
-    <UCard v-else-if="missions.length === 0">
-      <p class="text-[var(--ui-text-muted)] text-center py-6">
-        Aucune mission ne vous est encore attribuée.
-      </p>
-    </UCard>
+    <div
+      v-else-if="missions.length === 0"
+      class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
+    >
+      Aucune mission ne vous est encore attribuée.
+    </div>
 
-    <UCard v-for="mission in missions" v-else :key="mission.id">
-      <template #header>
-        <div class="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <h2 class="text-lg font-semibold text-[var(--ui-text)]">{{ mission.project.title }}</h2>
-            <UBadge
-              class="mt-1"
-              :color="mission.project.internal ? 'primary' : 'neutral'"
-              variant="subtle"
-            >
-              {{ mission.project.internal ? 'Interne' : 'Externe' }}
-            </UBadge>
-          </div>
-          <UBadge
-            :color="projectStatusColor(mission.status)"
-            variant="solid"
-            size="lg"
-          >
-            {{ projectStatusLabel(mission.status) }}
-          </UBadge>
+    <div
+      v-for="mission in missions"
+      v-else
+      :key="mission.id"
+      class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 space-y-5"
+    >
+      <div class="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h2 class="text-base font-semibold text-[var(--ui-text)]">{{ mission.project.title }}</h2>
+          <p class="text-xs text-[var(--ui-text-muted)] mt-0.5">
+            {{ mission.project.internal ? 'Projet interne' : 'Projet externe' }}
+          </p>
         </div>
-      </template>
+        <UBadge
+          :color="projectStatusColor(mission.status)"
+          variant="subtle"
+          class="font-normal"
+        >
+          {{ projectStatusLabel(mission.status) }}
+        </UBadge>
+      </div>
 
-      <div v-if="mission.tutorComment" class="mb-4 bg-[var(--ui-bg-muted)] rounded-md p-3">
-        <p class="text-xs text-[var(--ui-text-muted)] uppercase tracking-wide">Commentaire tuteur</p>
+      <div v-if="mission.tutorComment" class="rounded-md bg-[var(--ui-bg-muted)] p-3">
+        <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-1">Commentaire tuteur</p>
         <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
           {{ mission.tutorComment }}
         </p>
       </div>
 
+      <!-- Publier un nouveau retour -->
       <UForm
         :state="formStateFor(mission)"
-        :schema="missionUpdateSchema"
+        :schema="updateFormSchema"
         class="space-y-3"
         @submit="onSubmit(mission)"
       >
@@ -70,12 +69,12 @@
           />
         </UFormField>
 
-        <UFormField label="Mes notes" name="studentComment">
+        <UFormField label="Nouveau retour" name="body">
           <UTextarea
-            v-model="formStateFor(mission).studentComment"
+            v-model="formStateFor(mission).body"
             :rows="3"
             class="w-full"
-            placeholder="Notez ce que vous avez fait, ce que vous comptez faire…"
+            placeholder="Où en êtes-vous ? Ce que vous avez fait, ce qui bloque, la suite…"
           />
         </UFormField>
 
@@ -87,28 +86,44 @@
         />
 
         <div class="flex justify-end">
-          <UButton type="submit" color="primary" :loading="pending[mission.id]">
-            Mettre à jour
+          <UButton type="submit" color="neutral" icon="i-lucide-send" :loading="pending[mission.id]">
+            Publier le retour
           </UButton>
         </div>
       </UForm>
-    </UCard>
+
+      <!-- Journal des retours -->
+      <div v-if="mission.updates.length" class="pt-1">
+        <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-3">
+          Journal ({{ mission.updates.length }})
+        </p>
+        <UpdateTimeline :items="mission.updates" />
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { z } from 'zod'
 import { ProjectStatus, Role } from '@prisma/client'
 import {
   PROJECT_STATUS_OPTIONS,
   projectStatusColor,
   projectStatusLabel
 } from '~/shared/utils/projects'
+import { projectUpdateCreateSchema } from '~/shared/utils/project-updates'
 
 definePageMeta({
   middleware: ['role'],
   requireRole: [Role.Alternant, Role.Stagiaire]
 })
+
+interface MissionUpdate {
+  id: string
+  body: string
+  status: ProjectStatus | null
+  createdAt: string
+  author: { id: string; firstName: string; lastName: string; role: Role }
+}
 
 interface Mission {
   id: string
@@ -120,6 +135,7 @@ interface Mission {
   startedAt: string | null
   updatedAt: string
   project: { id: string; title: string; internal: boolean; createdById: string | null }
+  updates: MissionUpdate[]
 }
 
 const toast = useToast()
@@ -134,28 +150,21 @@ const {
 const missions = computed(() => data.value ?? [])
 
 const statusItems = PROJECT_STATUS_OPTIONS
+const updateFormSchema = projectUpdateCreateSchema
 
-const missionUpdateSchema = z.object({
-  status: z.nativeEnum(ProjectStatus),
-  studentComment: z.string().trim().max(5000).nullable().optional()
-})
-
-interface MissionFormState {
+interface UpdateFormState {
   status: ProjectStatus
-  studentComment: string
+  body: string
 }
 
-const states = reactive<Record<string, MissionFormState>>({})
+const states = reactive<Record<string, UpdateFormState>>({})
 const pending = reactive<Record<string, boolean>>({})
 const errors = reactive<Record<string, string | null>>({})
 
-function formStateFor(mission: Mission): MissionFormState {
+function formStateFor(mission: Mission): UpdateFormState {
   let current = states[mission.id]
   if (!current) {
-    current = {
-      status: mission.status,
-      studentComment: mission.studentComment ?? ''
-    }
+    current = { status: mission.status, body: '' }
     states[mission.id] = current
   }
   return current
@@ -166,18 +175,15 @@ async function onSubmit(mission: Mission) {
   pending[mission.id] = true
   errors[mission.id] = null
   try {
-    await $fetch(`/api/project-assignments/${mission.id}`, {
-      method: 'PUT',
-      body: {
-        status: state.status,
-        studentComment:
-          state.studentComment.trim() === '' ? null : state.studentComment
-      }
+    await $fetch(`/api/project-assignments/${mission.id}/updates`, {
+      method: 'POST',
+      body: { body: state.body, status: state.status }
     })
-    toast.add({ title: 'Mission mise à jour', color: 'success' })
+    state.body = ''
+    toast.add({ title: 'Retour publié', color: 'success' })
     await refresh()
   } catch (err: unknown) {
-    errors[mission.id] = readErrorMessage(err) ?? 'Impossible d\'enregistrer.'
+    errors[mission.id] = readErrorMessage(err) ?? 'Impossible de publier le retour.'
   } finally {
     pending[mission.id] = false
   }

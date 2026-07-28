@@ -48,6 +48,30 @@ model User {
   studentEvents CalendarEvent[] @relation("EventStudent")
   tutorEvents   CalendarEvent[] @relation("EventTutor")
 
+  // Relations: retours sur missions
+  projectUpdates ProjectUpdate[]
+
+  // Relations: modules PRONOTE (présences, rapports, annonces)
+  attendancesRecorded    Attendance[]            @relation("AttendanceRecorder")
+  reportsAsStudent       ProgressReport[]        @relation("ReportStudent")
+  reportsAsTutor         ProgressReport[]        @relation("ReportTutor")
+  announcementsAuthored  Announcement[]          @relation("AnnouncementAuthor")
+  announcementsReceived  AnnouncementRecipient[] @relation("AnnouncementRecipient")
+
+  // Relations: modules PRONOTE lot 2 (bulletins, visites)
+  reportPeriods    ReportPeriod[] @relation("PeriodTutor")
+  reportCards      ReportCard[]   @relation("CardStudent")
+  visitsAsTutor    TutorVisit[]   @relation("VisitTutor")
+  visitsAsStudent  TutorVisit[]   @relation("VisitStudent")
+
+  // Relations: modules PRONOTE lot 3 (compétences, messagerie)
+  competencyDomains     CompetencyDomain[]     @relation("DomainTutor")
+  competencyAssessments CompetencyAssessment[] @relation("AssessmentStudent")
+  assessmentsGiven      CompetencyAssessment[] @relation("AssessmentAssessor")
+  conversationsAsTutor   Conversation[] @relation("ConvTutor")
+  conversationsAsStudent Conversation[] @relation("ConvStudent")
+  messagesAuthored       Message[]      @relation("MessageAuthor")
+
   @@index([role])
   @@map("users")
 }
@@ -136,10 +160,27 @@ model ProjectAssignment {
 
   project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
   student User    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  updates ProjectUpdate[]
 
   @@unique([projectId, studentId])
   @@index([studentId])
   @@map("project_assignments")
+}
+
+// Journal append-only des retours de l'alternant/stagiaire (et du tuteur) sur une mission.
+model ProjectUpdate {
+  id           String         @id @default(uuid()) @db.Uuid
+  assignmentId String         @map("assignment_id") @db.Uuid
+  authorId     String         @map("author_id") @db.Uuid
+  body         String
+  status       ProjectStatus? // snapshot du statut au moment du retour (optionnel)
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz
+
+  assignment ProjectAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  author     User              @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([assignmentId, createdAt])
+  @@map("project_updates")
 }
 
 model CalendarEvent {
@@ -155,8 +196,249 @@ model CalendarEvent {
   student          User              @relation("EventStudent", fields: [studentId], references: [id], onDelete: Cascade)
   tutor            User              @relation("EventTutor", fields: [tutorId], references: [id], onDelete: Cascade)
   courseAssignment CourseAssignment? @relation(fields: [courseAssignmentId], references: [id], onDelete: SetNull)
+  attendance       Attendance?
 
   @@index([studentId, startTime])
   @@index([courseAssignmentId])
   @@map("calendar_events")
+}
+
+// ─────────────────────── Modules PRONOTE ───────────────────────
+
+enum AttendanceStatus {
+  present
+  absent
+  retard
+  excuse
+}
+
+enum ReportStatus {
+  brouillon
+  soumis
+  valide
+  a_revoir
+}
+
+// A. Présences — un pointage par session (CalendarEvent), saisi par le tuteur.
+model Attendance {
+  id            String           @id @default(uuid()) @db.Uuid
+  eventId       String           @unique @map("event_id") @db.Uuid
+  status        AttendanceStatus
+  minutesLate   Int?             @map("minutes_late")
+  justification String?
+  recordedById  String           @map("recorded_by") @db.Uuid
+  recordedAt    DateTime         @default(now()) @map("recorded_at") @db.Timestamptz
+
+  event      CalendarEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  recordedBy User          @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: Cascade)
+
+  @@map("attendances")
+}
+
+// B. Rapports d'étape — livret d'apprentissage. Machine à états côté serveur.
+model ProgressReport {
+  id            String       @id @default(uuid()) @db.Uuid
+  studentId     String       @map("student_id") @db.Uuid
+  tutorId       String       @map("tutor_id") @db.Uuid
+  periodStart   DateTime     @map("period_start") @db.Date
+  periodEnd     DateTime     @map("period_end") @db.Date
+  title         String
+  body          String
+  difficulties  String?
+  learnings     String?
+  status        ReportStatus @default(brouillon)
+  tutorFeedback String?      @map("tutor_feedback")
+  submittedAt   DateTime?    @map("submitted_at") @db.Timestamptz
+  reviewedAt    DateTime?    @map("reviewed_at") @db.Timestamptz
+  createdAt     DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt     DateTime     @updatedAt @map("updated_at") @db.Timestamptz
+
+  student User @relation("ReportStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor   User @relation("ReportTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, periodEnd])
+  @@index([tutorId, status])
+  @@map("progress_reports")
+}
+
+// C. Annonces — canal descendant tuteur -> ses étudiants, avec accusé de lecture.
+model Announcement {
+  id        String   @id @default(uuid()) @db.Uuid
+  authorId  String   @map("author_id") @db.Uuid
+  title     String
+  body      String
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  author     User                    @relation("AnnouncementAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  recipients AnnouncementRecipient[]
+
+  @@index([authorId, createdAt])
+  @@map("announcements")
+}
+
+model AnnouncementRecipient {
+  announcementId String    @map("announcement_id") @db.Uuid
+  studentId      String    @map("student_id") @db.Uuid
+  readAt         DateTime? @map("read_at") @db.Timestamptz
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  student      User         @relation("AnnouncementRecipient", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, studentId])
+  @@index([studentId])
+  @@map("announcement_recipients")
+}
+
+// ─────────────────────── Modules PRONOTE — Lot 2 ───────────────────────
+
+enum VisitStatus {
+  planifiee
+  realisee
+  annulee
+}
+
+// D. Bulletins périodiques — une période de bulletin définie par le tuteur.
+model ReportPeriod {
+  id        String    @id @default(uuid()) @db.Uuid
+  tutorId   String    @map("tutor_id") @db.Uuid
+  label     String
+  startDate DateTime  @map("start_date") @db.Date
+  endDate   DateTime  @map("end_date") @db.Date
+  closedAt  DateTime? @map("closed_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor User         @relation("PeriodTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  cards ReportCard[]
+
+  @@index([tutorId])
+  @@map("report_periods")
+}
+
+// Bulletin d'un étudiant pour une période. `snapshot` fige les moyennes + assiduité à la publication.
+model ReportCard {
+  id             String    @id @default(uuid()) @db.Uuid
+  periodId       String    @map("period_id") @db.Uuid
+  studentId      String    @map("student_id") @db.Uuid
+  generalComment String?   @map("general_comment")
+  snapshot       Json?
+  publishedAt    DateTime? @map("published_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+
+  period  ReportPeriod @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  student User         @relation("CardStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([periodId, studentId])
+  @@index([studentId])
+  @@map("report_cards")
+}
+
+// G. Visites tuteur — visite planifiée (entreprise/école/visio) avec compte-rendu.
+model TutorVisit {
+  id          String      @id @default(uuid()) @db.Uuid
+  studentId   String      @map("student_id") @db.Uuid
+  tutorId     String      @map("tutor_id") @db.Uuid
+  scheduledAt DateTime    @map("scheduled_at") @db.Timestamptz
+  mode        String?
+  location    String?
+  status      VisitStatus @default(planifiee)
+  summary     String?
+  nextSteps   String?     @map("next_steps")
+  createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz
+
+  student User @relation("VisitStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  tutor   User @relation("VisitTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  @@index([tutorId, scheduledAt])
+  @@index([studentId])
+  @@map("tutor_visits")
+}
+
+// ─────────────────────── Modules PRONOTE — Lot 3 ───────────────────────
+
+enum CompetencyLevel {
+  decouverte
+  en_cours
+  acquis
+  maitrise
+}
+
+// E. Référentiel de compétences — domaines et compétences définis par le tuteur.
+model CompetencyDomain {
+  id        String   @id @default(uuid()) @db.Uuid
+  tutorId   String   @map("tutor_id") @db.Uuid
+  label     String
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor        User         @relation("DomainTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  competencies Competency[]
+
+  @@index([tutorId])
+  @@map("competency_domains")
+}
+
+model Competency {
+  id        String   @id @default(uuid()) @db.Uuid
+  domainId  String   @map("domain_id") @db.Uuid
+  label     String
+  position  Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  domain      CompetencyDomain       @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  assessments CompetencyAssessment[]
+
+  @@index([domainId])
+  @@map("competencies")
+}
+
+// Évaluation d'une compétence pour un étudiant (append-only : le plus récent fait foi).
+model CompetencyAssessment {
+  id           String          @id @default(uuid()) @db.Uuid
+  competencyId String          @map("competency_id") @db.Uuid
+  studentId    String          @map("student_id") @db.Uuid
+  level        CompetencyLevel
+  comment      String?
+  assessedById String          @map("assessed_by") @db.Uuid
+  createdAt    DateTime        @default(now()) @map("created_at") @db.Timestamptz
+
+  competency Competency @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+  student    User       @relation("AssessmentStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  assessedBy User       @relation("AssessmentAssessor", fields: [assessedById], references: [id], onDelete: Cascade)
+
+  @@index([studentId, competencyId, createdAt])
+  @@map("competency_assessments")
+}
+
+// F. Messagerie — un fil unique par couple tuteur/étudiant.
+model Conversation {
+  id        String   @id @default(uuid()) @db.Uuid
+  tutorId   String   @map("tutor_id") @db.Uuid
+  studentId String   @map("student_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  tutor    User      @relation("ConvTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  student  User      @relation("ConvStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  messages Message[]
+
+  @@unique([tutorId, studentId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String    @id @default(uuid()) @db.Uuid
+  conversationId String    @map("conversation_id") @db.Uuid
+  authorId       String    @map("author_id") @db.Uuid
+  body           String
+  readAt         DateTime? @map("read_at") @db.Timestamptz
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author       User         @relation("MessageAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
 }

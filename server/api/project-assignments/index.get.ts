@@ -4,7 +4,13 @@ import { requireAuth } from '~/server/utils/require-role'
 
 const include = {
   project: { select: { id: true, title: true, internal: true, createdById: true } },
-  student: { select: { id: true, firstName: true, lastName: true, email: true } }
+  student: { select: { id: true, firstName: true, lastName: true, email: true } },
+  updates: {
+    orderBy: { createdAt: 'desc' as const },
+    include: {
+      author: { select: { id: true, firstName: true, lastName: true, role: true } }
+    }
+  }
 } as const
 
 export default defineEventHandler(async (event) => {

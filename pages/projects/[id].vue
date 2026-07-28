@@ -1,11 +1,11 @@
 <template>
-  <div class="max-w-4xl mx-auto px-4 py-8 space-y-6">
-    <UButton variant="ghost" color="neutral" icon="i-lucide-arrow-left" to="/projects">
+  <div class="mx-auto max-w-4xl px-6 py-10 space-y-6">
+    <UButton variant="link" color="neutral" icon="i-lucide-arrow-left" to="/projects" class="-ml-2 px-2 text-[var(--ui-text-muted)]">
       Retour aux projets
     </UButton>
 
     <div v-if="status === 'pending'" class="flex justify-center py-12">
-      <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-primary-500" />
+      <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
     </div>
 
     <UAlert
@@ -17,52 +17,44 @@
     />
 
     <template v-else-if="project">
-      <UCard>
-        <template #header>
-          <div class="flex items-start justify-between gap-4">
-            <div>
-              <h1 class="text-2xl font-bold text-[var(--ui-text)]">{{ project.title }}</h1>
-              <UBadge
-                class="mt-1"
-                :color="project.internal ? 'primary' : 'neutral'"
-                variant="subtle"
-              >
-                {{ project.internal ? 'Interne' : 'Externe' }}
-              </UBadge>
-            </div>
-          </div>
+      <PageHeader :title="project.title">
+        <template #actions>
+          <UBadge color="neutral" variant="subtle" class="font-normal">
+            {{ project.internal ? 'Interne' : 'Externe' }}
+          </UBadge>
         </template>
+      </PageHeader>
 
-        <p v-if="project.description" class="text-[var(--ui-text-toned)] whitespace-pre-line">
-          {{ project.description }}
-        </p>
-        <p v-else class="text-[var(--ui-text-dimmed)] italic">Aucune description.</p>
-      </UCard>
+      <p v-if="project.description" class="text-[var(--ui-text-toned)] whitespace-pre-line -mt-1">
+        {{ project.description }}
+      </p>
+      <p v-else class="text-[var(--ui-text-dimmed)] -mt-1">Aucune description.</p>
 
-      <UCard>
-        <template #header>
-          <div class="flex items-center justify-between gap-4">
-            <div>
-              <h2 class="text-lg font-semibold text-[var(--ui-text)]">Missions</h2>
-              <p class="text-sm text-[var(--ui-text-muted)]">
-                {{ project.assignments.length }} mission{{ project.assignments.length > 1 ? 's' : '' }}
-              </p>
-            </div>
-            <UButton color="primary" icon="i-lucide-user-plus" @click="openAssign">
-              Assigner un learner
-            </UButton>
+      <div class="pt-2">
+        <div class="flex items-end justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-base font-semibold text-[var(--ui-text)]">Missions</h2>
+            <p class="text-sm text-[var(--ui-text-muted)] mt-0.5">
+              {{ project.assignments.length }} mission{{ project.assignments.length > 1 ? 's' : '' }}
+            </p>
           </div>
-        </template>
+          <UButton color="neutral" icon="i-lucide-plus" @click="openAssign">
+            Assigner un learner
+          </UButton>
+        </div>
 
-        <div v-if="project.assignments.length === 0" class="text-[var(--ui-text-muted)] text-sm py-4 text-center">
+        <div
+          v-if="project.assignments.length === 0"
+          class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-10 text-center"
+        >
           Aucune mission n'est encore attribuée pour ce projet.
         </div>
 
-        <ul v-else class="divide-y divide-gray-200">
+        <ul v-else class="space-y-3">
           <li
             v-for="assignment in project.assignments"
             :key="assignment.id"
-            class="py-4 flex flex-col gap-3"
+            class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-4 flex flex-col gap-3"
           >
             <div class="flex items-center justify-between gap-4 flex-wrap">
               <div>
@@ -71,10 +63,11 @@
                 </p>
                 <p class="text-sm text-[var(--ui-text-muted)]">{{ assignment.student.email }}</p>
               </div>
-              <div class="flex items-center gap-2">
+              <div class="flex items-center gap-1">
                 <UBadge
                   :color="projectStatusColor(assignment.status)"
                   variant="subtle"
+                  class="mr-1 font-normal"
                 >
                   {{ projectStatusLabel(assignment.status) }}
                 </UBadge>
@@ -88,7 +81,7 @@
                 />
                 <UButton
                   variant="ghost"
-                  color="error"
+                  color="neutral"
                   icon="i-lucide-trash-2"
                   size="sm"
                   :aria-label="`Retirer ${assignment.student.firstName}`"
@@ -97,22 +90,22 @@
               </div>
             </div>
 
-            <div v-if="assignment.tutorComment" class="bg-[var(--ui-bg-muted)] rounded-md p-3">
-              <p class="text-xs text-[var(--ui-text-muted)] uppercase tracking-wide">Commentaire tuteur</p>
+            <div v-if="assignment.tutorComment" class="rounded-md bg-[var(--ui-bg-muted)] p-3">
+              <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-1">Commentaire tuteur</p>
               <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
                 {{ assignment.tutorComment }}
               </p>
             </div>
 
-            <div v-if="assignment.studentComment" class="bg-primary-50 rounded-md p-3">
-              <p class="text-xs text-primary-700 uppercase tracking-wide">Note du learner</p>
-              <p class="text-sm text-[var(--ui-text-toned)] whitespace-pre-line">
-                {{ assignment.studentComment }}
+            <div v-if="assignment.updates.length" class="rounded-md bg-[var(--ui-bg-muted)] p-3">
+              <p class="text-xs font-medium text-[var(--ui-text-dimmed)] uppercase tracking-wide mb-3">
+                Journal des retours ({{ assignment.updates.length }})
               </p>
+              <UpdateTimeline :items="assignment.updates" />
             </div>
           </li>
         </ul>
-      </UCard>
+      </div>
     </template>
 
     <!-- Assigner -->
@@ -164,7 +157,7 @@
             <UButton color="neutral" variant="ghost" @click="assignOpen = false">
               Annuler
             </UButton>
-            <UButton type="submit" color="primary" :loading="assignPending">
+            <UButton type="submit" color="neutral" :loading="assignPending">
               Assigner
             </UButton>
           </div>
@@ -205,7 +198,7 @@
             <UButton color="neutral" variant="ghost" @click="editAssignOpen = false">
               Annuler
             </UButton>
-            <UButton type="submit" color="primary" :loading="editAssignPending">
+            <UButton type="submit" color="neutral" :loading="editAssignPending">
               Enregistrer
             </UButton>
           </div>
@@ -254,6 +247,14 @@ definePageMeta({
   requireRole: 'Tutor'
 })
 
+interface AssignmentUpdate {
+  id: string
+  body: string
+  status: ProjectStatus | null
+  createdAt: string
+  author: { id: string; firstName: string; lastName: string; role: string }
+}
+
 interface AssignmentWithStudent {
   id: string
   projectId: string
@@ -264,6 +265,7 @@ interface AssignmentWithStudent {
   startedAt: string | null
   updatedAt: string
   student: { id: string; firstName: string; lastName: string; email: string }
+  updates: AssignmentUpdate[]
 }
 
 interface ProjectDetail {
@@ -279,6 +281,8 @@ interface ProjectDetail {
 const route = useRoute()
 const toast = useToast()
 const { user } = useUserSession()
+// Forwarde les cookies de session lors du rendu serveur (sinon 401 sur les $fetch SSR)
+const requestFetch = useRequestFetch()
 
 const {
   data: project,
@@ -299,7 +303,7 @@ watch(
   () => user.value?.id,
   async (id) => {
     if (!id) return
-    learners.value = await $fetch<LearnerRef[]>(`/api/tutors/${id}/learners`)
+    learners.value = await requestFetch<LearnerRef[]>(`/api/tutors/${id}/learners`)
   },
   { immediate: true }
 )

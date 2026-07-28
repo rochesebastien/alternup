@@ -1,21 +1,15 @@
 <template>
-  <div class="max-w-6xl mx-auto px-4 py-8 space-y-6">
-    <div class="flex items-start justify-between gap-4 flex-wrap">
-      <div>
-        <h1 class="text-2xl font-bold text-[var(--ui-text)]">Calendrier</h1>
-        <p class="text-sm text-[var(--ui-text-muted)]">
-          {{ isTutor ? 'Sessions et rendez-vous avec vos learners.' : 'Vos cours et rendez-vous à venir.' }}
-        </p>
-      </div>
-      <UButton
-        v-if="isTutor"
-        color="primary"
-        icon="i-lucide-plus"
-        @click="openCreate"
-      >
-        Nouvel événement
-      </UButton>
-    </div>
+  <div class="mx-auto max-w-6xl px-6 py-10 space-y-6">
+    <PageHeader
+      title="Calendrier"
+      :subtitle="isTutor ? 'Sessions et rendez-vous avec vos learners.' : 'Vos cours et rendez-vous à venir.'"
+    >
+      <template v-if="isTutor" #actions>
+        <UButton color="neutral" icon="i-lucide-plus" @click="openCreate">
+          Nouvel événement
+        </UButton>
+      </template>
+    </PageHeader>
 
     <UAlert
       v-if="loadError"
@@ -25,16 +19,16 @@
       :description="loadError.message"
     />
 
-    <UCard>
+    <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-4">
       <ClientOnly>
         <FullCalendar v-if="calendarOptions" :options="calendarOptions" />
         <template #fallback>
           <div class="flex justify-center py-12">
-            <UIcon name="i-lucide-loader-2" class="animate-spin h-8 w-8 text-[var(--ui-primary)]" />
+            <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
           </div>
         </template>
       </ClientOnly>
-    </UCard>
+    </div>
 
     <!-- Détail / édition de note (session de cours) -->
     <UModal v-model:open="noteModalOpen" :title="noteModalTitle">
@@ -88,7 +82,7 @@
               <UButton color="neutral" variant="ghost" @click="noteModalOpen = false">
                 Fermer
               </UButton>
-              <UButton type="submit" color="primary" :loading="notePending">
+              <UButton type="submit" color="neutral" :loading="notePending">
                 Enregistrer
               </UButton>
             </div>
@@ -165,7 +159,7 @@
             <UButton color="neutral" variant="ghost" @click="createOpen = false">
               Annuler
             </UButton>
-            <UButton type="submit" color="primary" :loading="createPending">
+            <UButton type="submit" color="neutral" :loading="createPending">
               Créer
             </UButton>
           </div>
@@ -203,6 +197,8 @@ definePageMeta({
 const toast = useToast()
 const { user } = useUserSession()
 const isTutor = computed(() => user.value?.role === Role.Tutor)
+// Forwarde les cookies de session lors du rendu serveur (sinon 401 sur les $fetch SSR)
+const requestFetch = useRequestFetch()
 
 interface CourseNote extends NoteByAssignmentRef {
   assignment?: { course?: { id: string; title: string } }
@@ -226,7 +222,7 @@ watch(
   () => (isTutor.value ? user.value?.id : null),
   async (id) => {
     if (!id) return
-    learners.value = await $fetch<typeof learners.value>(
+    learners.value = await requestFetch<typeof learners.value>(
       `/api/tutors/${id}/learners`
     )
   },
@@ -441,13 +437,13 @@ function readErrorMessage(err: unknown): string | null {
   --fc-button-text-color: var(--ui-text);
   --fc-button-hover-bg-color: var(--ui-bg-accented);
   --fc-button-hover-border-color: var(--ui-border-accented);
-  --fc-button-active-bg-color: var(--ui-primary);
-  --fc-button-active-border-color: var(--ui-primary);
+  --fc-button-active-bg-color: var(--ui-bg-inverted);
+  --fc-button-active-border-color: var(--ui-bg-inverted);
 
-  /* Évènements (par défaut → primaire jaune avec texte noir) */
-  --fc-event-bg-color: var(--ui-primary);
-  --fc-event-border-color: var(--ui-primary);
-  --fc-event-text-color: #000;
+  /* Évènements → chips neutres foncés (style minimaliste) */
+  --fc-event-bg-color: var(--ui-bg-inverted);
+  --fc-event-border-color: var(--ui-bg-inverted);
+  --fc-event-text-color: var(--ui-text-inverted);
 }
 
 .fc .fc-toolbar-title {
@@ -456,20 +452,21 @@ function readErrorMessage(err: unknown): string | null {
 }
 
 .fc .fc-button {
-  font-weight: 600;
-  border-radius: 9999px;
-  padding: 0.45rem 0.95rem;
+  font-weight: 500;
+  border-radius: var(--ui-radius);
+  padding: 0.4rem 0.8rem;
+  font-size: 0.875rem;
   text-transform: none;
   box-shadow: none;
 }
 .fc .fc-button:focus,
 .fc .fc-button:focus-visible {
-  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ui-primary) 35%, transparent);
+  box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px color-mix(in oklab, var(--ui-text) 25%, transparent);
 }
-/* Le bouton actif (vue courante + Aujourd'hui) → jaune sur texte noir */
+/* Le bouton actif (vue courante + Aujourd'hui) → foncé sur texte inversé */
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
-  color: #000;
+  color: var(--ui-text-inverted);
 }
 
 /* Cellules / headers */

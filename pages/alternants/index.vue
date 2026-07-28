@@ -1,16 +1,15 @@
 <template>
-  <div class="max-w-5xl mx-auto px-4 py-8 space-y-6">
-    <div class="flex items-center justify-between gap-4">
-      <div>
-        <h1 class="text-2xl font-bold text-[var(--ui-text)]">Mes alternants &amp; stagiaires</h1>
-        <p class="text-sm text-[var(--ui-text-muted)]">
-          {{ learners.length }} {{ learners.length > 1 ? 'personnes rattachées' : 'personne rattachée' }}
-        </p>
-      </div>
-      <UButton color="primary" icon="i-lucide-user-plus" @click="openAdd">
-        Ajouter
-      </UButton>
-    </div>
+  <div class="mx-auto max-w-5xl px-6 py-10 space-y-6">
+    <PageHeader
+      title="Alternants & stagiaires"
+      :subtitle="`${learners.length} ${learners.length > 1 ? 'personnes rattachées' : 'personne rattachée'}`"
+    >
+      <template #actions>
+        <UButton color="neutral" icon="i-lucide-plus" @click="openAdd">
+          Ajouter
+        </UButton>
+      </template>
+    </PageHeader>
 
     <UAlert
       v-if="error"
@@ -20,7 +19,7 @@
       :description="errorDetail(error)"
     />
 
-    <UCard>
+    <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden">
       <UTable
         :columns="columns"
         :data="learners"
@@ -30,17 +29,14 @@
         <template #fullName-cell="{ row }">
           <NuxtLink
             :to="`/alternants/${row.original.id}`"
-            class="font-medium text-[var(--ui-text)] hover:text-[var(--ui-primary)]"
+            class="font-medium text-[var(--ui-text)] hover:underline underline-offset-4"
           >
             {{ row.original.firstName }} {{ row.original.lastName }}
           </NuxtLink>
         </template>
 
         <template #role-cell="{ row }">
-          <UBadge
-            :color="row.original.role === 'Alternant' ? 'primary' : 'info'"
-            variant="subtle"
-          >
+          <UBadge color="neutral" variant="subtle" class="font-normal">
             {{ row.original.role }}
           </UBadge>
         </template>
@@ -51,7 +47,7 @@
 
         <template #actions-cell="{ row }">
           <UButton
-            color="error"
+            color="neutral"
             variant="ghost"
             icon="i-lucide-trash-2"
             size="sm"
@@ -60,7 +56,7 @@
           />
         </template>
       </UTable>
-    </UCard>
+    </div>
 
     <UModal v-model:open="addOpen" title="Ajouter un alternant ou stagiaire">
       <template #body>
@@ -95,7 +91,7 @@
             <UButton color="neutral" variant="ghost" @click="addOpen = false">
               Annuler
             </UButton>
-            <UButton type="submit" color="primary" :loading="addPending">
+            <UButton type="submit" color="neutral" :loading="addPending">
               Ajouter
             </UButton>
           </div>

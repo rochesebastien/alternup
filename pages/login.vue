@@ -1,17 +1,26 @@
 <template>
-  <div class="min-h-[80vh] flex items-center justify-center px-4 py-12">
-    <UCard class="w-full max-w-md">
-      <div class="flex flex-col items-center text-center mb-6">
-        <span class="iconify i-lucide:log-in size-8 text-primary mb-2" aria-hidden="true" />
-        <h1 class="text-xl font-semibold">Connexion</h1>
-        <p class="text-sm text-muted mt-1">Accédez à votre espace Alternup.</p>
+  <div class="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-16">
+    <div class="w-full max-w-sm">
+      <div class="mb-8">
+        <h1 class="text-2xl font-semibold tracking-tight text-[var(--ui-text)]">Connexion</h1>
+        <p class="text-sm text-[var(--ui-text-muted)] mt-1.5">
+          Accédez à votre espace Alternup.
+        </p>
       </div>
+
+      <UAlert
+        v-if="serverError"
+        class="mb-5"
+        color="error"
+        variant="soft"
+        :title="serverError"
+      />
 
       <UForm
         :state="state"
         :schema="loginInputSchema"
         :validate-on="['blur', 'change']"
-        class="space-y-5"
+        class="space-y-4"
         @submit="onSubmit"
       >
         <UFormField label="Email" name="email" required>
@@ -20,6 +29,7 @@
             type="email"
             placeholder="vous@exemple.com"
             autocomplete="email"
+            size="lg"
             class="w-full"
           />
         </UFormField>
@@ -29,34 +39,29 @@
             v-model="state.password"
             type="password"
             autocomplete="current-password"
+            size="lg"
             class="w-full"
           />
         </UFormField>
 
         <UButton
           type="submit"
-          color="primary"
+          color="neutral"
           block
+          size="lg"
+          class="mt-2"
           :loading="pending"
           label="Se connecter"
         />
       </UForm>
 
-      <p class="text-sm text-center text-muted mt-4">
+      <p class="text-sm text-[var(--ui-text-muted)] mt-6">
         Pas encore de compte ?
-        <NuxtLink to="/register" class="text-primary-600 hover:underline">
+        <NuxtLink to="/register" class="font-medium text-[var(--ui-text)] underline underline-offset-4 hover:no-underline">
           S'inscrire
         </NuxtLink>
       </p>
-
-      <UAlert
-        v-if="serverError"
-        class="mt-4"
-        color="error"
-        variant="soft"
-        :title="serverError"
-      />
-    </UCard>
+    </div>
   </div>
 </template>
 

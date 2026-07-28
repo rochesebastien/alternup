@@ -15,7 +15,13 @@ export async function loadProjectVisibleTo(id: string, user: User) {
       ...projectIncludeOwner,
       assignments: {
         include: {
-          student: { select: { id: true, firstName: true, lastName: true, email: true } }
+          student: { select: { id: true, firstName: true, lastName: true, email: true } },
+          updates: {
+            orderBy: { createdAt: 'desc' },
+            include: {
+              author: { select: { id: true, firstName: true, lastName: true, role: true } }
+            }
+          }
         }
       }
     }

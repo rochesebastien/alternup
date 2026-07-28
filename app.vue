@@ -31,6 +31,12 @@
               </template>
               <template v-else>
                 <NuxtLink
+                  to="/dashboard"
+                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                >
+                  Tableau de bord
+                </NuxtLink>
+                <NuxtLink
                   v-if="isTutor"
                   to="/alternants"
                   class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
@@ -64,6 +70,15 @@
                 >
                   Calendrier
                 </NuxtLink>
+                <UDropdownMenu :items="suiviItems" :content="{ align: 'start' }">
+                  <button
+                    type="button"
+                    class="flex items-center gap-1 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                  >
+                    Suivi
+                    <UIcon name="i-lucide-chevron-down" class="size-4" />
+                  </button>
+                </UDropdownMenu>
               </template>
             </div>
           </div>
@@ -146,11 +161,19 @@
                 <NuxtLink to="/" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Tarifs</NuxtLink>
               </template>
               <template v-else>
+                <NuxtLink to="/dashboard" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Tableau de bord</NuxtLink>
                 <NuxtLink v-if="isTutor" to="/alternants" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes alternants</NuxtLink>
                 <NuxtLink v-if="isTutor" to="/projects" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes projets</NuxtLink>
                 <NuxtLink v-if="isLearner" to="/courses" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes cours</NuxtLink>
                 <NuxtLink v-if="isLearner" to="/missions" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes missions</NuxtLink>
                 <NuxtLink to="/calendar" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Calendrier</NuxtLink>
+                <NuxtLink to="/presences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Présences</NuxtLink>
+                <NuxtLink to="/rapports" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Rapports</NuxtLink>
+                <NuxtLink to="/annonces" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Annonces</NuxtLink>
+                <NuxtLink to="/bulletins" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Bulletins</NuxtLink>
+                <NuxtLink to="/competences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Compétences</NuxtLink>
+                <NuxtLink to="/visites" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Visites</NuxtLink>
+                <NuxtLink to="/messages" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Messages</NuxtLink>
               </template>
             </div>
           </div>
@@ -162,7 +185,8 @@
       </main>
 
       <!-- ============== FOOTER ============== -->
-      <footer class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16">
+      <!-- Footer marketing complet uniquement sur les pages publiques -->
+      <footer v-if="isMarketing" class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16">
         <div class="max-w-7xl mx-auto px-6 text-center">
           <NuxtLink to="/" class="inline-flex items-center gap-2" aria-label="alternup, accueil">
             <img
@@ -174,9 +198,16 @@
             >
           </NuxtLink>
           <p class="text-sm text-[#8a8a86] mt-6">
-            © 2026 Alternup — Le suivi des alternants et des stagiaires réinventé. Tous droits réservés.
+            © 2026 Alternup — Le suivi des alternants et des stagiaires réinventé.
           </p>
-          <p class="text-xs text-[#6b6b6a] mt-2">Version {{ appVersion }}</p>
+        </div>
+      </footer>
+
+      <!-- Footer minimal sur les pages applicatives -->
+      <footer v-else class="mt-auto border-t border-[var(--ui-border)]">
+        <div class="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between text-xs text-[var(--ui-text-dimmed)]">
+          <span>© 2026 Alternup</span>
+          <span>v{{ appVersion }}</span>
         </div>
       </footer>
     </div>
@@ -195,6 +226,17 @@ const isLearner = computed(
   () => user.value?.role === Role.Alternant || user.value?.role === Role.Stagiaire
 )
 
+// Modules de suivi regroupés dans un menu déroulant (nav desktop).
+const suiviItems = [[
+  { label: 'Présences', icon: 'i-lucide-clipboard-check', to: '/presences' },
+  { label: 'Rapports', icon: 'i-lucide-file-text', to: '/rapports' },
+  { label: 'Bulletins', icon: 'i-lucide-graduation-cap', to: '/bulletins' },
+  { label: 'Compétences', icon: 'i-lucide-target', to: '/competences' },
+  { label: 'Visites', icon: 'i-lucide-map-pin', to: '/visites' },
+  { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
+  { label: 'Messages', icon: 'i-lucide-mail', to: '/messages' }
+]]
+
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
 const logoSrc = computed(() =>
@@ -210,6 +252,9 @@ const mobileOpen = ref(false)
 
 const route = useRoute()
 watch(() => route.fullPath, () => { mobileOpen.value = false })
+
+// Footer marketing complet uniquement sur les pages publiques (landing, features, tarifs)
+const isMarketing = computed(() => ['/', '/features', '/pricing'].includes(route.path))
 
 async function onLogout() {
   loggingOut.value = true
