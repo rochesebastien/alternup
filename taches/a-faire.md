@@ -660,7 +660,7 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
 
 ### P0 — à implémenter maintenant (workflow d'agents Opus)
 
-- [ ] **F1 — Alertes de décrochage (early warning)** : score de risque par alternant calculé
+- [x] **F1 — Alertes de décrochage (early warning)** : score de risque par alternant calculé
   côté serveur (assiduité 30 j, retards, rapports en retard/à revoir, tendance des notes,
   inactivité), niveaux `ok / vigilance / alerte`, badge + section dédiée sur le dashboard
   tuteur et dans la liste des alternants. Différenciant fort (Edusign, Loop Formations).
