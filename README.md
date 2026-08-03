@@ -2,18 +2,22 @@
 
 ![Image Description](docs/readme_cover.jpg)
 
-[![CI](https://github.com/rochesebastien/alternup/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/rochesebastien/alternup/actions/workflows/ci.yml)
+<center>
 
-Solution **Nuxt 3** permettant aux tuteurs de suivre et gérer leurs étudiants en alternance (et stagiaires). Application monolithique avec **PostgreSQL** (Prisma) côté données, **nuxt-auth-utils** pour la session et **Tailwind CSS** pour l'UI. Déploiement cible : **Dokploy**.
-
-## Stack
-
+[![CI](https://github.com/rochesebastien/alternup/actions/workflows/ci.yml/badge.svg?branch=dev)](https://github.com/rochesebastien/alternup/actions/workflows/ci.yml)  
 [![Nuxt](https://img.shields.io/badge/Nuxt-00DC82?style=for-the-badge&logo=nuxtdotjs&logoColor=white)](https://nuxt.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white)](https://tailwindcss.com/)
 [![Prisma](https://img.shields.io/badge/Prisma-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-316192?style=for-the-badge&logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
+
+</center>
+
+
+
+Solution **Nuxt 3** permettant aux tuteurs de suivre et gérer leurs étudiants en alternance (et stagiaires). Application monolithique avec **PostgreSQL** (Prisma) côté données, **nuxt-auth-utils** pour la session et **Tailwind CSS** pour l'UI. Déploiement cible : **Dokploy**.
+
 
 ## Structure du projet
 
