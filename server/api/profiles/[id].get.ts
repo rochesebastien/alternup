@@ -1,27 +1,15 @@
-import { prisma } from '~/server/utils/prisma'
+import { z } from 'zod'
+import { requireAuth } from '~/server/utils/require-role'
+import { loadProfileVisibleTo } from '~/server/utils/profiles'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Profile ID is required' })
+  const user = await requireAuth(event)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant de profil invalide.' })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true
-    }
-  })
-
-  if (!user) {
-    throw createError({ statusCode: 404, statusMessage: 'Profile not found' })
-  }
-
-  return user
+  // Soi-même, ou un membre du réseau du tuteur connecté. 404 sinon.
+  return loadProfileVisibleTo(id.data, user)
 })

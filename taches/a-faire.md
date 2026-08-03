@@ -649,3 +649,105 @@ Les 4 composants + la page dashboard ont été générés en parallèle par un w
 
 ### Reste (lot suivant)
 - Lot 4 : Casier de documents (convention, attestations) — nécessite du stockage de fichiers (à isoler).
+
+---
+
+## 2026-07-28 — Roadmap « game breakers » (issue de l'étude de marché)
+
+> Étude de marché complète : `taches/etude-marche.md`. Concurrents analysés : Studea, Ypareo,
+> Edusign/Sowesign, Bloom Alternance, Loop Formations, SIRH (SIGMA-RH, Kammi…).
+> Branche `claude/market-research-game-breaker-features-20u03q`.
+
+### P0 — à implémenter maintenant (workflow d'agents Opus)
+
+- [x] **F1 — Alertes de décrochage (early warning)** : score de risque par alternant calculé
+  côté serveur (assiduité 30 j, retards, rapports en retard/à revoir, tendance des notes,
+  inactivité), niveaux `ok / vigilance / alerte`, badge + section dédiée sur le dashboard
+  tuteur et dans la liste des alternants. Différenciant fort (Edusign, Loop Formations).
+- [x] **F2 — Centre de notifications & relances automatiques** : table `Notification`,
+  cloche dans la nav (compteur non-lus), page `/notifications` ; notifications émises par les
+  événements existants (annonce publiée, rapport soumis/validé/à revoir, bulletin publié,
+  visite planifiée) + relances d'échéances calculées (rapport en retard, visite à venir).
+  Gain de temps n°1 cité chez tous les concurrents.
+- [x] **F3 — Vue 360° de l'alternant** : enrichir `/alternants/[id]` en fiche complète —
+  KPIs, score de risque, timeline unifiée (notes, retours missions, rapports, visites,
+  présences, bulletins, évaluations de compétences), accès rapides. L'écran « préparation
+  d'entretien » plébiscité chez Studea.
+- [x] **F4 — Signature tripartite + export PDF** : signatures horodatées (tuteur + alternant)
+  sur bulletins et rapports d'étape (table `DocumentSignature`), affichage des signatures,
+  vue imprimable (CSS print) du bulletin et du « livret » de l'alternant → export PDF via
+  impression navigateur. Exigence OPCO/financeurs, standard Studea/Ypareo.
+  - Fiche de bulletin dédiée `/bulletins/carte/[id]` (accessible aux deux parties) :
+    `/bulletins/[id]` est la page de PÉRIODE, réservée au tuteur et listant N alternants —
+    elle ne pouvait porter ni la signature de l'étudiant ni un PDF « un bulletin ».
+  - Livret imprimable `/alternants/[id]/livret` alimenté par un endpoint d'agrégation dédié
+    (`/api/users/[id]/livret`) : aucune route de liste n'exposait au tuteur les bulletins et
+    rapports d'UN étudiant, et les signatures sont jointes en lot (2 requêtes).
+  - `pages/alternants/[id].vue` déplacée en `pages/alternants/[id]/index.vue` pour que le
+    livret soit une route sœur et non une route enfant (Nuxt exigerait sinon un `<NuxtPage />`).
+- [x] **F5 — Durcissement des routes héritées** : `profiles/*`, `alternants/*`, `courses/*`,
+  `course-assignments/*` passent sous `requireRole` + contrôles d'ownership/réseau
+  (pré-requis de crédibilité avant toute mise en avant « conformité »).
+  - Les 17 routes ne passaient que par l'`auth-guard` global : `POST /api/profiles` créait un
+    compte avec un rôle arbitraire (donc `Tutor`), `GET /api/profiles` et `GET /api/alternants`
+    listaient toute la base, `courses/*` et `course-assignments/*` étaient un CRUD ouvert avec
+    `createdById` accepté depuis le body.
+  - Recensement préalable des consommateurs : **aucune page/composant/composable n'appelle ces
+    routes**. La liste des alternants passe par `GET /api/tutors/[id]/learners` et l'ajout par
+    e-mail par `POST /api/tutors/[id]/learners` (inchangés) ; `pages/courses` et `pages/calendar`
+    ne consomment que `/api/course-notes` et `/api/users/[id]/calendar`. Aucun usage à préserver,
+    donc aucune régression fonctionnelle possible ; les routes sont conservées (domaine vivant :
+    `CourseAssignment` porte les sessions du calendrier, les notes de cours et les bulletins).
+  - Règles appliquées : `profiles` GET/POST/DELETE → `Tutor` (liste bornée au réseau + soi-même,
+    création limitée à `Alternant|Stagiaire` avec rattachement automatique au réseau du créateur
+    dans une transaction, suppression réservée à un learner du réseau) ; `profiles` GET/PUT par id
+    → soi-même ou tuteur du profil, sans changement de rôle possible ; `alternants/*` → `Tutor`
+    filtré sur son réseau ; `courses`/`course-assignments` → écriture `Tutor` + ownership du cours
+    (`createdById` forcé depuis la session), lecture tuteur = ses cours / learner = ses affectations.
+  - Schémas Zod déplacés dans `shared/utils/profiles.ts` et `shared/utils/courses.ts` (littéraux de
+    chaîne, aucun enum Prisma côté partagé), helpers de visibilité dans `server/utils/profiles.ts`
+    et `server/utils/courses.ts` — 404 systématique, jamais 403, pour ne pas divulguer l'existence.
+
+### Vérifications (relecture transverse F1→F5)
+
+- `npx prisma generate` ✅ — Prisma Client v7.8.0.
+- `npx vue-tsc --noEmit` ✅ — aucune erreur.
+- `npm test` ✅ — 15 fichiers, 207 tests (dont 7 nouveaux modules purs : `risk`,
+  `notifications`, `overview`, `livret`, `signatures`, `profiles`, `courses`).
+- `npm run build` ✅ — build Nitro complet.
+- `npm run lint` ✅ — après correction d'une erreur `vue/no-deprecated-filter`
+  **préexistante** dans `pages/competences/index.vue` : l'union TS
+  `CompetencyLevel | undefined` écrite dans le template était lue par ESLint comme
+  un filtre Vue 2. Cast extrait dans une fonction `cellLevel()` du `<script setup>`.
+
+Contrôles de conformité passés en revue sur le diff complet `origin/main...HEAD` :
+
+- **Leçon 6** (enums Prisma) : les 7 nouveaux modules `shared/**` n'importent que `zod`
+  au runtime ; `SignatureDocumentType` et `CompetencyLevel` y sont en `import type`.
+  Aucun nouveau composant n'importe de valeur d'enum. *(Reste connu et préexistant,
+  hors périmètre : 11 pages importent `Role`/`ProjectStatus` en valeur — build OK.)*
+- **Leçon 4** (`$fetch` SSR) : les 5 nouvelles pages chargent via `useFetch` ; les
+  `$fetch` nus sont tous dans des gestionnaires d'événements (clic), jamais au setup.
+- **Leçon 3** : aucun `z.uuid()`, `z.guid()` partout.
+- **Routes API** : les 35 routes touchées passent toutes par `requireAuth`/`requireRole`,
+  puis par un helper de visibilité renvoyant 404. Seul `signDocument()` renvoie 403/409,
+  volontairement : la visibilité y est déjà tranchée en amont, l'existence n'est pas divulguée.
+- **Migrations** : `prisma migrate diff --from-empty --to-schema` (Prisma 7 a renommé
+  `--to-schema-datamodel`) confirme que `notifications`, `document_signatures` et l'enum
+  `SignatureDocumentType` sont générés à l'identique des deux fichiers de migration écrits
+  à la main (colonnes, index, FK `ON DELETE CASCADE`).
+- **Nav** : `NotificationBell` est monté dans la barre d'actions (visible aussi en mobile),
+  ce qui alimente `useNotificationCountState()` et donc le badge du menu mobile — une seule
+  requête. Le lien `/notifications` du menu mobile est bien dans la branche « connecté »,
+  tous rôles confondus. `print:hidden` sur nav/footers pour l'export PDF.
+- **UI** : aucun texte anglais résiduel dans le diff `pages/` + `components/`.
+- **Route déplacée** : `pages/alternants/[id].vue` → `[id]/index.vue`, aucune référence
+  périmée (le `server/api/alternants/[id].get.ts` restant est une route API, sans rapport).
+
+### P1 — backlog (features suivantes)
+
+- [ ] **Questionnaires / campagnes d'évaluation personnalisables** signés par le trinôme (cœur de Studea).
+- [ ] **Émargement par QR code / code de session** (preuve d'assiduité conforme financeurs).
+- [ ] **Rôle École / organisation & pilotage par promotion** (espace tripartite complet — gros chantier de schéma).
+- [ ] **Casier de documents** (Lot 4 existant — stockage fichiers).
+- [ ] **Notifications email** (relances hors connexion) — nécessite un SMTP en prod.

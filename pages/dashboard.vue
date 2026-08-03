@@ -75,9 +75,26 @@ interface LearnerSummary {
 
 type DashboardSummary = TutorSummary | LearnerSummary
 
+interface RiskEntry {
+  student: { id: string; firstName: string; lastName: string }
+  score: number
+  level: 'ok' | 'vigilance' | 'alerte'
+  reasons: string[]
+}
+
 const { data: summary } = await useFetch<DashboardSummary>('/api/dashboard/summary')
 
 const isTutor = computed<boolean>(() => summary.value?.role === 'Tutor')
+
+// Alertes de décrochage — réservé au tuteur (la route renvoie 403 sinon).
+const { data: riskEntries } = await useFetch<RiskEntry[]>('/api/dashboard/risk', {
+  default: () => [],
+  immediate: isTutor.value,
+})
+
+const atRisk = computed<RiskEntry[]>(() =>
+  (riskEntries.value ?? []).filter((entry) => entry.level !== 'ok'),
+)
 
 const subtitle = computed<string>(() =>
   isTutor.value
@@ -181,6 +198,60 @@ function fullName(person: Person): string {
 
     <!-- TUTEUR -->
     <template v-if="tutorSummary">
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <h2 class="text-sm font-semibold text-[var(--ui-text)]">
+            Alternants à suivre
+          </h2>
+          <span class="text-xs text-[var(--ui-text-muted)]">
+            Signaux de décrochage sur 30 jours
+          </span>
+        </div>
+
+        <ul
+          v-if="atRisk.length"
+          class="divide-y divide-[var(--ui-border)]"
+        >
+          <li
+            v-for="entry in atRisk"
+            :key="entry.student.id"
+            class="py-3 first:pt-0 last:pb-0"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <NuxtLink
+                :to="`/alternants/${entry.student.id}`"
+                class="font-medium text-[var(--ui-text)] hover:underline underline-offset-4"
+              >
+                {{ fullName(entry.student) }}
+              </NuxtLink>
+              <RiskBadge
+                :level="entry.level"
+                :score="entry.score"
+              />
+            </div>
+            <ul class="mt-2 space-y-1">
+              <li
+                v-for="(reason, index) in entry.reasons"
+                :key="index"
+                class="flex gap-2 text-sm text-[var(--ui-text-muted)]"
+              >
+                <UIcon
+                  name="i-lucide-dot"
+                  class="mt-0.5 shrink-0 size-4"
+                />
+                <span>{{ reason }}</span>
+              </li>
+            </ul>
+          </li>
+        </ul>
+        <div
+          v-else
+          class="rounded-md border border-dashed border-[var(--ui-border)] p-6 text-center text-sm text-[var(--ui-text-muted)]"
+        >
+          Aucun signal de décrochage : tout votre réseau est sur les rails.
+        </div>
+      </div>
+
       <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5">
         <h2 class="text-sm font-semibold text-[var(--ui-text)] mb-4">
           Derniers retours

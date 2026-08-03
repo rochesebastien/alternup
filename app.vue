@@ -3,7 +3,7 @@
     <div class="min-h-screen flex flex-col bg-[var(--ui-bg)] text-[var(--ui-text)]">
       <!-- ============== NAV (Linear-style) ============== -->
       <nav
-        class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/85 backdrop-blur"
+        class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/85 backdrop-blur print:hidden"
         aria-label="Principal"
       >
         <div class="mx-auto max-w-7xl h-full px-6 flex items-center justify-between gap-6">
@@ -95,6 +95,7 @@
             />
 
             <template v-if="loggedIn && user">
+              <NotificationBell />
               <span class="hidden lg:inline text-sm text-[var(--ui-text-muted)] mr-1">
                 {{ user.firstName }} {{ user.lastName }}
               </span>
@@ -174,19 +175,28 @@
                 <NuxtLink to="/competences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Compétences</NuxtLink>
                 <NuxtLink to="/visites" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Visites</NuxtLink>
                 <NuxtLink to="/messages" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Messages</NuxtLink>
+                <NuxtLink to="/notifications" class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">
+                  Notifications
+                  <span
+                    v-if="notificationCount > 0"
+                    class="min-w-4 h-4 px-1 rounded-full bg-[var(--ui-error)] text-white text-[10px] font-semibold leading-4 text-center"
+                  >
+                    {{ notificationCount > 99 ? '99+' : notificationCount }}
+                  </span>
+                </NuxtLink>
               </template>
             </div>
           </div>
         </Transition>
       </nav>
 
-      <main class="flex-grow pt-14">
+      <main class="flex-grow pt-14 print:pt-0">
         <NuxtPage />
       </main>
 
       <!-- ============== FOOTER ============== -->
       <!-- Footer marketing complet uniquement sur les pages publiques -->
-      <footer v-if="isMarketing" class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16">
+      <footer v-if="isMarketing" class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16 print:hidden">
         <div class="max-w-7xl mx-auto px-6 text-center">
           <NuxtLink to="/" class="inline-flex items-center gap-2" aria-label="alternup, accueil">
             <img
@@ -204,7 +214,7 @@
       </footer>
 
       <!-- Footer minimal sur les pages applicatives -->
-      <footer v-else class="mt-auto border-t border-[var(--ui-border)]">
+      <footer v-else class="mt-auto border-t border-[var(--ui-border)] print:hidden">
         <div class="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between text-xs text-[var(--ui-text-dimmed)]">
           <span>© 2026 Alternup</span>
           <span>v{{ appVersion }}</span>
@@ -236,6 +246,10 @@ const suiviItems = [[
   { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
   { label: 'Messages', icon: 'i-lucide-mail', to: '/messages' }
 ]]
+
+// Compteur du centre de notifications, alimenté par <NotificationBell /> (nav
+// desktop) et réutilisé tel quel dans le menu mobile — aucune requête en double.
+const notificationCount = useNotificationCountState()
 
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')

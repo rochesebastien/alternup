@@ -172,7 +172,12 @@ const learnerItems = computed<Array<{ label: string; value: string }>>(() =>
   }))
 )
 
-const selectedId = ref<string | undefined>(undefined)
+// Pré-sélection possible depuis la fiche 360° d'un alternant :
+// /competences?student=<id>.
+const route = useRoute()
+const selectedId = ref<string | undefined>(
+  typeof route.query.student === 'string' ? route.query.student : undefined
+)
 
 const {
   data: evalMap,
@@ -182,7 +187,7 @@ const {
   () => (selectedId.value ? `/api/users/${selectedId.value}/competencies` : ''),
   {
     default: emptyMap,
-    immediate: false
+    immediate: isTutor.value && !!selectedId.value
   }
 )
 
@@ -191,6 +196,15 @@ watch(selectedId, (id) => {
 })
 
 const assessPending = reactive<Record<string, boolean>>({})
+
+/**
+ * Niveau d'une cellule au format attendu par `USelect` (`undefined` = non évalué).
+ * Extrait du template à dessein : l'union TS `CompetencyLevel | undefined` y était
+ * lue par ESLint comme un filtre Vue 2 (`vue/no-deprecated-filter`).
+ */
+function cellLevel(level: string | null): CompetencyLevel | undefined {
+  return (level ?? undefined) as CompetencyLevel | undefined
+}
 
 async function assess(competencyId: string, level: CompetencyLevel) {
   if (!selectedId.value) return
@@ -419,7 +433,7 @@ async function assess(competencyId: string, level: CompetencyLevel) {
                 <USelect
                   :items="COMPETENCY_LEVEL_OPTIONS"
                   value-key="value"
-                  :model-value="(c.level ?? undefined) as CompetencyLevel | undefined"
+                  :model-value="cellLevel(c.level)"
                   :loading="assessPending[c.id]"
                   placeholder="Niveau…"
                   class="w-44"

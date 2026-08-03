@@ -41,6 +41,15 @@
           </UBadge>
         </template>
 
+        <template #risk-cell="{ row }">
+          <RiskBadge
+            v-if="riskOf(row.original.id)"
+            :level="riskOf(row.original.id)!.level"
+            :score="riskOf(row.original.id)!.score"
+          />
+          <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
+        </template>
+
         <template #addedAt-cell="{ row }">
           <span class="text-sm text-[var(--ui-text-muted)]">{{ formatDate(row.original.addedAt) }}</span>
         </template>
@@ -165,10 +174,31 @@ const {
 
 const learners = computed(() => data.value ?? [])
 
+interface RiskEntry {
+  student: { id: string; firstName: string; lastName: string }
+  score: number
+  level: 'ok' | 'vigilance' | 'alerte'
+  reasons: string[]
+}
+
+const { data: riskData, refresh: refreshRisk } = await useFetch<RiskEntry[]>(
+  '/api/dashboard/risk',
+  { default: () => [] }
+)
+
+const riskByStudent = computed(
+  () => new Map((riskData.value ?? []).map((entry) => [entry.student.id, entry]))
+)
+
+function riskOf(studentId: string): RiskEntry | undefined {
+  return riskByStudent.value.get(studentId)
+}
+
 const columns: TableColumn<Learner>[] = [
   { accessorKey: 'fullName', header: 'Nom' },
   { accessorKey: 'email', header: 'Email' },
   { accessorKey: 'role', header: 'Rôle' },
+  { accessorKey: 'risk', header: 'Risque' },
   { accessorKey: 'addedAt', header: 'Ajouté le' },
   { accessorKey: 'actions', header: '' }
 ]
@@ -214,7 +244,7 @@ async function onAddSubmit() {
       body: { email: addState.email }
     })
     addOpen.value = false
-    await refresh()
+    await Promise.all([refresh(), refreshRisk()])
     toast.add({
       title: 'Learner ajouté',
       description: `${addState.email} est désormais rattaché à votre réseau.`,
@@ -249,7 +279,7 @@ async function confirmRemove() {
       { method: 'DELETE' }
     )
     removeOpen.value = false
-    await refresh()
+    await Promise.all([refresh(), refreshRisk()])
     toast.add({
       title: 'Learner retiré',
       description: `${target.firstName} ${target.lastName} a été retiré de votre réseau.`,

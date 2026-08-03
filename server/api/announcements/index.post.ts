@@ -2,6 +2,7 @@ import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { requireRole } from '~/server/utils/require-role'
 import { learnerIdsOf } from '~/server/utils/network'
+import { excerpt, notifyUsers } from '~/server/utils/notifications'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
 import { announcementCreateSchema } from '~/shared/utils/announcements'
 
@@ -28,7 +29,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return prisma.announcement.create({
+  const announcement = await prisma.announcement.create({
     data: {
       authorId: user.id,
       title,
@@ -46,4 +47,13 @@ export default defineEventHandler(async (event) => {
       }
     }
   })
+
+  await notifyUsers(recipientIds, {
+    type: 'annonce',
+    title: `Nouvelle annonce : ${title}`,
+    body: excerpt(body),
+    link: '/annonces'
+  })
+
+  return announcement
 })

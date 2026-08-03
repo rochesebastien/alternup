@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { requireAuth } from '~/server/utils/require-role'
 import { loadReportVisibleTo } from '~/server/utils/reports'
+import { signableReportOf, signatureBlockOf } from '~/server/utils/signatures'
 
 export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
@@ -10,5 +11,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Identifiant invalide.' })
   }
 
-  return loadReportVisibleTo(idp.data, user)
+  const report = await loadReportVisibleTo(idp.data, user)
+  const signatures = await signatureBlockOf(signableReportOf(report))
+
+  return { ...report, signatures }
 })

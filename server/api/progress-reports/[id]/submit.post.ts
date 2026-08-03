@@ -2,6 +2,7 @@ import { z } from 'zod'
 import { prisma } from '~/server/utils/prisma'
 import { requireAuth } from '~/server/utils/require-role'
 import { loadReportVisibleTo } from '~/server/utils/reports'
+import { notifyUser } from '~/server/utils/notifications'
 import { canTransition } from '~/shared/utils/progress-reports'
 
 export default defineEventHandler(async (event) => {
@@ -23,8 +24,17 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return prisma.progressReport.update({
+  const updated = await prisma.progressReport.update({
     where: { id: report.id },
     data: { status: 'soumis', submittedAt: new Date() }
   })
+
+  await notifyUser(report.tutorId, {
+    type: 'rapport_soumis',
+    title: `Rapport à relire : ${report.title}`,
+    body: `${report.student.firstName} ${report.student.lastName} a soumis son rapport d'étape.`,
+    link: `/rapports/${report.id}`
+  })
+
+  return updated
 })

@@ -1,43 +1,44 @@
 import { z } from 'zod'
-import { Prisma, Role } from '@prisma/client'
+import { Prisma } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
-
-const bodySchema = z.object({
-  email: z.string().email().optional(),
-  firstName: z.string().min(1).optional(),
-  lastName: z.string().min(1).optional(),
-  role: z.nativeEnum(Role).optional()
-})
+import { requireAuth } from '~/server/utils/require-role'
+import { loadProfileVisibleTo, profileSelect } from '~/server/utils/profiles'
+import { formatZodIssues } from '~/shared/utils/auth-credentials'
+import { profileUpdateSchema } from '~/shared/utils/profiles'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Profile ID is required' })
+  const user = await requireAuth(event)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant de profil invalide.' })
   }
 
-  const parsed = bodySchema.safeParse(await readBody(event))
+  // Soi-même, ou un membre du réseau du tuteur connecté. 404 sinon.
+  await loadProfileVisibleTo(id.data, user)
+
+  const parsed = profileUpdateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
-    throw createError({ statusCode: 400, statusMessage: parsed.error.message })
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Données de profil invalides.',
+      data: { issues: formatZodIssues(parsed.error) }
+    })
   }
 
   try {
+    // Le rôle n'est pas modifiable : il est absent du schéma de mise à jour.
     return await prisma.user.update({
-      where: { id },
+      where: { id: id.data },
       data: parsed.data,
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        createdAt: true,
-        updatedAt: true
-      }
+      select: profileSelect
     })
   } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError) {
-      if (err.code === 'P2025') throw createError({ statusCode: 404, statusMessage: 'Profile not found' })
-      if (err.code === 'P2002') throw createError({ statusCode: 409, statusMessage: 'Email already in use' })
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Cette adresse e-mail est déjà utilisée.'
+      })
     }
     throw err
   }

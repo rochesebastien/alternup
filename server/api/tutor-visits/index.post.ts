@@ -2,6 +2,7 @@ import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { requireRole } from '~/server/utils/require-role'
 import { learnerIdsOf } from '~/server/utils/network'
+import { notifyUser } from '~/server/utils/notifications'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
 import { visitCreateSchema } from '~/shared/utils/tutor-visits'
 
@@ -27,7 +28,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return prisma.tutorVisit.create({
+  const visit = await prisma.tutorVisit.create({
     data: {
       tutorId: user.id,
       studentId,
@@ -36,4 +37,15 @@ export default defineEventHandler(async (event) => {
       location: location ?? null
     }
   })
+
+  await notifyUser(studentId, {
+    type: 'visite_planifiee',
+    title: 'Nouvelle visite planifiée',
+    body: `${user.firstName} ${user.lastName} a planifié une visite${
+      location ? ` — ${location}` : ''
+    }.`,
+    link: '/visites'
+  })
+
+  return visit
 })

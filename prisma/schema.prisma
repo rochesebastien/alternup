@@ -72,6 +72,12 @@ model User {
   conversationsAsStudent Conversation[] @relation("ConvStudent")
   messagesAuthored       Message[]      @relation("MessageAuthor")
 
+  // Relations: centre de notifications
+  notifications Notification[] @relation("UserNotifications")
+
+  // Relations: signatures de documents (bulletins, rapports)
+  documentSignatures DocumentSignature[] @relation("UserSignatures")
+
   @@index([role])
   @@map("users")
 }
@@ -441,4 +447,58 @@ model Message {
 
   @@index([conversationId, createdAt])
   @@map("messages")
+}
+
+// ─────────────────────── Centre de notifications ───────────────────────
+
+// H. Notifications — un événement adressé à un utilisateur (annonce publiée,
+// rapport soumis/relu, bulletin publié, visite planifiée, message reçu).
+// `type` reste une String libre : les valeurs sont typées côté application
+// (`shared/utils/notifications.ts`), ce qui évite une migration d'enum à chaque
+// nouvel événement. Les RELANCES d'échéances ne sont pas stockées ici : elles
+// sont recalculées à la volée à chaque lecture.
+model Notification {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  type      String
+  title     String
+  body      String?
+  link      String?
+  readAt    DateTime? @map("read_at") @db.Timestamptz
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  user User @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@map("notifications")
+}
+
+// ─────────────────────── Signature tripartite ───────────────────────
+
+/** Nature du document signé. Chaque valeur pointe vers une table distincte. */
+enum SignatureDocumentType {
+  bulletin // -> ReportCard
+  rapport // -> ProgressReport
+}
+
+// I. Signatures horodatées — exigence OPCO/financeurs. Une ligne = une partie
+// (tuteur OU étudiant) ayant signé un document. La relation vers le document
+// est POLYMORPHE (`documentType` + `documentId`) : pas de FK, la cohérence est
+// garantie côté application par `server/utils/signatures.ts`, qui recharge le
+// document via ses helpers de visibilité avant toute écriture. Le couple
+// (type, document, signataire) est unique : signer est idempotent, et une
+// signature n'est jamais rétractable (append-only, `signedAt` fait foi).
+model DocumentSignature {
+  id           String                @id @default(uuid()) @db.Uuid
+  documentType SignatureDocumentType @map("document_type")
+  documentId   String                @map("document_id") @db.Uuid
+  userId       String                @map("user_id") @db.Uuid
+  signedAt     DateTime              @default(now()) @map("signed_at") @db.Timestamptz
+
+  user User @relation("UserSignatures", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentType, documentId, userId])
+  @@index([documentType, documentId])
+  @@map("document_signatures")
 }

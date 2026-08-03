@@ -236,13 +236,24 @@ async function onCreateSubmit(
         <div
           v-for="card in cards"
           :key="card.id"
-          class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5"
+          class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 space-y-4"
         >
           <ReportCardView
             :snapshot="card.snapshot"
             :general-comment="card.generalComment"
             :period-label="card.period.label"
           />
+
+          <div class="flex justify-end">
+            <UButton
+              color="neutral"
+              variant="outline"
+              icon="i-lucide-pen-line"
+              :to="`/bulletins/carte/${card.id}`"
+            >
+              Consulter et signer
+            </UButton>
+          </div>
         </div>
       </div>
     </template>

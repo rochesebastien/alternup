@@ -3,6 +3,7 @@ import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { requireRole } from '~/server/utils/require-role'
 import { loadReportVisibleTo } from '~/server/utils/reports'
+import { excerpt, notifyUser } from '~/server/utils/notifications'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
 import { reportReviewSchema, canTransition } from '~/shared/utils/progress-reports'
 
@@ -36,7 +37,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  return prisma.progressReport.update({
+  const updated = await prisma.progressReport.update({
     where: { id: report.id },
     data: {
       status: decision,
@@ -44,4 +45,20 @@ export default defineEventHandler(async (event) => {
       reviewedAt: new Date()
     }
   })
+
+  const validated = decision === 'valide'
+  await notifyUser(report.studentId, {
+    type: validated ? 'rapport_valide' : 'rapport_a_revoir',
+    title: validated
+      ? `Rapport validé : ${report.title}`
+      : `Rapport à revoir : ${report.title}`,
+    body: feedback
+      ? excerpt(feedback)
+      : validated
+        ? `${report.tutor.firstName} ${report.tutor.lastName} a validé votre rapport d'étape.`
+        : `${report.tutor.firstName} ${report.tutor.lastName} vous demande de revoir votre rapport d'étape.`,
+    link: `/rapports/${report.id}`
+  })
+
+  return updated
 })

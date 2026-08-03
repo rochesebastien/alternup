@@ -1,28 +1,16 @@
+import { z } from 'zod'
 import { Role } from '@prisma/client'
-import { prisma } from '~/server/utils/prisma'
+import { requireRole } from '~/server/utils/require-role'
+import { loadNetworkLearner } from '~/server/utils/profiles'
 
 export default defineEventHandler(async (event) => {
-  const id = getRouterParam(event, 'id')
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: 'Alternant ID is required' })
+  const tutor = await requireRole(event, Role.Tutor)
+
+  const id = z.guid().safeParse(getRouterParam(event, 'id'))
+  if (!id.success) {
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant invalide.' })
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      createdAt: true,
-      updatedAt: true
-    }
-  })
-
-  if (!user || (user.role !== Role.Alternant && user.role !== Role.Stagiaire)) {
-    throw createError({ statusCode: 404, statusMessage: 'Alternant not found' })
-  }
-
-  return user
+  // Alternant/stagiaire du réseau du tuteur uniquement. 404 sinon.
+  return loadNetworkLearner(tutor, id.data)
 })
