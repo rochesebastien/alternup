@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { Role } from '@prisma/client'
-import type { VisitStatus } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
+import type { VisitStatus } from '~/shared/utils/enums'
 import {
   visitCreateSchema,
   visitModeLabel,

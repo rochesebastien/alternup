@@ -33,13 +33,13 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
 })
 
 function formatDate(value: string | null): string {
-  if (!value) return '—'
+  if (!value) return '-'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
+  return Number.isNaN(date.getTime()) ? '-' : dateFormatter.format(date)
 }
 
 function formatRange(start: string, end: string): string {
-  return `${formatDate(start)} — ${formatDate(end)}`
+  return `du ${formatDate(start)} au ${formatDate(end)}`
 }
 
 /* --- Export PDF --- */
@@ -82,7 +82,7 @@ function onPrint(): void {
       </div>
 
       <PageHeader
-        :title="`Livret — ${studentName}`"
+        :title="`Livret de ${studentName}`"
         subtitle="Bulletins, rapports validés, compétences, visites et assiduité."
       >
         <template #actions>
@@ -165,7 +165,7 @@ function onPrint(): void {
           <StatCard label="Retards" :value="livret.attendance.retard" />
           <StatCard
             label="Taux de présence"
-            :value="livret.attendance.rate !== null ? `${livret.attendance.rate} %` : '—'"
+            :value="livret.attendance.rate !== null ? `${livret.attendance.rate} %` : '-'"
           />
         </div>
       </section>
@@ -178,7 +178,7 @@ function onPrint(): void {
             v-if="livret.competencies.overall !== null"
             class="font-normal text-[var(--ui-text-muted)]"
           >
-            — {{ livret.competencies.overall }} % de progression globale
+            · {{ livret.competencies.overall }} % de progression globale
           </span>
         </h2>
 
@@ -377,7 +377,7 @@ function onPrint(): void {
       </section>
 
       <p class="print-only text-xs text-[var(--ui-text-dimmed)] pt-6">
-        Livret généré par Alternup le {{ formatDate(livret.generatedAt) }} — les
+        Livret généré par Alternup le {{ formatDate(livret.generatedAt) }}. Les
         signatures reproduites sont horodatées et conservées en base.
       </p>
     </template>

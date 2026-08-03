@@ -63,14 +63,14 @@ const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
 })
 
 function formatDate(value: string | null): string {
-  if (!value) return '—'
+  if (!value) return '-'
   const date = new Date(value)
-  return Number.isNaN(date.getTime()) ? '—' : dateFormatter.format(date)
+  return Number.isNaN(date.getTime()) ? '-' : dateFormatter.format(date)
 }
 
 const periodRange = computed<string>(() =>
   card.value
-    ? `${formatDate(card.value.period.startDate)} — ${formatDate(card.value.period.endDate)}`
+    ? `du ${formatDate(card.value.period.startDate)} au ${formatDate(card.value.period.endDate)}`
     : ''
 )
 
@@ -137,7 +137,7 @@ function readErrorMessage(err: unknown): string | null {
         </p>
       </div>
 
-      <PageHeader :title="`Bulletin — ${card.period.label}`" :subtitle="periodRange">
+      <PageHeader :title="`Bulletin ${card.period.label}`" :subtitle="periodRange">
         <template #actions>
           <UButton
             color="neutral"
@@ -201,7 +201,7 @@ function readErrorMessage(err: unknown): string | null {
       />
 
       <p class="print-only text-xs text-[var(--ui-text-dimmed)] pt-4">
-        Document généré par Alternup — les signatures ci-dessus sont horodatées
+        Document généré par Alternup. Les signatures ci-dessus sont horodatées
         et conservées en base.
       </p>
     </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { CompetencyLevel } from '@prisma/client'
+import type { CompetencyLevel } from '~/shared/utils/enums'
 import { competencyLevelColor, competencyLevelLabel } from '~/shared/utils/competencies'
 
 const props = defineProps<{ level: string | null }>()

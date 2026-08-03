@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 
 const email = z
   .string({ error: 'L\'adresse e-mail est requise.' })

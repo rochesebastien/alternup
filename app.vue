@@ -8,26 +8,30 @@
       >
         <div class="mx-auto max-w-7xl h-full px-6 flex items-center justify-between gap-6">
           <div class="flex items-center gap-8">
-            <NuxtLink to="/" class="flex items-center gap-2" aria-label="alternup, accueil">
-              <ClientOnly>
-                <img
-                  :src="logoSrc"
-                  alt="alternup"
-                  width="110"
-                  height="24"
-                  class="h-6 w-auto"
-                >
-                <template #fallback>
-                  <span class="font-extrabold tracking-tight text-base">alternup</span>
-                </template>
-              </ClientOnly>
+            <NuxtLink :to="loggedIn ? '/dashboard' : '/'" class="flex items-center gap-2" aria-label="alternup, accueil">
+              <!-- Les deux variantes sont rendues côté serveur et permutées en CSS
+                   selon la classe `dark` : le logo est visible dès le premier
+                   rendu, sans attendre l'hydratation. -->
+              <img
+                src="/images/logo_nav_light.png"
+                alt="alternup"
+                width="110"
+                height="24"
+                class="h-6 w-auto dark:hidden"
+              >
+              <img
+                src="/images/logo_nav_dark.png"
+                alt="alternup"
+                width="110"
+                height="24"
+                class="h-6 w-auto hidden dark:block"
+              >
             </NuxtLink>
 
             <div class="hidden md:flex items-center gap-6 text-sm font-medium">
               <template v-if="!loggedIn">
-                <NuxtLink to="/product_anchor" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Produit</NuxtLink>
+                <NuxtLink to="/#product_anchor" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Produit</NuxtLink>
                 <NuxtLink to="/features" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Fonctionnalités</NuxtLink>
-                <NuxtLink to="/pricing" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Tarifs</NuxtLink>
               </template>
               <template v-else>
                 <NuxtLink
@@ -157,9 +161,8 @@
           >
             <div class="mx-auto max-w-7xl px-6 py-4 flex flex-col gap-3 text-sm font-medium">
               <template v-if="!loggedIn">
-                <NuxtLink to="/" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Produit</NuxtLink>
+                <NuxtLink to="/#product_anchor" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Produit</NuxtLink>
                 <NuxtLink to="/features" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Fonctionnalités</NuxtLink>
-                <NuxtLink to="/" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Tarifs</NuxtLink>
               </template>
               <template v-else>
                 <NuxtLink to="/dashboard" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Tableau de bord</NuxtLink>
@@ -208,7 +211,7 @@
             >
           </NuxtLink>
           <p class="text-sm text-[#8a8a86] mt-6">
-            © 2026 Alternup — Le suivi des alternants et des stagiaires réinventé.
+            © 2026 Alternup. Le suivi des alternants et des stagiaires réinventé.
           </p>
         </div>
       </footer>
@@ -225,7 +228,7 @@
 </template>
 
 <script setup lang="ts">
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 
 const config = useRuntimeConfig()
 const appVersion = config.public.appVersion
@@ -253,9 +256,6 @@ const notificationCount = useNotificationCountState()
 
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
-const logoSrc = computed(() =>
-  isDark.value ? '/images/logo_nav_dark.png' : '/images/logo_nav_light.png'
-)
 
 function toggleColorMode() {
   colorMode.preference = isDark.value ? 'light' : 'dark'
@@ -268,7 +268,7 @@ const route = useRoute()
 watch(() => route.fullPath, () => { mobileOpen.value = false })
 
 // Footer marketing complet uniquement sur les pages publiques (landing, features, tarifs)
-const isMarketing = computed(() => ['/', '/features', '/pricing'].includes(route.path))
+const isMarketing = computed(() => ['/', '/features'].includes(route.path))
 
 async function onLogout() {
   loggingOut.value = true

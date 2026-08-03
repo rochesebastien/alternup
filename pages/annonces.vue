@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import { announcementCreateSchema } from '~/shared/utils/announcements'
 
 definePageMeta({})

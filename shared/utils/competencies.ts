@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { CompetencyLevel } from '@prisma/client'
+import type { CompetencyLevel } from '~/shared/utils/enums'
 
 // Littéraux de chaîne uniquement côté partagé (pas d'objet enum Prisma runtime).
 

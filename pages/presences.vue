@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { AttendanceStatus } from '@prisma/client'
-import { Role } from '@prisma/client'
+import type { AttendanceStatus } from '~/shared/utils/enums'
+import { Role } from '~/shared/utils/enums'
 
 definePageMeta({
   // Authentifié seulement — comportement selon le rôle
@@ -111,7 +111,7 @@ const {
 
 const learnerRate = computed<string>(() => {
   const rate = learnerData.value?.summary.rate
-  return rate != null ? `${rate}%` : '—'
+  return rate != null ? `${rate}%` : '-'
 })
 </script>
 

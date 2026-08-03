@@ -7,7 +7,7 @@
           Fonctionnalités
         </h1>
         <p class="text-lg leading-[1.55] text-[var(--ui-text-muted)] max-w-[640px] mx-auto">
-          Tout ce qu'il faut pour suivre tes alternants — pour les tuteurs,
+          Tout ce qu'il faut pour suivre tes alternants : pour les tuteurs,
           les alternants et les écoles.
         </p>
       </div>
@@ -116,7 +116,7 @@
 import { h } from 'vue'
 
 definePageMeta({ auth: false })
-useHead({ title: 'Fonctionnalités — alternup' })
+useHead({ title: 'Fonctionnalités - alternup' })
 
 const { loggedIn } = useUserSession()
 
@@ -154,10 +154,10 @@ const MockDashboard = () => h('div', { class: 'mockup-frame' }, [
       h('span', { class: 'mock-chip' }, '2025-26')
     ]),
     h('div', { class: 'space-y-2.5' }, [
-      mockRow('Léa Martin', 'I2 — Software Engineering · Macron Corporation', 'À jour', 'good', '#FFD93D'),
-      mockRow('Kevin Dubois', 'L3 — Marketing · Globex', 'Rapport dû', 'warn', '#FFB4B4'),
-      mockRow('Sofia Bensaïd', 'M1 — Design · Initech', 'Visite à planifier', 'info', '#B4E1FF'),
-      mockRow('Thomas Petit', 'I2 — Software Engineering · Macron Corporation', 'À jour', 'good', '#C9F2D1')
+      mockRow('Léa Martin', 'I2 Software Engineering · Macron Corporation', 'À jour', 'good', '#FFD93D'),
+      mockRow('Kevin Dubois', 'L3 Marketing · Globex', 'Rapport dû', 'warn', '#FFB4B4'),
+      mockRow('Sofia Bensaïd', 'M1 Design · Initech', 'Visite à planifier', 'info', '#B4E1FF'),
+      mockRow('Thomas Petit', 'I2 Software Engineering · Macron Corporation', 'À jour', 'good', '#C9F2D1')
     ])
   ])
 ])
@@ -186,9 +186,9 @@ const MockAlerts = () => h('div', { class: 'mockup-frame p-5 sm:p-7 space-y-3' }
     h('span', { class: 'text-sm font-bold' }, 'Mes alertes'),
     h('span', { class: 'text-xs text-[var(--ui-text-muted)]' }, '3 nouvelles')
   ]),
-  mockAlert('Rapport d\'étape en retard', 'Kevin Dubois — échéance dépassée de 3 jours', 'il y a 1h', '⏰'),
-  mockAlert('Visite à planifier', 'Sofia Bensaïd — aucune visite prévue ce semestre', 'il y a 4h', '📅'),
-  mockAlert('Livrable manquant', 'Thomas Petit — soutenance dans 7 jours', 'hier', '📎')
+  mockAlert('Rapport d\'étape en retard', 'Kevin Dubois : échéance dépassée de 3 jours', 'il y a 1h', '⏰'),
+  mockAlert('Visite à planifier', 'Sofia Bensaïd : aucune visite prévue ce semestre', 'il y a 4h', '📅'),
+  mockAlert('Livrable manquant', 'Thomas Petit : soutenance dans 7 jours', 'hier', '📎')
 ])
 
 function mockAlert(title: string, desc: string, time: string, emoji: string) {
@@ -206,7 +206,7 @@ function mockAlert(title: string, desc: string, time: string, emoji: string) {
 
 const MockVisit = () => h('div', { class: 'mockup-frame p-5 sm:p-7' }, [
   h('div', { class: 'flex items-center justify-between mb-4' }, [
-    h('span', { class: 'text-sm font-bold' }, 'Visite tuteur — Léa Martin'),
+    h('span', { class: 'text-sm font-bold' }, 'Visite tuteur : Léa Martin'),
     h('span', { class: 'text-[11px] font-semibold bg-brand-500 text-black px-2 py-0.5 rounded-full' }, 'Programmée')
   ]),
   h('div', { class: 'grid grid-cols-2 gap-3 mb-4 text-[13px]' }, [
@@ -216,7 +216,7 @@ const MockVisit = () => h('div', { class: 'mockup-frame p-5 sm:p-7' }, [
     ]),
     h('div', { class: 'rounded-lg bg-[var(--ui-bg-muted)] p-3' }, [
       h('div', { class: 'text-[11px] text-[var(--ui-text-muted)] mb-0.5' }, 'Lieu'),
-      h('div', { class: 'font-semibold' }, 'Macron Corporation — Paris')
+      h('div', { class: 'font-semibold' }, 'Macron Corporation · Paris')
     ])
   ]),
   h('div', { class: 'space-y-2' }, [
@@ -240,7 +240,7 @@ function mockChecklistRow(label: string, done: boolean) {
 
 const MockSkills = () => h('div', { class: 'mockup-frame p-5 sm:p-7' }, [
   h('div', { class: 'flex items-center justify-between mb-5' }, [
-    h('span', { class: 'text-sm font-bold' }, 'Compétences — Léa Martin'),
+    h('span', { class: 'text-sm font-bold' }, 'Compétences : Léa Martin'),
     h('span', { class: 'text-[11px] text-[var(--ui-text-muted)]' }, 'Mis à jour il y a 2 j')
   ]),
   h('div', { class: 'space-y-3.5' }, [
@@ -266,7 +266,7 @@ function mockSkillBar(label: string, percent: number) {
 
 const MockReport = () => h('div', { class: 'mockup-frame p-5 sm:p-7' }, [
   h('div', { class: 'flex items-center justify-between mb-4' }, [
-    h('span', { class: 'text-sm font-bold' }, 'Rapport d\'étape — S1'),
+    h('span', { class: 'text-sm font-bold' }, 'Rapport d\'étape S1'),
     h('span', { class: 'text-[11px] font-semibold bg-[#FFD93D] text-black px-2 py-0.5 rounded-full' }, 'Brouillon')
   ]),
   h('div', { class: 'space-y-3' }, [
@@ -343,7 +343,7 @@ function mockCourseCard(title: string, sub: string, progress: string) {
 
 const MockSchoolOverview = () => h('div', { class: 'mockup-frame p-5 sm:p-7' }, [
   h('div', { class: 'flex items-center justify-between mb-4' }, [
-    h('span', { class: 'text-sm font-bold' }, 'Promo I2 Software Engineering — 2025-26'),
+    h('span', { class: 'text-sm font-bold' }, 'Promo I2 Software Engineering · 2025-26'),
     h('span', { class: 'text-[11px] text-[var(--ui-text-muted)]' }, '28 alternants')
   ]),
   h('div', { class: 'grid grid-cols-3 gap-3 mb-4' }, [
@@ -378,9 +378,9 @@ const MockSignature = () => h('div', { class: 'mockup-frame p-5 sm:p-7' }, [
     h('span', { class: 'text-[11px] font-semibold bg-brand-500 text-black px-2 py-0.5 rounded-full' }, '3 / 3 signataires')
   ]),
   h('div', { class: 'space-y-2.5' }, [
-    sigRow('École — Mme Durand', true),
-    sigRow('Tuteur — M. Lopez', true),
-    sigRow('Alternant — Léa Martin', true)
+    sigRow('École : Mme Durand', true),
+    sigRow('Tuteur : M. Lopez', true),
+    sigRow('Alternant : Léa Martin', true)
   ]),
   h('div', { class: 'mt-4 rounded-xl bg-[var(--ui-bg-muted)] p-3.5 text-[12px] text-[var(--ui-text-muted)] flex items-center gap-2' }, [
     h('span', {}, '🔒'),
@@ -434,7 +434,7 @@ const groups: Group[] = [
       {
         id: 'alerts',
         title: 'Alertes intelligentes',
-        description: "Rapports en retard, visite à programmer, livrable manquant : alternup te prévient au bon moment — pas une semaine après que ça a dérapé.",
+        description: "Rapports en retard, visite à programmer, livrable manquant : alternup te prévient au bon moment, pas une semaine après que ça a dérapé.",
         audiences: ['tutor', 'school'],
         mockup: MockAlerts,
         bullets: [
@@ -484,7 +484,7 @@ const groups: Group[] = [
       {
         id: 'skills',
         title: 'Suivi des compétences en continu',
-        description: "Grilles personnalisables, évaluations partagées avec l'entreprise, progression visible dans le temps. Une lecture qui parle — pas juste une moyenne.",
+        description: "Grilles personnalisables, évaluations partagées avec l'entreprise, progression visible dans le temps. Une lecture qui parle, pas juste une moyenne.",
         audiences: ['tutor', 'learner', 'school'],
         mockup: MockSkills,
         bullets: [
@@ -503,7 +503,7 @@ const groups: Group[] = [
       {
         id: 'missions',
         title: 'Mes missions au jour le jour',
-        description: "Toutes tes missions au même endroit. Coche ce qui est fait, garde une trace de ce que tu as appris — utile pour ton rapport et pour ta soutenance.",
+        description: "Toutes tes missions au même endroit. Coche ce qui est fait, garde une trace de ce que tu as appris, utile pour ton rapport et pour ta soutenance.",
         audiences: ['learner'],
         mockup: MockMissions,
         bullets: [
@@ -515,7 +515,7 @@ const groups: Group[] = [
       {
         id: 'courses',
         title: 'Cours et quiz de la formation',
-        description: "Retrouve les supports de cours, les quiz et tes notes au même endroit. Avance à ton rythme — la progression remonte automatiquement à l'école.",
+        description: "Retrouve les supports de cours, les quiz et tes notes au même endroit. Avance à ton rythme, la progression remonte automatiquement à l'école.",
         audiences: ['learner', 'school'],
         mockup: MockCourses,
         bullets: [

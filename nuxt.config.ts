@@ -24,6 +24,15 @@ export default defineNuxtConfig({
     // Serveur uniquement
     databaseUrl: process.env.DATABASE_URL,
     // nuxt-auth-utils lit NUXT_SESSION_PASSWORD automatiquement via runtimeConfig.session
+    session: {
+      cookie: {
+        // Cookie de session réservé à HTTPS. Déclaré ici pour rester surchargeable
+        // au runtime : si l'app est exposée en HTTP simple (test derrière une IP,
+        // pas de certificat), poser NUXT_SESSION_COOKIE_SECURE=false, sinon le
+        // navigateur jette le cookie et la connexion semble « ne rien faire ».
+        secure: true
+      }
+    },
     public: {
       appVersion: process.env.APP_VERSION || '1.0.0'
     }
@@ -34,7 +43,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: "alternup centralise le suivi de tes alternants et stagiaires — visites, livrables, rapports, compétences." },
+        { name: 'description', content: "alternup centralise le suivi de tes alternants et stagiaires : visites, livrables, rapports, compétences." },
         { name: 'theme-color', content: '#F1DE02' }
       ],
       link: [

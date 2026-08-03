@@ -41,6 +41,28 @@ export default [
     },
   },
 
+  // `@prisma/client` est un paquet serveur : l'importer depuis du code rendu
+  // dans le navigateur casse le bundle client (voir shared/utils/enums.ts).
+  {
+    files: [
+      'app.vue',
+      'pages/**/*.{ts,vue}',
+      'components/**/*.{ts,vue}',
+      'composables/**/*.ts',
+      'middleware/**/*.ts',
+      'plugins/**/*.ts',
+      'shared/**/*.ts',
+    ],
+    rules: {
+      'no-restricted-imports': ['error', {
+        paths: [{
+          name: '@prisma/client',
+          message: 'Code client : importer les énumérations depuis ~/shared/utils/enums.',
+        }],
+      }],
+    },
+  },
+
   ...vue.configs['flat/recommended'],
 
   {

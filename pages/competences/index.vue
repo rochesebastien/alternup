@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { CompetencyLevel } from '@prisma/client'
-import { Role } from '@prisma/client'
+import type { CompetencyLevel } from '~/shared/utils/enums'
+import { Role } from '~/shared/utils/enums'
 import { COMPETENCY_LEVEL_OPTIONS } from '~/shared/utils/competencies'
 
 definePageMeta({})
@@ -72,7 +72,7 @@ const { data: learnerMap } = await useFetch<CompetencyMap>(
 
 const learnerOverall = computed<string>(() => {
   const o = learnerMap.value?.overall
-  return o != null ? `${o}%` : '—'
+  return o != null ? `${o}%` : '-'
 })
 
 // --- Tuteur : référentiel ---------------------------------------------------
@@ -255,7 +255,7 @@ async function assess(competencyId: string, level: CompetencyLevel) {
             {{ domain.label }}
           </h2>
           <span class="text-sm text-[var(--ui-text-muted)]">
-            {{ domain.progress != null ? domain.progress + '%' : '—' }}
+            {{ domain.progress != null ? domain.progress + '%' : '-' }}
           </span>
         </div>
 

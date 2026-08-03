@@ -751,3 +751,61 @@ Contrôles de conformité passés en revue sur le diff complet `origin/main...HE
 - [ ] **Rôle École / organisation & pilotage par promotion** (espace tripartite complet — gros chantier de schéma).
 - [ ] **Casier de documents** (Lot 4 existant — stockage fichiers).
 - [ ] **Notifications email** (relances hors connexion) — nécessite un SMTP en prod.
+
+---
+
+## Correctifs 2026-08-03 — production inutilisable (logo, auth, rôle) + compte de test Dokploy
+
+### Constat
+
+Symptômes rapportés : logo remplacé par du texte dans la nav, inscription et connexion
+impossibles, rôle non sélectionnable. Reproduits sur le build de production (`npm run build`
+puis `node .output/server/index.mjs`), invisibles en `npm run dev`.
+
+Cause unique pour l'essentiel : `Failed to resolve module specifier ".prisma/client/index-browser"`
+levé au chargement du bundle client → **aucune hydratation** → l'app reste du HTML statique.
+Détail dans `taches/lecons.md` (2026-08-03).
+
+### Réalisé
+
+- [x] `shared/utils/enums.ts` : les 7 enums Prisma redéclarés en objets `as const`.
+- [x] `app.vue`, 13 pages, 5 composants, `middleware/role.ts`, 10 utils partagés et 2 fichiers
+      de types basculés sur ce module ; plus aucune référence à `@prisma/client` hors `server/`.
+- [x] Règle ESLint `no-restricted-imports` sur `app.vue`, `pages/`, `components/`, `composables/`,
+      `middleware/`, `plugins/`, `shared/` pour empêcher la régression.
+- [x] `auth-guard` : les endpoints internes des modules Nuxt (`/api/_`) ne sont plus bloqués
+      (icônes 401 sur toutes les pages publiques, `/api/_auth/session`). Tests ajoutés.
+- [x] Nav : logo servi en SSR via deux `<img>` permutées en CSS (`dark:hidden` / `hidden dark:block`)
+      au lieu d'un `<ClientOnly>` dont le fallback texte restait affiché sans hydratation.
+      Le lien du logo pointe vers `/dashboard` quand l'utilisateur est connecté.
+- [x] Nav : liens morts corrigés — « Produit » pointait sur la route inexistante `/product_anchor`
+      (→ ancre `/#product_anchor`), « Tarifs » sur `/pricing` qui n'existe pas (lien retiré,
+      à remettre quand la page existera).
+- [x] `nuxt.config` : `session.cookie.secure` déclaré dans `runtimeConfig` pour rester surchargeable
+      par `NUXT_SESSION_COOKIE_SECURE=false` si le déploiement est exposé en HTTP simple.
+- [x] Compte de test provisionné au démarrage depuis `TEMP_LOGIN` / `TEMP_PASS`
+      (+ `TEMP_ROLE`, `Tutor` par défaut) : `server/plugins/temp-account.ts`, upsert à chaque
+      démarrage, échec base non bloquant. Variables passées au conteneur dans `docker-compose.yml`.
+- [x] Suppression des tirets cadratins « — » des textes affichés (pages, libellés d'API,
+      placeholders de valeurs vides).
+
+### Vérifications
+
+- `npm run lint` ✅ · `npm test` ✅ (15 fichiers, 210 tests) · `npm run build` ✅
+- `grep -rl "\.prisma/client/index-browser" .output/public/_nuxt/` → vide (avant : 20 chunks).
+- Parcours Playwright sur le build de production, zéro `pageerror` :
+  inscription avec choix du rôle « Tuteur » (`/api/auth/me` renvoie bien `role: "Tutor"`,
+  nav tuteur affichée) → déconnexion → connexion avec mauvais mot de passe (alerte
+  « Identifiants invalides. ») → connexion valide → `/dashboard` conservé après rechargement.
+- Balayage des 14 routes principales connecté en tuteur : toutes rendues, aucune 5xx.
+- `TEMP_LOGIN` / `TEMP_PASS` : compte créé au démarrage, `POST /api/auth/login` → 200,
+  connexion via l'UI OK.
+- Logo vérifié en thème clair et sombre (permutation CSS).
+
+### Reste à traiter (hors périmètre de ce lot)
+
+- [ ] `Hydration completed but contains mismatches` sur `/alternants` et `/projects` : les
+      `Intl.DateTimeFormat('fr-FR')` de ces tableaux n'ont pas de `timeZone`, donc le rendu
+      serveur (UTC) et le rendu navigateur peuvent différer. Correctif propre : imposer
+      `timeZone: 'Europe/Paris'` aux ~28 formateurs de l'app.
+- [ ] Page `/pricing` à créer, puis remettre le lien « Tarifs » dans la nav.

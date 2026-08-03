@@ -112,7 +112,7 @@ export default defineEventHandler(async (event) => {
         { key: 'projects', label: 'Projets', value: projectIds.length },
         { key: 'active', label: 'Missions en cours', value: statuses.filter((s) => s === ProjectStatus.en_cours).length },
         { key: 'reports', label: 'Rapports à valider', value: reportsPending },
-        { key: 'grade', label: 'Note moyenne réseau', value: avg != null ? `${avg}/20` : '—' }
+        { key: 'grade', label: 'Note moyenne réseau', value: avg != null ? `${avg}/20` : '-' }
       ],
       avgGrade: avg,
       gradeTrend: buildGradeTrend(notes, now),
@@ -174,8 +174,8 @@ export default defineEventHandler(async (event) => {
   return {
     role: user.role,
     stats: [
-      { key: 'grade', label: 'Note moyenne', value: avg != null ? `${avg}/20` : '—' },
-      { key: 'attendance', label: 'Taux de présence', value: attendanceRate != null ? `${attendanceRate}%` : '—' },
+      { key: 'grade', label: 'Note moyenne', value: avg != null ? `${avg}/20` : '-' },
+      { key: 'attendance', label: 'Taux de présence', value: attendanceRate != null ? `${attendanceRate}%` : '-' },
       { key: 'missions', label: 'Missions terminées', value: `${done}/${statuses.length}` },
       { key: 'sessions', label: 'Sessions à venir', value: upcoming.length }
     ],

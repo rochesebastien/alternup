@@ -11,7 +11,7 @@ const props = defineProps<{
 
 /** Note formatée à la française : « 14,5 / 20 », tiret si absente. */
 function formatAverage(value: number | null): string {
-  if (value === null || !Number.isFinite(value)) return '—'
+  if (value === null || !Number.isFinite(value)) return '-'
   return `${(Math.round(value * 10) / 10).toString().replace('.', ',')} / 20`
 }
 
@@ -20,7 +20,7 @@ const overallDisplay = computed<string>(() =>
 )
 
 const rateDisplay = computed<string>(() =>
-  props.snapshot.attendance.rate !== null ? `${props.snapshot.attendance.rate} %` : '—'
+  props.snapshot.attendance.rate !== null ? `${props.snapshot.attendance.rate} %` : '-'
 )
 </script>
 

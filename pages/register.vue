@@ -86,7 +86,7 @@
 </template>
 
 <script setup lang="ts">
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import { registerInputSchema, type RegisterInput } from '~/shared/utils/auth-credentials'
 import { resolvePostLoginPath } from '~/shared/utils/auth-redirect'

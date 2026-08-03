@@ -1,4 +1,4 @@
-import type { Role } from '@prisma/client'
+import type { Role } from '~/shared/utils/enums'
 
 export default defineNuxtRouteMiddleware((to) => {
   const required = to.meta.requireRole as Role | Role[] | undefined

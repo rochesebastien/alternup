@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ProjectStatus } from '@prisma/client'
+import { ProjectStatus } from '~/shared/utils/enums'
 
 /**
  * Un « retour » (feedback) posté sur une mission. Append-only : chaque envoi crée

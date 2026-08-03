@@ -29,13 +29,13 @@ const props = defineProps<{
 const overallDisplay = computed<string>(() =>
   props.snapshot.overallAverage != null
     ? `${props.snapshot.overallAverage}/20`
-    : '—'
+    : '-'
 )
 
 const rateDisplay = computed<string>(() =>
   props.snapshot.attendance.rate != null
     ? `${props.snapshot.attendance.rate}%`
-    : '—'
+    : '-'
 )
 
 const courseBars = computed<Array<{ label: string; value: number }>>(() =>

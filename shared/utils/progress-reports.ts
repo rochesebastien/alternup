@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { ReportStatus } from '@prisma/client'
+import type { ReportStatus } from '~/shared/utils/enums'
 
 // NB: pas d'import runtime de l'objet enum Prisma dans ce module partagé
 // (undefined côté client -> crash au chargement). Littéraux de chaîne uniquement.
