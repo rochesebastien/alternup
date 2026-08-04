@@ -12,7 +12,7 @@
 //   • les seules parties habilitées sont le tuteur émetteur et l'étudiant concerné ;
 //   • une signature est définitive et idempotente (append-only, jamais rétractée).
 
-import type { SignatureDocumentType } from '@prisma/client'
+import type { SignatureDocumentType } from '~/shared/utils/enums'
 
 // ─────────────────────────── Libellés ───────────────────────────
 

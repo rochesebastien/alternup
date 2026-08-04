@@ -104,7 +104,7 @@
 </template>
 
 <script setup lang="ts">
-import { ProjectStatus, Role } from '@prisma/client'
+import { ProjectStatus, Role } from '~/shared/utils/enums'
 import {
   PROJECT_STATUS_OPTIONS,
   projectStatusColor,

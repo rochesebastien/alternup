@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import type { FormSubmitEvent } from '@nuxt/ui'
 import {
   periodCreateSchema,
@@ -65,7 +65,7 @@ function formatDate(value: string): string {
 }
 
 function formatRange(start: string, end: string): string {
-  return `${formatDate(start)} — ${formatDate(end)}`
+  return `du ${formatDate(start)} au ${formatDate(end)}`
 }
 
 // --- Création période (tuteur) ---------------------------------------------

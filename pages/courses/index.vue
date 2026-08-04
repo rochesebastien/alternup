@@ -64,7 +64,7 @@
               min="0"
               max="20"
               step="0.25"
-              placeholder="—"
+              placeholder="-"
               class="w-full"
             />
           </UFormField>
@@ -109,7 +109,7 @@
 
 <script setup lang="ts">
 import { z } from 'zod'
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import {
   findNoteForSession,
   notionsToString,

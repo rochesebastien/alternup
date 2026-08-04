@@ -267,7 +267,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'note',
     title: note.assignment.course.title,
     description:
-      [gradeText(note.grade), excerpt(note.comment)].filter(Boolean).join(' — ') || null,
+      [gradeText(note.grade), excerpt(note.comment)].filter(Boolean).join(' · ') || null,
     link: null
   }))
 
@@ -296,7 +296,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'visite',
     title: visitTitle(visit.mode),
     description:
-      [visitStatusLabel(visit.status), excerpt(visit.summary)].filter(Boolean).join(' — ') ||
+      [visitStatusLabel(visit.status), excerpt(visit.summary)].filter(Boolean).join(' · ') ||
       null,
     link: '/visites'
   }))
@@ -305,7 +305,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     id: `absence:${item.id}`,
     date: item.event.startTime.toISOString(),
     type: 'absence',
-    title: `${attendanceStatusLabel(item.status)} — ${
+    title: `${attendanceStatusLabel(item.status)} · ${
       item.event.courseAssignment?.course.title ?? item.event.title
     }`,
     description:
@@ -316,7 +316,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
         excerpt(item.justification)
       ]
         .filter(Boolean)
-        .join(' — ') || null,
+        .join(' · ') || null,
     link: '/presences'
   }))
 
@@ -324,7 +324,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     id: `bulletin:${card.id}`,
     date: (card.publishedAt ?? now).toISOString(),
     type: 'bulletin',
-    title: `Bulletin — ${card.period.label}`,
+    title: `Bulletin ${card.period.label}`,
     description: excerpt(card.generalComment),
     // Fiche du bulletin (accessible aux deux parties), et non la page de
     // période `/bulletins/[id]` qui est réservée au tuteur.
@@ -339,7 +339,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     description:
       [competencyLevelLabel(assessment.level), excerpt(assessment.comment)]
         .filter(Boolean)
-        .join(' — ') || null,
+        .join(' · ') || null,
     link: competencyLink
   }))
 

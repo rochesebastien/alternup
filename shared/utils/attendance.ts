@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { AttendanceStatus } from '@prisma/client'
+import type { AttendanceStatus } from '~/shared/utils/enums'
 
 // NB: on n'importe PAS l'objet enum Prisma au runtime dans ce module partagé
 // (il est `undefined` dans le bundle client -> crash au chargement). On travaille

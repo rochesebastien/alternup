@@ -78,7 +78,7 @@
           <div>
             <strong class="block text-[15px] font-bold">Léa Martin</strong>
             <div class="text-[13px] text-[var(--ui-text-muted)] mb-2">
-              Master 2 — Software Engineering · Macron Corporation
+              Master 2 Software Engineering · Macron Corporation
             </div>
             <div class="flex flex-wrap gap-1">
               <span class="inline-block bg-brand-500 text-black text-xs font-semibold px-2.5 py-1 rounded-full">
@@ -108,7 +108,7 @@
           </h2>
           <p class="text-[17px] leading-[1.55] text-[var(--ui-text-muted)] max-w-[600px] mx-auto">
             Le suivi par mail, Excel et Teams, ça tient plus.
-            Centralise tes alternants au même endroit — et reprends le contrôle.
+            Centralise tes alternants au même endroit, et reprends le contrôle.
           </p>
         </div>
 
@@ -154,7 +154,7 @@
                 </span>
                 <span class="text-[var(--ui-text-muted)]">
                   <strong class="text-[var(--ui-text)] font-bold mr-1">{{ item.title }}</strong>
-                  — {{ item.text }}
+                  : {{ item.text }}
                 </span>
               </li>
             </ul>
@@ -247,7 +247,7 @@
                     <span class="float-right text-xs text-[var(--ui-text-muted)] ml-2">il y a 15 min</span>
                     <strong class="block text-[14.5px] font-bold mb-1">Votre alternant veut faire un point avec vous</strong>
                     <p class="text-[var(--ui-text-muted)] text-[13.5px] leading-[1.4] m-0">
-                      Léa Martin a demandé un échange — propose-lui un créneau.
+                      Léa Martin a demandé un échange, propose-lui un créneau.
                     </p>
                   </div>
                 </div>
@@ -261,7 +261,7 @@
               Tes alternants, tous reliés à toi
             </h3>
             <p class="text-[var(--ui-text-muted)] text-[15.5px] leading-[1.55] mb-8 max-w-[440px]">
-              Visualise toute ta promo en un graphe. Tuteur au centre, alternants autour — un clic sur un nœud, tu ouvres son dossier complet.
+              Visualise toute ta promo en un graphe. Tuteur au centre, alternants autour. Un clic sur un nœud, tu ouvres son dossier complet.
             </p>
             <div class="mt-auto flex-1 flex items-center justify-center min-h-[200px]">
               <div class="w-full h-[260px] relative">
@@ -323,7 +323,7 @@
               Une lecture des compétences qui parle
             </h3>
             <p class="text-[var(--ui-text-muted)] text-[15.5px] leading-[1.55] mb-8 max-w-[440px]">
-              alternup compile les évaluations, les visites et les retours de l'entreprise pour te montrer la progression réelle — pas juste une moyenne.
+              alternup compile les évaluations, les visites et les retours de l'entreprise pour te montrer la progression réelle, pas juste une moyenne.
             </p>
             <div class="mt-auto flex-1 flex items-center justify-center min-h-[200px]">
               <div class="w-full max-w-[380px] bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-5 shadow-sm">

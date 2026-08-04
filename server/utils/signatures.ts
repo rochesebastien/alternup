@@ -48,7 +48,7 @@ export function signableCardOf(card: VisibleReportCard): SignableDocument {
       tutor: { id: card.period.tutor.id, name: fullName(card.period.tutor) },
       student: { id: card.student.id, name: fullName(card.student) }
     },
-    title: `Bulletin — ${card.period.label}`,
+    title: `Bulletin ${card.period.label}`,
     link: `/bulletins/carte/${card.id}`
   }
 }

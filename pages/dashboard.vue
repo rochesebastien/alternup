@@ -179,7 +179,7 @@ function fullName(person: Person): string {
             Évolution des notes
           </h2>
           <span class="text-2xl font-semibold tracking-tight text-[var(--ui-text)]">
-            {{ summary.avgGrade != null ? summary.avgGrade + '/20' : '—' }}
+            {{ summary.avgGrade != null ? summary.avgGrade + '/20' : '-' }}
           </span>
         </div>
         <TrendChart
@@ -310,7 +310,7 @@ function fullName(person: Person): string {
               <span class="text-sm text-[var(--ui-text-muted)]">{{ formatDate(n.sessionDate) }}</span>
             </div>
             <span class="text-sm font-medium text-[var(--ui-text)] whitespace-nowrap">
-              {{ n.grade != null ? n.grade + '/20' : '—' }}
+              {{ n.grade != null ? n.grade + '/20' : '-' }}
             </span>
           </li>
         </ul>

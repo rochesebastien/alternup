@@ -171,7 +171,7 @@
 
 <script setup lang="ts">
 import { z } from 'zod'
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import FullCalendar from '@fullcalendar/vue3'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import timeGridPlugin from '@fullcalendar/timegrid'

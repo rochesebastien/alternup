@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { ProjectStatus } from '@prisma/client'
+import { ProjectStatus } from '~/shared/utils/enums'
 
 const title = z.string().trim().min(1, 'Title is required').max(200)
 const description = z.string().trim().max(5000).nullable()

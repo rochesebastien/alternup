@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import type { VisitStatus } from '@prisma/client'
+import type { VisitStatus } from '~/shared/utils/enums'
 
 // Littéraux de chaîne uniquement (pas d'objet enum Prisma runtime en code partagé).
 
@@ -57,5 +57,5 @@ export const VISIT_MODE_OPTIONS: Array<{ label: string; value: string }> = [
 ]
 
 export function visitModeLabel(mode: string | null): string {
-  return VISIT_MODE_OPTIONS.find((m) => m.value === mode)?.label ?? (mode ?? '—')
+  return VISIT_MODE_OPTIONS.find((m) => m.value === mode)?.label ?? (mode ?? '-')
 }

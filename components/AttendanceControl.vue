@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { AttendanceStatus } from '@prisma/client'
+import type { AttendanceStatus } from '~/shared/utils/enums'
 import { ATTENDANCE_STATUS_OPTIONS } from '~/shared/utils/attendance'
 
 const props = defineProps<{

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ProjectStatus } from '@prisma/client'
+import { ProjectStatus } from '~/shared/utils/enums'
 import {
   PROJECT_STATUS_OPTIONS,
   assignmentCreateSchema,

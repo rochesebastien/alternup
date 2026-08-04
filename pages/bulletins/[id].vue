@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import type { ReportCardSnapshot } from '~/shared/utils/report-periods'
 import { signedCount, type SignatureBlock } from '~/shared/utils/signatures'
 
@@ -77,7 +77,7 @@ function formatDate(value: string): string {
 
 const periodRange = computed<string>(() => {
   if (!data.value) return ''
-  return `${formatDate(data.value.period.startDate)} — ${formatDate(data.value.period.endDate)}`
+  return `du ${formatDate(data.value.period.startDate)} au ${formatDate(data.value.period.endDate)}`
 })
 
 // --- Publication ------------------------------------------------------------
@@ -219,7 +219,7 @@ async function onPublishSubmit(): Promise<void> {
       v-model:open="publishOpen"
       :title="
         publishTarget
-          ? `Publier le bulletin — ${fullName(publishTarget)}`
+          ? `Publier le bulletin de ${fullName(publishTarget)}`
           : 'Publier le bulletin'
       "
     >

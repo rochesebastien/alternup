@@ -5,7 +5,7 @@
 // `server/api/users/[id]/livret.get.ts` ; ce fichier ne porte que le contrat de
 // réponse et le calcul du bilan d'assiduité, testable sans base de données.
 
-import type { CompetencyLevel } from '@prisma/client'
+import type { CompetencyLevel } from '~/shared/utils/enums'
 import type { ReportCardSnapshot } from '~/shared/utils/report-periods'
 import type { SignatureBlock } from '~/shared/utils/signatures'
 

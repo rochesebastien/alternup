@@ -129,7 +129,7 @@
 </template>
 
 <script setup lang="ts">
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import {
   reportCreateSchema,
   type ReportCreateInput
@@ -188,7 +188,7 @@ function formatDate(value: string): string {
 }
 
 function formatRange(startVal: string, endVal: string): string {
-  return `${formatDate(startVal)} — ${formatDate(endVal)}`
+  return `du ${formatDate(startVal)} au ${formatDate(endVal)}`
 }
 
 const formOpen = ref(false)

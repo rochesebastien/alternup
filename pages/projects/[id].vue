@@ -234,7 +234,7 @@
 
 <script setup lang="ts">
 import { z } from 'zod'
-import { ProjectStatus } from '@prisma/client'
+import { ProjectStatus } from '~/shared/utils/enums'
 import {
   PROJECT_STATUS_OPTIONS,
   assignmentUpdateSchema,

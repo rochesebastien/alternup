@@ -1,4 +1,4 @@
-import type { Role } from '@prisma/client'
+import type { Role } from '~/shared/utils/enums'
 
 const DEFAULT_LANDING: Record<Role, string> = {
   Tutor: '/dashboard',

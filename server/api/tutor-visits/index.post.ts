@@ -42,7 +42,7 @@ export default defineEventHandler(async (event) => {
     type: 'visite_planifiee',
     title: 'Nouvelle visite planifiée',
     body: `${user.firstName} ${user.lastName} a planifié une visite${
-      location ? ` — ${location}` : ''
+      location ? ` · ${location}` : ''
     }.`,
     link: '/visites'
   })

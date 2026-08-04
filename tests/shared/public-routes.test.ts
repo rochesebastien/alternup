@@ -23,6 +23,14 @@ describe('isPublicApiRoute', () => {
   it('strips a query string before matching', () => {
     expect(isPublicApiRoute('/api/health?ts=42')).toBe(true)
   })
+
+  it.each([
+    '/api/_auth/session',
+    '/api/_nuxt_icon/lucide.json',
+    '/api/_nuxt_icon/lucide.json?icons=menu%2Cmoon'
+  ])('lets the Nuxt internal endpoint %s through', (path) => {
+    expect(isPublicApiRoute(path)).toBe(true)
+  })
 })
 
 describe('isPublicPage', () => {

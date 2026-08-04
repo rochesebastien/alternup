@@ -115,14 +115,14 @@ describe('formatGrade20 / formatPercent', () => {
   it('formate les notes à la française', () => {
     expect(formatGrade20(14)).toBe('14/20')
     expect(formatGrade20(13.25)).toBe('13,3/20')
-    expect(formatGrade20(null)).toBe('—')
-    expect(formatGrade20(undefined)).toBe('—')
-    expect(formatGrade20(Number.NaN)).toBe('—')
+    expect(formatGrade20(null)).toBe('-')
+    expect(formatGrade20(undefined)).toBe('-')
+    expect(formatGrade20(Number.NaN)).toBe('-')
   })
 
   it('formate les pourcentages avec espace insécable court', () => {
     expect(formatPercent(87)).toBe('87 %')
     expect(formatPercent(86.6)).toBe('87 %')
-    expect(formatPercent(null)).toBe('—')
+    expect(formatPercent(null)).toBe('-')
   })
 })

@@ -47,7 +47,7 @@
             :level="riskOf(row.original.id)!.level"
             :score="riskOf(row.original.id)!.score"
           />
-          <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
+          <span v-else class="text-sm text-[var(--ui-text-muted)]">-</span>
         </template>
 
         <template #addedAt-cell="{ row }">

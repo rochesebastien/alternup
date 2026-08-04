@@ -9,7 +9,7 @@
 </template>
 
 <script setup lang="ts">
-import type { VisitStatus } from '@prisma/client'
+import type { VisitStatus } from '~/shared/utils/enums'
 import {
   visitStatusColor,
   visitStatusLabel

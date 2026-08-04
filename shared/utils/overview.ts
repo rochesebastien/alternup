@@ -154,13 +154,13 @@ export function mergeUpcoming(
 
 /** Note sur 20 au format français (« 14,2/20 »), ou tiret si absente. */
 export function formatGrade20(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '—'
+  if (value === null || value === undefined || !Number.isFinite(value)) return '-'
   return `${(Math.round(value * 10) / 10).toString().replace('.', ',')}/20`
 }
 
 /** Pourcentage entier (« 87 % »), ou tiret si absent. */
 export function formatPercent(value: number | null | undefined): string {
-  if (value === null || value === undefined || !Number.isFinite(value)) return '—'
+  if (value === null || value === undefined || !Number.isFinite(value)) return '-'
   return `${Math.round(value)} %`
 }
 

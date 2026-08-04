@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { Role } from '@prisma/client'
+import { Role } from '~/shared/utils/enums'
 import {
   formatZodIssues,
   loginInputSchema,
