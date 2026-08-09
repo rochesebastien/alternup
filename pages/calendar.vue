@@ -222,13 +222,14 @@ interface CourseNote extends NoteByAssignmentRef {
   assignment?: { course?: { id: string; title: string } }
 }
 
-const eventsUrl = computed(() => `/api/users/${user.value?.id ?? ''}/calendar`)
-
+// `/api/calendar-events` filtre selon le rôle (tutorId pour un tuteur,
+// studentId sinon) — contrairement à `/api/users/[id]/calendar` qui ne cherche
+// que par studentId et renvoyait donc toujours une liste vide aux tuteurs.
 const {
   data: events,
   error: loadError,
   refresh: refreshEvents
-} = await useFetch<ApiCalendarEvent[]>(eventsUrl, { default: () => [] })
+} = await useFetch<ApiCalendarEvent[]>('/api/calendar-events', { default: () => [] })
 
 const { data: notes, refresh: refreshNotes } = await useFetch<CourseNote[]>(
   '/api/course-notes',
