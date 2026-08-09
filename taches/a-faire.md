@@ -845,3 +845,62 @@ l'identique). Direction : éditorial/typographique plutôt que SaaS centré gén
   color-mode `system`, préexistant).
 - Ancre `/#product_anchor` (lien « Produit » de la nav) conservée sur le H2 de la
   section problème.
+
+## 2026-08-09 — Calendrier : FullCalendar → Schedule-X (thème shadcn)
+
+Objectif : remplacer le moteur d'affichage de `pages/calendar.vue` par
+**Schedule-X v4** avec le thème `shadcn`, pour un rendu type « ReUI Event
+Calendar » (nav sobre Aujourd'hui / ‹ › / titre / sélecteur de vue, chips
+d'événements colorées). Toute la logique métier existante est conservée :
+chargement via `GET /api/users/{id}/calendar`, modale de note de session,
+modale de détail/suppression, modale de création (tuteur).
+
+### Décisions
+
+- **Vues** : `viewMonthGrid`, `viewWeek`, `viewDay`, `viewList` — vue par défaut
+  `week`, comme l'ancien `timeGridWeek`. `locale: 'fr-FR'` (Schedule-X embarque
+  les traductions françaises), `firstDayOfWeek: 1` (lundi).
+- **Dates `Temporal`** : la v4 n'accepte plus de chaînes mais des
+  `Temporal.ZonedDateTime` lus sur le **global**. Le polyfill
+  (`temporal-polyfill`, peerDependency de `@schedule-x/calendar`) est chargé
+  dynamiquement dans `onMounted`, et **seulement s'il manque**, pour que la
+  librairie et la page partagent la même implémentation (Schedule-X valide ses
+  dates avec `instanceof`). Types globaux exposés par `types/temporal.d.ts`.
+- **SSR** : `createCalendar` lit `document` → création dans `onMounted`,
+  `<ClientOnly>` + spinner conservés.
+- **Catégories colorées** (`calendars` Schedule-X) : `session` (vert),
+  `visite` (jaune de marque, détecté sur le titre — pas de type en base),
+  `autre` (neutre). Couleurs clair/sombre déclarées séparément.
+- **Thème sombre** : `calendarApp.setTheme('dark' | 'light')` piloté par
+  `useColorMode()`. La palette du thème shadcn est remappée sur les tokens
+  `--ui-*` de l'app dans le `<style>` de la page.
+- **Pas de recréation du calendrier** : `events-service` (`set`) pour les
+  données, `calendar-controls` (`setDate`) pour recentrer après une création.
+- **Édition réservée au tuteur** : les plugins `drag-and-drop` et `resize` ne
+  sont enregistrés que pour lui ; `onBeforeEventUpdateAsync` fait le
+  `PUT /api/calendar-events/[id]` et renvoie `false` en cas d'échec, ce qui fait
+  revenir l'événement à sa position d'origine.
+
+### Point d'attention (dette upstream)
+
+`@schedule-x/drag-and-drop` et `@schedule-x/resize` s'arrêtent à la **3.7.3**
+(pas de v4 publiée). `resize` reste compatible, mais `drag-and-drop` expose
+encore `create*DragHandler` alors que le calendrier v4 appelle `start*Drag` :
+sans correctif, tout glisser-déposer lève un `TypeError`. La page installe donc
+des **alias** (`createCompatibleDragAndDropPlugin`), inertes dès qu'une v4 du
+plugin sortira. À retirer à ce moment-là.
+
+### Tâches
+
+- [x] `pages/calendar.vue` : Schedule-X + thème shadcn, 4 vues, DnD/resize,
+      ligne d'heure courante, clic sur créneau vide → création pré-remplie
+- [x] `shared/utils/calendar-display.ts` : `toFullCalendarEvent` →
+      `toDisplayEvent` / `toCalendarCategory` (pur, dates laissées en ISO)
+- [x] `tests/shared/calendar-display.test.ts` réécrit (8 cas)
+- [x] `package.json` : suppression des 6 `@fullcalendar/*`, ajout de
+      `temporal-polyfill` (**lock à régénérer**)
+- [x] `assets/css/main.css` : plus aucune mention FullCalendar
+- [x] `npm run lint` ✅ · `npx vue-tsc --noEmit` ✅ · `npm test` ✅ (212 tests)
+- [x] Vérif d'intégration en Node (DOM stubbé) : `createCalendar` accepte la
+      config exacte de la page, `events-service.set`, `calendar-controls.setDate`,
+      `setTheme('dark')` et les alias DnD répondent

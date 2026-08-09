@@ -5,21 +5,30 @@
       <!-- Grille pointillée + halo jaune en arrière-plan -->
       <div class="hero-bg absolute inset-0 pointer-events-none" aria-hidden="true" />
 
-      <!-- Bulles décoratives : flottent autour du hero, attrapables à la souris -->
-      <div ref="bubblesLayer" class="bubbles absolute inset-0 select-none" aria-hidden="true">
+      <!-- Pastilles décoratives : flottent autour du hero, attrapables à la souris -->
+      <div ref="pastillesLayer" class="pastilles absolute inset-0 select-none" aria-hidden="true">
         <div
-          v-for="(bubble, i) in bubbles"
+          v-for="(pastille, i) in pastilles"
           :key="i"
-          class="bubble absolute"
-          :class="bubble.show"
-          :style="bubble.pos"
+          class="pastille absolute"
+          :class="pastille.show"
+          :style="pastille.pos"
         >
           <span
-            class="bubble-inner"
-            :class="bubble.tone === 'brand' ? 'bubble-inner--brand' : 'bubble-inner--soft'"
-            :style="{ width: bubble.size + 'px', height: bubble.size + 'px' }"
+            class="pastille-inner bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full shadow-lg inline-flex items-center gap-2 whitespace-nowrap"
+            :class="pastille.style"
+            :style="{ rotate: pastille.rot + 'deg' }"
           >
-            {{ bubble.label }}
+            <span
+              v-if="pastille.dot"
+              class="w-2 h-2 rounded-full bg-brand-500 shrink-0"
+            />
+            <UIcon
+              v-else-if="pastille.icon"
+              :name="pastille.icon"
+              class="size-3.5 shrink-0 text-[var(--ui-text-dimmed)]"
+            />
+            {{ pastille.label }}
           </span>
         </div>
       </div>
@@ -490,19 +499,75 @@ definePageMeta({ auth: false })
 
 const { loggedIn } = useUserSession()
 
-// Bulles décoratives du hero : tailles, ancrages et visibilité par breakpoint.
-// Les grosses bulles sont réservées aux écrans larges pour rester dans les marges du contenu.
-const bubbles = [
-  { label: 'Visites', size: 96, tone: 'brand', pos: { top: '13%', left: '2.5%' }, show: 'hidden lg:block' },
-  { label: 'Livrables', size: 84, tone: 'soft', pos: { bottom: '10%', left: '4%' }, show: 'hidden xl:block' },
-  { label: 'Rapports', size: 78, tone: 'soft', pos: { top: '7%', right: '3.5%' }, show: 'hidden lg:block' },
-  { label: 'Alertes', size: 70, tone: 'brand', pos: { bottom: '9%', right: '5%' }, show: 'hidden lg:block' },
-  { label: '', size: 44, tone: 'brand', pos: { top: '40%', left: '0.5%' }, show: 'hidden md:block' },
-  { label: '', size: 30, tone: 'soft', pos: { top: '5%', left: '4%' }, show: 'block' },
-  { label: '', size: 24, tone: 'brand', pos: { top: '62%', right: '1%' }, show: 'hidden sm:block' }
+// Pastilles décoratives du hero : même langage visuel que les badges « À jour » et
+// « ↑ +12 % » de la carte (pilule élevée, arrondie, ombre portée, texte court).
+// Tailles et rotations légèrement variables pour un effet naturel ; ancrées vers les
+// bords et réservées aux écrans larges pour ne jamais gêner le titre ni les CTA.
+type HeroPastille = {
+  label: string
+  /** Point jaune de tête, comme le badge « À jour ». */
+  dot?: boolean
+  /** Alternative au point : une petite icône lucide. */
+  icon?: string
+  /** Rotation légère, en degrés (-6 à 6). */
+  rot: number
+  /** Utilitaires Tailwind de taille/couleur propres à la pastille. */
+  style: string
+  pos: Record<string, string>
+  show: string
+}
+
+const pastilles: HeroPastille[] = [
+  {
+    label: 'Visites',
+    dot: true,
+    rot: -5,
+    style: 'pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { top: '13%', left: '2%' },
+    show: 'hidden lg:block'
+  },
+  {
+    label: 'Livrables',
+    dot: true,
+    rot: 4,
+    style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { bottom: '12%', left: '3.5%' },
+    show: 'hidden xl:block'
+  },
+  {
+    label: 'Rapports',
+    icon: 'i-lucide-file-text',
+    rot: 6,
+    style: 'pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { top: '7%', right: '3%' },
+    show: 'hidden lg:block'
+  },
+  {
+    label: 'Alertes',
+    dot: true,
+    rot: -4,
+    style: 'pl-2.5 pr-3 py-1 text-[12.5px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { bottom: '9%', right: '4.5%' },
+    show: 'hidden lg:block'
+  },
+  {
+    label: '↑ +12 %',
+    rot: -6,
+    style: 'px-3.5 py-1.5 text-[13px] font-bold text-emerald-600',
+    pos: { top: '44%', left: '0.5%' },
+    show: 'hidden xl:block'
+  },
+  {
+    label: 'Compétences',
+    icon: 'i-lucide-target',
+    rot: 3,
+    style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { top: '60%', right: '1%' },
+    show: 'hidden xl:block'
+  }
 ]
 
-const bubblesLayer = ref<HTMLElement | null>(null)
+const pastillesLayer = ref<HTMLElement | null>(null)
 
 const problems = [
   "Un Excel par promo, qui n'est jamais à jour",
@@ -565,32 +630,33 @@ onMounted(() => {
   onUnmounted(() => io.disconnect())
 })
 
-// Bulles du hero : flottement continu (désactivé si mouvement réduit) + drag via gsap Draggable.
-let killBubbles: (() => void) | null = null
+// Pastilles du hero : flottement continu (désactivé si mouvement réduit) + drag via gsap Draggable.
+let killPastilles: (() => void) | null = null
 
 onMounted(async () => {
-  const layer = bubblesLayer.value
+  const layer = pastillesLayer.value
   if (!layer) return
 
   const { $gsap: gsap } = useNuxtApp()
   // Import dynamique : Draggable ne doit être chargé que côté client.
   const { Draggable } = await import('gsap/Draggable')
-  if (!bubblesLayer.value) return
+  if (!pastillesLayer.value) return
   gsap.registerPlugin(Draggable)
 
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  const items = Array.from(layer.querySelectorAll<HTMLElement>('.bubble'))
+  const items = Array.from(layer.querySelectorAll<HTMLElement>('.pastille'))
   const tweens: ReturnType<typeof gsap.to>[] = []
   const draggables: ReturnType<typeof Draggable.create> = []
 
   items.forEach((el, i) => {
     const inner = el.firstElementChild as HTMLElement
 
-    // Flottement : appliqué sur la sphère interne pour ne pas écraser le drag (porté par le conteneur).
+    // Flottement : appliqué sur la pastille interne pour ne pas écraser le drag (porté par le conteneur).
+    // La rotation reste sur la propriété CSS `rotate`, que gsap ne touche pas (il n'écrit que `transform`).
     if (!reduced) {
       tweens.push(gsap.to(inner, {
-        x: gsap.utils.random(-7, 7),
-        y: gsap.utils.random(-16, -8),
+        x: gsap.utils.random(-6, 6),
+        y: gsap.utils.random(-12, -6),
         duration: gsap.utils.random(3.4, 5.6),
         ease: 'sine.inOut',
         yoyo: true,
@@ -605,20 +671,20 @@ onMounted(async () => {
       bounds: layer,
       cursor: 'grab',
       activeCursor: 'grabbing',
-      onPress: () => gsap.to(inner, { scale: 1.12, duration: 0.2, ease: 'power2.out' }),
+      onPress: () => gsap.to(inner, { scale: 1.08, duration: 0.2, ease: 'power2.out' }),
       onRelease: () => gsap.to(inner, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.65)' })
     }))
   })
 
-  killBubbles = () => {
+  killPastilles = () => {
     draggables.forEach(d => d.kill())
     tweens.forEach(t => t.kill())
   }
 })
 
 onUnmounted(() => {
-  killBubbles?.()
-  killBubbles = null
+  killPastilles?.()
+  killPastilles = null
 })
 </script>
 
@@ -708,43 +774,26 @@ onUnmounted(() => {
   }
 }
 
-/* ─── Bulles décoratives du hero ─── */
-.bubbles {
-  /* Le calque ne bloque jamais le contenu : seules les sphères captent la souris. */
+/* ─── Pastilles décoratives du hero ─── */
+.pastilles {
+  /* Le calque ne bloque jamais le contenu : seules les pastilles captent la souris. */
   pointer-events: none;
-  /* Garde les bulles (et les drags) dans le hero, pas de débordement horizontal. */
+  /* Garde les pastilles (et les drags) dans le hero, pas de débordement horizontal. */
   overflow: hidden;
 }
-.bubble {
+.pastille {
   will-change: transform;
 }
-.bubble-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 9999px;
-  padding: 0 0.35rem;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.01em;
-  text-align: center;
+/* L'apparence (fond élevé, bordure, rounded-full, ombre, tailles) est portée par les
+   utilitaires Tailwind du template, calqués sur les badges « À jour » / « ↑ +12 % ». */
+.pastille-inner {
   pointer-events: auto;
   cursor: grab;
+  letter-spacing: 0.01em;
   will-change: transform;
 }
-.bubble-inner:active {
+.pastille-inner:active {
   cursor: grabbing;
-}
-.bubble-inner--brand {
-  background: linear-gradient(140deg, rgba(241, 222, 2, 0.95) 0%, rgba(255, 249, 176, 0.9) 100%);
-  color: #1F1F1E;
-  box-shadow: 0 8px 24px rgba(241, 222, 2, 0.28);
-}
-.bubble-inner--soft {
-  background: linear-gradient(140deg, var(--ui-bg-elevated) 0%, var(--ui-bg-muted) 100%);
-  border: 1px solid var(--ui-border);
-  color: var(--ui-text-muted);
-  box-shadow: 0 8px 24px rgba(31, 31, 30, 0.08);
 }
 
 /* ─── Titres de section ─── */
