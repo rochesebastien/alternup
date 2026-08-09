@@ -15,13 +15,16 @@ export async function assertTutorOwnsLearner(
   studentId: string
 ): Promise<void> {
   if (tutor.role !== Role.Tutor) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
   const relation = await prisma.tutorStudent.findUnique({
     where: { tutorId_studentId: { tutorId: tutor.id, studentId } }
   })
   if (!relation) {
-    throw createError({ statusCode: 403, statusMessage: 'Learner is not in your network' })
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Cette personne ne fait pas partie de votre réseau.'
+    })
   }
 }
 
@@ -39,11 +42,11 @@ export async function loadCalendarEventVisibleTo(id: string, user: User) {
     }
   })
   if (!event) {
-    throw createError({ statusCode: 404, statusMessage: 'Event not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Événement introuvable.' })
   }
   const isOwner = event.tutorId === user.id || event.studentId === user.id
   if (!isOwner) {
-    throw createError({ statusCode: 404, statusMessage: 'Event not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Événement introuvable.' })
   }
   return event
 }
@@ -61,7 +64,7 @@ export async function loadCourseNoteVisibleTo(id: string, user: User) {
     }
   })
   if (!note) {
-    throw createError({ statusCode: 404, statusMessage: 'Note not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Note introuvable.' })
   }
   await assertCanReadAssignment(user, note.assignment.studentId)
   return note
@@ -73,13 +76,13 @@ export async function assertCanReadAssignment(
 ): Promise<void> {
   if (user.id === studentId) return
   if (user.role !== Role.Tutor) {
-    throw createError({ statusCode: 404, statusMessage: 'Not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Ressource introuvable.' })
   }
   const relation = await prisma.tutorStudent.findUnique({
     where: { tutorId_studentId: { tutorId: user.id, studentId } }
   })
   if (!relation) {
-    throw createError({ statusCode: 404, statusMessage: 'Not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Ressource introuvable.' })
   }
 }
 

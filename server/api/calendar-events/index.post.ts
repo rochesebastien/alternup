@@ -33,12 +33,12 @@ export default defineEventHandler(async (event) => {
       select: { studentId: true }
     })
     if (!assignment) {
-      throw createError({ statusCode: 400, statusMessage: 'Invalid courseAssignmentId' })
+      throw createError({ statusCode: 400, statusMessage: 'Affectation de cours introuvable.' })
     }
     if (assignment.studentId !== parsed.data.studentId) {
       throw createError({
         statusCode: 400,
-        statusMessage: 'Course assignment does not belong to this learner'
+        statusMessage: "Cette affectation de cours n'appartient pas à cette personne."
       })
     }
   }
@@ -50,7 +50,7 @@ export default defineEventHandler(async (event) => {
     })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2003') {
-      throw createError({ statusCode: 400, statusMessage: 'Invalid foreign key reference' })
+      throw createError({ statusCode: 400, statusMessage: 'Référence liée introuvable.' })
     }
     throw err
   }

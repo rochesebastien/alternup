@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid assignment id' })
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'affectation invalide." })
   }
 
   const assignment = await loadAssignmentVisibleTo(id.data, user)
@@ -36,7 +36,10 @@ export default defineEventHandler(async (event) => {
 
   const data = isTutor ? parsed.data : pickStudentEditableFields(parsed.data)
   if (Object.keys(data).length === 0) {
-    throw createError({ statusCode: 403, statusMessage: 'No editable field for this role' })
+    throw createError({
+      statusCode: 403,
+      statusMessage: 'Aucun champ modifiable pour votre rôle.'
+    })
   }
 
   return prisma.projectAssignment.update({

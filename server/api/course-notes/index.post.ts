@@ -38,7 +38,7 @@ export default defineEventHandler(async (event) => {
     select: { studentId: true }
   })
   if (!assignment) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid assignmentId' })
+    throw createError({ statusCode: 400, statusMessage: 'Affectation introuvable.' })
   }
   await assertCanReadAssignment(user, assignment.studentId)
 

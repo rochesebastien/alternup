@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { ProjectStatus } from '~/shared/utils/enums'
 
-const title = z.string().trim().min(1, 'Title is required').max(200)
+const title = z.string().trim().min(1, 'Le titre est requis.').max(200)
 const description = z.string().trim().max(5000).nullable()
 
 export const projectCreateSchema = z.object({
@@ -17,7 +17,7 @@ export const projectUpdateSchema = z
     internal: z.boolean().optional()
   })
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'At least one field is required'
+    message: 'Au moins un champ doit être fourni.'
   })
 
 export const assignmentCreateSchema = z.object({
@@ -37,7 +37,7 @@ export const assignmentUpdateSchema = z
     startedAt: z.coerce.date().nullable().optional()
   })
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'At least one field is required'
+    message: 'Au moins un champ doit être fourni.'
   })
 
 export type ProjectCreateInput = z.input<typeof projectCreateSchema>

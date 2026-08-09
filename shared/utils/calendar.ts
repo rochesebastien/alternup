@@ -9,7 +9,7 @@ export const calendarEventCreateSchema = z
     courseAssignmentId: z.guid().nullable().optional()
   })
   .refine((d) => d.endTime > d.startTime, {
-    message: 'endTime must be after startTime',
+    message: 'La date de fin doit être postérieure à la date de début.',
     path: ['endTime']
   })
 
@@ -25,10 +25,10 @@ export const calendarEventUpdateSchema = z
       if (d.startTime && d.endTime) return d.endTime > d.startTime
       return true
     },
-    { message: 'endTime must be after startTime', path: ['endTime'] }
+    { message: 'La date de fin doit être postérieure à la date de début.', path: ['endTime'] }
   )
   .refine((data) => Object.keys(data).length > 0, {
-    message: 'At least one field is required'
+    message: 'Au moins un champ doit être fourni.'
   })
 
 export const eventNoteUpsertSchema = z.object({

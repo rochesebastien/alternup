@@ -4,24 +4,13 @@ import {
   feedItemLabel,
   relativeTimeFr
 } from '~/shared/utils/notifications'
-import type { ReminderItem } from '~/shared/utils/notifications'
+import type {
+  NotificationFeed,
+  NotificationItem,
+  ReminderItem
+} from '~/shared/utils/notifications'
 
 definePageMeta({})
-
-interface NotificationItem {
-  id: string
-  type: string
-  title: string
-  body: string | null
-  link: string | null
-  readAt: string | null
-  createdAt: string
-}
-
-interface NotificationFeed {
-  notifications: NotificationItem[]
-  reminders: ReminderItem[]
-}
 
 const { data, refresh } = await useFetch<NotificationFeed>('/api/notifications', {
   default: () => ({ notifications: [], reminders: [] })
@@ -87,7 +76,7 @@ async function markAllAsRead(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
       title="Notifications"
       subtitle="Vos événements de suivi et vos échéances à traiter."

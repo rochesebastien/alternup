@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid event id' })
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'événement invalide." })
   }
   return loadCalendarEventVisibleTo(id.data, user)
 })

@@ -9,11 +9,11 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid note id' })
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant de note invalide.' })
   }
 
   await loadCourseNoteVisibleTo(id.data, user)
 
   await prisma.courseNote.delete({ where: { id: id.data } })
-  return { message: 'Note deleted' }
+  return { message: 'Note supprimée.' }
 })

@@ -105,7 +105,7 @@ function readErrorMessage(err: unknown): string | null {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-6 py-10 space-y-6 print:max-w-none print:px-0 print:py-0">
+  <div class="w-full px-6 py-10 space-y-6 print:px-0 print:py-0">
     <UButton
       variant="link"
       color="neutral"

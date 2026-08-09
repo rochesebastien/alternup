@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid assignment id' })
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'affectation invalide." })
   }
 
   // 404 si l'utilisateur n'est ni le tuteur propriétaire ni l'étudiant de la mission.

@@ -5,6 +5,25 @@
       <!-- Grille pointillée + halo jaune en arrière-plan -->
       <div class="hero-bg absolute inset-0 pointer-events-none" aria-hidden="true" />
 
+      <!-- Bulles décoratives : flottent autour du hero, attrapables à la souris -->
+      <div ref="bubblesLayer" class="bubbles absolute inset-0 select-none" aria-hidden="true">
+        <div
+          v-for="(bubble, i) in bubbles"
+          :key="i"
+          class="bubble absolute"
+          :class="bubble.show"
+          :style="bubble.pos"
+        >
+          <span
+            class="bubble-inner"
+            :class="bubble.tone === 'brand' ? 'bubble-inner--brand' : 'bubble-inner--soft'"
+            :style="{ width: bubble.size + 'px', height: bubble.size + 'px' }"
+          >
+            {{ bubble.label }}
+          </span>
+        </div>
+      </div>
+
       <div class="relative max-w-[1200px] mx-auto px-6">
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-14 lg:gap-8 items-center">
           <!-- Colonne texte -->
@@ -127,16 +146,6 @@
         </div>
       </div>
     </header>
-
-    <!-- ============== TICKER ============== -->
-    <div class="marquee border-y border-[var(--ui-border)] py-4 select-none" aria-hidden="true">
-      <div v-for="n in 2" :key="n" class="marquee-track">
-        <span v-for="word in tickerWords" :key="word" class="marquee-item">
-          <span class="marquee-dot" />
-          {{ word }}
-        </span>
-      </div>
-    </div>
 
     <!-- ============== PROBLEM ============== -->
     <section class="py-20 sm:py-28">
@@ -481,16 +490,19 @@ definePageMeta({ auth: false })
 
 const { loggedIn } = useUserSession()
 
-const tickerWords = [
-  'Visites',
-  'Livrables',
-  'Rapports',
-  'Compétences',
-  'Alertes',
-  'Signatures',
-  'Bulletins',
-  'Évaluations'
+// Bulles décoratives du hero : tailles, ancrages et visibilité par breakpoint.
+// Les grosses bulles sont réservées aux écrans larges pour rester dans les marges du contenu.
+const bubbles = [
+  { label: 'Visites', size: 96, tone: 'brand', pos: { top: '13%', left: '2.5%' }, show: 'hidden lg:block' },
+  { label: 'Livrables', size: 84, tone: 'soft', pos: { bottom: '10%', left: '4%' }, show: 'hidden xl:block' },
+  { label: 'Rapports', size: 78, tone: 'soft', pos: { top: '7%', right: '3.5%' }, show: 'hidden lg:block' },
+  { label: 'Alertes', size: 70, tone: 'brand', pos: { bottom: '9%', right: '5%' }, show: 'hidden lg:block' },
+  { label: '', size: 44, tone: 'brand', pos: { top: '40%', left: '0.5%' }, show: 'hidden md:block' },
+  { label: '', size: 30, tone: 'soft', pos: { top: '5%', left: '4%' }, show: 'block' },
+  { label: '', size: 24, tone: 'brand', pos: { top: '62%', right: '1%' }, show: 'hidden sm:block' }
 ]
+
+const bubblesLayer = ref<HTMLElement | null>(null)
 
 const problems = [
   "Un Excel par promo, qui n'est jamais à jour",
@@ -551,6 +563,62 @@ onMounted(() => {
   }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
   targets.forEach(el => io.observe(el))
   onUnmounted(() => io.disconnect())
+})
+
+// Bulles du hero : flottement continu (désactivé si mouvement réduit) + drag via gsap Draggable.
+let killBubbles: (() => void) | null = null
+
+onMounted(async () => {
+  const layer = bubblesLayer.value
+  if (!layer) return
+
+  const { $gsap: gsap } = useNuxtApp()
+  // Import dynamique : Draggable ne doit être chargé que côté client.
+  const { Draggable } = await import('gsap/Draggable')
+  if (!bubblesLayer.value) return
+  gsap.registerPlugin(Draggable)
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const items = Array.from(layer.querySelectorAll<HTMLElement>('.bubble'))
+  const tweens: ReturnType<typeof gsap.to>[] = []
+  const draggables: ReturnType<typeof Draggable.create> = []
+
+  items.forEach((el, i) => {
+    const inner = el.firstElementChild as HTMLElement
+
+    // Flottement : appliqué sur la sphère interne pour ne pas écraser le drag (porté par le conteneur).
+    if (!reduced) {
+      tweens.push(gsap.to(inner, {
+        x: gsap.utils.random(-7, 7),
+        y: gsap.utils.random(-16, -8),
+        duration: gsap.utils.random(3.4, 5.6),
+        ease: 'sine.inOut',
+        yoyo: true,
+        repeat: -1,
+        delay: i * 0.15
+      }))
+    }
+
+    draggables.push(...Draggable.create(el, {
+      type: 'x,y',
+      trigger: inner,
+      bounds: layer,
+      cursor: 'grab',
+      activeCursor: 'grabbing',
+      onPress: () => gsap.to(inner, { scale: 1.12, duration: 0.2, ease: 'power2.out' }),
+      onRelease: () => gsap.to(inner, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.65)' })
+    }))
+  })
+
+  killBubbles = () => {
+    draggables.forEach(d => d.kill())
+    tweens.forEach(t => t.kill())
+  }
+})
+
+onUnmounted(() => {
+  killBubbles?.()
+  killBubbles = null
 })
 </script>
 
@@ -640,46 +708,43 @@ onMounted(() => {
   }
 }
 
-/* ─── Ticker ─── */
-.marquee {
-  display: flex;
+/* ─── Bulles décoratives du hero ─── */
+.bubbles {
+  /* Le calque ne bloque jamais le contenu : seules les sphères captent la souris. */
+  pointer-events: none;
+  /* Garde les bulles (et les drags) dans le hero, pas de débordement horizontal. */
   overflow: hidden;
-  gap: 3.5rem;
 }
-.marquee-track {
+.bubble {
+  will-change: transform;
+}
+.bubble-inner {
   display: flex;
-  gap: 3.5rem;
-  flex-shrink: 0;
-  min-width: 100%;
-  justify-content: space-around;
-  animation: marquee 36s linear infinite;
-}
-.marquee-item {
-  display: inline-flex;
   align-items: center;
-  gap: 0.875rem;
-  font-size: 13px;
+  justify-content: center;
+  border-radius: 9999px;
+  padding: 0 0.35rem;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-align: center;
+  pointer-events: auto;
+  cursor: grab;
+  will-change: transform;
+}
+.bubble-inner:active {
+  cursor: grabbing;
+}
+.bubble-inner--brand {
+  background: linear-gradient(140deg, rgba(241, 222, 2, 0.95) 0%, rgba(255, 249, 176, 0.9) 100%);
+  color: #1F1F1E;
+  box-shadow: 0 8px 24px rgba(241, 222, 2, 0.28);
+}
+.bubble-inner--soft {
+  background: linear-gradient(140deg, var(--ui-bg-elevated) 0%, var(--ui-bg-muted) 100%);
+  border: 1px solid var(--ui-border);
   color: var(--ui-text-muted);
-  white-space: nowrap;
-}
-.marquee-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 2px;
-  background: #F1DE02;
-  transform: rotate(45deg);
-}
-@keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(calc(-100% - 3.5rem)); }
-}
-@media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none;
-  }
+  box-shadow: 0 8px 24px rgba(31, 31, 30, 0.08);
 }
 
 /* ─── Titres de section ─── */

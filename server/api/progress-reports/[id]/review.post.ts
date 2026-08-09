@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
 
   const report = await loadReportVisibleTo(idp.data, user)
   if (report.tutorId !== user.id) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
 
   const parsed = reportReviewSchema.safeParse(await readBody(event))

@@ -13,7 +13,7 @@ const bodySchema = z
     notionsCovered: z.array(z.string().trim().min(1)).nullable().optional()
   })
   .refine((d) => Object.keys(d).length > 0, {
-    message: 'At least one field is required'
+    message: 'Au moins un champ doit être fourni.'
   })
 
 const include = {
@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid note id' })
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant de note invalide.' })
   }
 
   await loadCourseNoteVisibleTo(id.data, user)

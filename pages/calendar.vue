@@ -1,8 +1,8 @@
 <template>
-  <div class="mx-auto max-w-6xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
       title="Calendrier"
-      :subtitle="isTutor ? 'Sessions et rendez-vous avec vos learners.' : 'Vos cours et rendez-vous à venir.'"
+      :subtitle="isTutor ? 'Sessions et rendez-vous avec vos alternants.' : 'Vos cours et rendez-vous à venir.'"
     >
       <template v-if="isTutor" #actions>
         <UButton color="neutral" icon="i-lucide-plus" @click="openCreate">
@@ -121,12 +121,12 @@
             <UInput v-model="createState.title" class="w-full" />
           </UFormField>
 
-          <UFormField label="Learner" name="studentId" required>
+          <UFormField label="Alternant ou stagiaire" name="studentId" required>
             <USelect
               v-model="createState.studentId"
               :items="learnerItems"
               value-key="value"
-              placeholder="Sélectionner un learner…"
+              placeholder="Sélectionner un alternant…"
               class="w-full"
             />
           </UFormField>
@@ -244,6 +244,15 @@ const calendarOptions = computed(() => ({
     right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
   },
   locale: frLocale,
+  // Les flèches de navigation n'ont pas de libellé visible et la locale `fr`
+  // ne fournit pas de `buttonHints` : sans ça, l'infobulle native reste en
+  // anglais (« Previous week »).
+  buttonHints: {
+    prev: 'Période précédente',
+    next: 'Période suivante',
+    today: 'Revenir à aujourd\'hui'
+  },
+  viewHint: 'Vue $0',
   height: 'auto',
   weekNumbers: false,
   nowIndicator: true,
@@ -467,6 +476,17 @@ function readErrorMessage(err: unknown): string | null {
 .fc .fc-button-primary:not(:disabled).fc-button-active,
 .fc .fc-button-primary:not(:disabled):active {
   color: var(--ui-text-inverted);
+}
+
+/* Les évènements ouvrent la modale de détail : le curseur et un léger
+   estompage au survol le signalent (FullCalendar ne le fait que pour les
+   évènements déplaçables ou porteurs d'un lien). */
+.fc .fc-event {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+.fc .fc-event:hover {
+  opacity: 0.85;
 }
 
 /* Cellules / headers */

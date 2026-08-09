@@ -29,10 +29,13 @@ export default defineEventHandler(async (event) => {
     select: { id: true, role: true }
   })
   if (!student) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid studentId' })
+    throw createError({ statusCode: 400, statusMessage: 'Utilisateur introuvable.' })
   }
   if (student.role !== Role.Alternant && student.role !== Role.Stagiaire) {
-    throw createError({ statusCode: 400, statusMessage: 'Target user is not a learner' })
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Cet utilisateur n'est ni alternant ni stagiaire."
+    })
   }
 
   try {
@@ -42,7 +45,10 @@ export default defineEventHandler(async (event) => {
     })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw createError({ statusCode: 409, statusMessage: 'Assignment already exists' })
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Cette mission est déjà attribuée à cette personne.'
+      })
     }
     throw err
   }

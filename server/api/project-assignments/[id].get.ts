@@ -8,7 +8,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid assignment id' })
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'affectation invalide." })
   }
   return loadAssignmentVisibleTo(id.data, user)
 })

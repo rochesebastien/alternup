@@ -13,7 +13,7 @@ export default defineEventHandler(async (event) => {
 
   const announcement = await loadAnnouncementVisibleTo(idp.data, user)
   if (announcement.authorId !== user.id) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
 
   await prisma.announcement.delete({ where: { id: announcement.id } })

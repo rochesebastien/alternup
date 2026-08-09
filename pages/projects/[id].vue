@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-4xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <UButton variant="link" color="neutral" icon="i-lucide-arrow-left" to="/projects" class="-ml-2 px-2 text-[var(--ui-text-muted)]">
       Retour aux projets
     </UButton>
@@ -39,7 +39,7 @@
             </p>
           </div>
           <UButton color="neutral" icon="i-lucide-plus" @click="openAssign">
-            Assigner un learner
+            Assigner un alternant
           </UButton>
         </div>
 
@@ -71,22 +71,26 @@
                 >
                   {{ projectStatusLabel(assignment.status) }}
                 </UBadge>
-                <UButton
-                  variant="ghost"
-                  color="neutral"
-                  icon="i-lucide-pencil"
-                  size="sm"
-                  :aria-label="`Éditer la mission de ${assignment.student.firstName}`"
-                  @click="openEditAssignment(assignment)"
-                />
-                <UButton
-                  variant="ghost"
-                  color="neutral"
-                  icon="i-lucide-trash-2"
-                  size="sm"
-                  :aria-label="`Retirer ${assignment.student.firstName}`"
-                  @click="openRemoveAssignment(assignment)"
-                />
+                <UTooltip text="Modifier la mission">
+                  <UButton
+                    variant="ghost"
+                    color="neutral"
+                    icon="i-lucide-pencil"
+                    size="sm"
+                    :aria-label="`Éditer la mission de ${assignment.student.firstName}`"
+                    @click="openEditAssignment(assignment)"
+                  />
+                </UTooltip>
+                <UTooltip text="Retirer la mission">
+                  <UButton
+                    variant="ghost"
+                    color="neutral"
+                    icon="i-lucide-trash-2"
+                    size="sm"
+                    :aria-label="`Retirer ${assignment.student.firstName}`"
+                    @click="openRemoveAssignment(assignment)"
+                  />
+                </UTooltip>
               </div>
             </div>
 
@@ -109,7 +113,7 @@
     </template>
 
     <!-- Assigner -->
-    <UModal v-model:open="assignOpen" title="Assigner un learner">
+    <UModal v-model:open="assignOpen" title="Assigner un alternant">
       <template #body>
         <UForm
           :state="assignState"
@@ -117,18 +121,18 @@
           class="space-y-4"
           @submit="onAssignSubmit"
         >
-          <UFormField label="Learner" name="studentId" required>
+          <UFormField label="Alternant ou stagiaire" name="studentId" required>
             <USelect
               v-model="assignState.studentId"
               :items="learnerItems"
               value-key="value"
-              placeholder="Sélectionner un learner…"
+              placeholder="Sélectionner un alternant…"
               class="w-full"
             />
             <template #help>
               <span v-if="learnerItems.length === 0" class="text-xs text-amber-600">
-                Aucun learner dans votre réseau.
-                <NuxtLink to="/alternants" class="underline">Ajouter d'abord un learner</NuxtLink>.
+                Aucun alternant dans votre réseau.
+                <NuxtLink to="/alternants" class="underline">Ajouter d'abord un alternant</NuxtLink>.
               </span>
             </template>
           </UFormField>
@@ -210,7 +214,7 @@
     <UModal v-model:open="removeAssignOpen" title="Retirer cette mission ?">
       <template #body>
         <p class="text-sm text-[var(--ui-text-muted)]">
-          La mission sera retirée. Le compte du learner n'est pas affecté.
+          La mission sera retirée. Le compte de l'alternant n'est pas affecté.
         </p>
         <UAlert
           v-if="removeAssignError"
@@ -362,7 +366,7 @@ async function onAssignSubmit() {
     await refresh()
     toast.add({ title: 'Mission assignée', color: 'success' })
   } catch (err: unknown) {
-    assignError.value = readErrorMessage(err) ?? 'Impossible d\'assigner ce learner.'
+    assignError.value = readErrorMessage(err) ?? 'Impossible d\'assigner cet alternant.'
   } finally {
     assignPending.value = false
   }
