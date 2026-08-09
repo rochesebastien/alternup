@@ -1,123 +1,177 @@
 <template>
-  <div ref="rootRef" class="overflow-x-hidden">
+  <div class="overflow-x-hidden">
     <!-- ============== HERO ============== -->
-    <header class="relative pt-12 sm:pt-20 pb-16 sm:pb-24">
-      <!-- Funnel décoratif en arrière-plan -->
-      <div class="anim-funnel absolute inset-0 pointer-events-none z-0" aria-hidden="true">
-        <svg
-          class="w-full h-full"
-          viewBox="0 0 1400 900"
-          preserveAspectRatio="none"
-        >
-          <defs>
-            <linearGradient id="funnel-grad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#FFF9B0" stop-opacity="0.7" />
-              <stop offset="100%" stop-color="#F9F9F9" stop-opacity="0" />
-            </linearGradient>
-            <linearGradient id="funnel-grad-dark" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#F1DE02" stop-opacity="0.12" />
-              <stop offset="100%" stop-color="#1F1F1E" stop-opacity="0" />
-            </linearGradient>
-          </defs>
-          <path
-            d="M0,0 Q700,500 700,900 Q700,500 1400,0 Z"
-            :fill="isDark ? 'url(#funnel-grad-dark)' : 'url(#funnel-grad)'"
-          />
-          <path d="M0,0 Q700,500 700,900" stroke="#F1DE02" stroke-width="1.5" fill="none" opacity="0.5" />
-          <path d="M1400,0 Q700,500 700,900" stroke="#F1DE02" stroke-width="1.5" fill="none" opacity="0.5" />
-        </svg>
-      </div>
+    <header class="hero relative pt-14 sm:pt-24 pb-20 sm:pb-28">
+      <!-- Grille pointillée + halo jaune en arrière-plan -->
+      <div class="hero-bg absolute inset-0 pointer-events-none" aria-hidden="true" />
 
-      <div class="relative z-10 max-w-[820px] mx-auto px-6 text-center">
-        <div
-          class="inline-flex items-center gap-2.5 rounded-full border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] pl-3.5 pr-5 py-2 text-sm font-medium shadow-sm mb-8"
-        >
-          Fait par un alternant pour les alternants
-        </div>
-
-        <h1 class="text-[40px] leading-[1.02] sm:text-6xl lg:text-[76px] font-extrabold tracking-[-0.035em] mb-7">
-          Les alternants méritent mieux qu'un Excel
-        </h1>
-
-        <p class="text-lg leading-[1.55] text-[var(--ui-text-muted)] max-w-[600px] mx-auto mb-10">
-          Alternup centralise le suivi de tes alternants et stagiaires.
-          Visites, livrables, rapports, et compétences... tu sais qui en est où,
-          et quand intervenir, et quand l'alternant a besoin de toi.
-        </p>
-
-        <div class="flex flex-col sm:flex-row gap-3 justify-center mb-16 sm:mb-20">
-          <UButton
-            :to="loggedIn ? '/alternants' : '/register'"
-            color="primary"
-            size="xl"
-            class="rounded-full font-semibold px-7"
-          >
-            Suivre mes alternants
-          </UButton>
-          <UButton
-            color="neutral"
-            variant="outline"
-            size="xl"
-            to="/features"
-            class="rounded-full font-semibold px-7 bg-[var(--ui-bg-elevated)]"
-          >
-            Comment ça marche ?
-          </UButton>
-        </div>
-
-        <!-- Carte étudiant -->
-        <div
-          class="inline-flex items-center gap-4 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-[20px] py-4 pl-5 pr-6 text-left shadow-[0_4px_12px_rgba(31,31,30,.06),0_12px_32px_rgba(31,31,30,.06)]"
-        >
-          <div
-            class="w-13 h-13 rounded-full flex items-center justify-center text-2xl shrink-0"
-            style="width:52px;height:52px;background:linear-gradient(135deg,#F1DE02 0%,#FFF9B0 100%);"
-          >
-            🎓
-          </div>
-          <div>
-            <strong class="block text-[15px] font-bold">Léa Martin</strong>
-            <div class="text-[13px] text-[var(--ui-text-muted)] mb-2">
-              Master 2 Software Engineering · Macron Corporation
+      <div class="relative max-w-[1200px] mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-14 lg:gap-8 items-center">
+          <!-- Colonne texte -->
+          <div class="lg:col-span-7 text-center lg:text-left">
+            <div
+              data-reveal
+              class="inline-flex items-center gap-2.5 rounded-full border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)]/80 backdrop-blur px-4 py-1.5 text-[13px] font-semibold shadow-sm mb-8"
+            >
+              <span class="relative flex w-2 h-2" aria-hidden="true">
+                <span class="absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75 animate-ping" />
+                <span class="relative inline-flex rounded-full w-2 h-2 bg-brand-500" />
+              </span>
+              Fait par un alternant pour les alternants
             </div>
-            <div class="flex flex-wrap gap-1">
-              <span class="inline-block bg-brand-500 text-black text-xs font-semibold px-2.5 py-1 rounded-full">
-                Alternance
+
+            <h1
+              data-reveal
+              style="--d:.05s"
+              class="text-[44px] leading-[1.02] sm:text-6xl xl:text-[80px] font-extrabold tracking-[-0.04em] mb-7 text-balance"
+            >
+              Les alternants méritent
+              <span class="hl">mieux</span>
+              qu'<span class="strike">un&nbsp;Excel
+                <svg class="strike-svg" viewBox="0 0 140 28" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M4 17 Q 40 9, 72 14 T 136 11" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" />
+                </svg>
               </span>
-              <span class="inline-block bg-[var(--ui-bg-muted)] text-[var(--ui-text-toned)] text-xs font-medium px-2.5 py-1 rounded-full">
-                I2
-              </span>
-              <span class="inline-block bg-[var(--ui-bg-muted)] text-[var(--ui-text-toned)] text-xs font-medium px-2.5 py-1 rounded-full">
-                2ᵉ année
-              </span>
+            </h1>
+
+            <p
+              data-reveal
+              style="--d:.1s"
+              class="text-lg leading-[1.6] text-[var(--ui-text-muted)] max-w-[560px] mx-auto lg:mx-0 mb-10"
+            >
+              Alternup centralise le suivi de tes alternants et stagiaires.
+              Visites, livrables, rapports, et compétences... tu sais qui en est où,
+              et quand intervenir, et quand l'alternant a besoin de toi.
+            </p>
+
+            <div
+              data-reveal
+              style="--d:.15s"
+              class="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
+            >
+              <UButton
+                :to="loggedIn ? '/alternants' : '/register'"
+                color="primary"
+                size="xl"
+                class="rounded-full font-semibold px-8 shadow-[0_8px_24px_rgba(241,222,2,0.35)] hover:shadow-[0_10px_28px_rgba(241,222,2,0.45)] transition-shadow"
+              >
+                Suivre mes alternants
+              </UButton>
+              <UButton
+                color="neutral"
+                variant="outline"
+                size="xl"
+                to="/features"
+                class="rounded-full font-semibold px-8"
+              >
+                Comment ça marche ?
+              </UButton>
+            </div>
+          </div>
+
+          <!-- Colonne visuelle : collage de cartes -->
+          <div class="lg:col-span-5" data-reveal style="--d:.2s">
+            <div class="relative max-w-[400px] mx-auto lg:ml-auto lg:mr-0 px-4 py-8">
+              <!-- Aplat jaune décalé derrière la carte -->
+              <div
+                class="absolute inset-6 translate-x-4 translate-y-4 rotate-3 rounded-[28px] bg-brand-500"
+                aria-hidden="true"
+              />
+
+              <!-- Carte étudiant -->
+              <div
+                class="relative bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-[24px] p-6 -rotate-2 shadow-[0_12px_32px_rgba(31,31,30,.10),0_32px_64px_rgba(31,31,30,.10)]"
+              >
+                <div class="flex items-center gap-4">
+                  <div
+                    class="rounded-full flex items-center justify-center text-2xl shrink-0"
+                    style="width:56px;height:56px;background:linear-gradient(135deg,#F1DE02 0%,#FFF9B0 100%);"
+                  >
+                    🎓
+                  </div>
+                  <div class="min-w-0">
+                    <strong class="block text-[16px] font-bold">Léa Martin</strong>
+                    <div class="text-[13px] text-[var(--ui-text-muted)]">
+                      Master 2 Software Engineering · Macron Corporation
+                    </div>
+                  </div>
+                </div>
+                <div class="h-px bg-[var(--ui-border)] my-4" />
+                <div class="flex flex-wrap gap-1.5">
+                  <span class="inline-block bg-brand-500 text-black text-xs font-semibold px-2.5 py-1 rounded-full">
+                    Alternance
+                  </span>
+                  <span class="inline-block bg-[var(--ui-bg-muted)] text-[var(--ui-text-toned)] text-xs font-medium px-2.5 py-1 rounded-full">
+                    I2
+                  </span>
+                  <span class="inline-block bg-[var(--ui-bg-muted)] text-[var(--ui-text-toned)] text-xs font-medium px-2.5 py-1 rounded-full">
+                    2ᵉ année
+                  </span>
+                </div>
+              </div>
+
+              <!-- Pastilles flottantes -->
+              <div
+                class="float-chip absolute -top-1 -right-2 rotate-6 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold shadow-lg flex items-center gap-2"
+              >
+                <span class="w-2 h-2 rounded-full bg-brand-500" aria-hidden="true" />
+                À jour
+              </div>
+              <div
+                class="float-chip float-chip--slow absolute -bottom-2 -left-1 -rotate-3 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full px-3.5 py-1.5 text-[13px] font-bold shadow-lg text-emerald-600"
+              >
+                ↑ +12 %
+              </div>
             </div>
           </div>
         </div>
       </div>
     </header>
 
+    <!-- ============== TICKER ============== -->
+    <div class="marquee border-y border-[var(--ui-border)] py-4 select-none" aria-hidden="true">
+      <div v-for="n in 2" :key="n" class="marquee-track">
+        <span v-for="word in tickerWords" :key="word" class="marquee-item">
+          <span class="marquee-dot" />
+          {{ word }}
+        </span>
+      </div>
+    </div>
+
     <!-- ============== PROBLEM ============== -->
-    <section class="py-16 sm:py-24">
+    <section class="py-20 sm:py-28">
       <div class="max-w-[1200px] mx-auto px-6">
-        <div class="text-center max-w-[760px] mx-auto mb-12 sm:mb-16">
-          <span class="inline-block text-xs font-bold tracking-[0.18em] uppercase bg-brand-500 text-black px-3.5 py-1.5 rounded-full mb-6">
-            Le problème
-          </span>
-          <h2 id="product_anchor" class="text-3xl sm:text-4xl lg:text-[56px] leading-[1.05] font-extrabold tracking-[-0.03em] mb-5">
-            Marre de courir après tes alternants ?
-          </h2>
-          <p class="text-[17px] leading-[1.55] text-[var(--ui-text-muted)] max-w-[600px] mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-end mb-12 sm:mb-16">
+          <div class="lg:col-span-7">
+            <span data-reveal class="eyebrow">Le problème</span>
+            <h2
+              id="product_anchor"
+              data-reveal
+              style="--d:.05s"
+              class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance"
+            >
+              Marre de courir après tes alternants ?
+            </h2>
+          </div>
+          <p
+            data-reveal
+            style="--d:.1s"
+            class="lg:col-span-5 text-[17px] leading-[1.6] text-[var(--ui-text-muted)] lg:pb-2"
+          >
             Le suivi par mail, Excel et Teams, ça tient plus.
             Centralise tes alternants au même endroit, et reprends le contrôle.
           </p>
         </div>
 
-        <div class="bg-[var(--ui-bg-muted)] rounded-[28px] p-8 sm:p-14 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-12">
-          <!-- Sans -->
-          <div>
-            <h3 class="text-center text-lg font-bold mb-7 inline-flex items-center justify-center gap-2 w-full">
-              Sans
-              <span class="font-extrabold">alternup</span>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Sans : panneau clair, volontairement « bancal » -->
+          <div
+            data-reveal
+            class="rounded-[24px] border border-dashed border-[var(--ui-border-accented)] bg-[var(--ui-bg-muted)] p-8 sm:p-10"
+          >
+            <h3 class="flex items-center gap-3 text-lg font-bold mb-8">
+              <span class="w-2.5 h-2.5 rounded-full bg-red-500" aria-hidden="true" />
+              Sans <span class="font-extrabold -ml-1">alternup</span>
             </h3>
             <ul class="space-y-4">
               <li
@@ -125,7 +179,7 @@
                 :key="i"
                 class="flex items-start gap-3.5 text-[15.5px] leading-[1.5]"
               >
-                <span class="w-5.5 h-5.5 rounded-full bg-red-500 text-white shrink-0 flex items-center justify-center mt-0.5" style="width:22px;height:22px;">
+                <span class="rounded-full bg-red-500/10 text-red-500 shrink-0 flex items-center justify-center mt-0.5" style="width:22px;height:22px;">
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
                     <path d="M2 2L8 8M8 2L2 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
                   </svg>
@@ -135,13 +189,18 @@
             </ul>
           </div>
 
-          <!-- Avec -->
-          <div>
-            <h3 class="text-center text-lg font-bold mb-7 inline-flex items-center justify-center gap-2 w-full">
-              Avec
-              <span class="font-extrabold">alternup</span>
+          <!-- Avec : panneau sombre, net -->
+          <div
+            data-reveal
+            style="--d:.1s"
+            class="dark-panel rounded-[24px] p-8 sm:p-10 relative overflow-hidden"
+          >
+            <div class="dark-panel-glow" aria-hidden="true" />
+            <h3 class="relative flex items-center gap-3 text-lg font-bold mb-8 text-white">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-500" aria-hidden="true" />
+              Avec <span class="font-extrabold -ml-1">alternup</span>
             </h3>
-            <ul class="space-y-4">
+            <ul class="relative space-y-4">
               <li
                 v-for="(item, i) in benefitsList"
                 :key="i"
@@ -152,8 +211,8 @@
                     <path d="M2 5L4 7L8 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                   </svg>
                 </span>
-                <span class="text-[var(--ui-text-muted)]">
-                  <strong class="text-[var(--ui-text)] font-bold mr-1">{{ item.title }}</strong>
+                <span class="text-[#A8A8A6]">
+                  <strong class="text-white font-bold mr-1">{{ item.title }}</strong>
                   : {{ item.text }}
                 </span>
               </li>
@@ -164,33 +223,42 @@
     </section>
 
     <!-- ============== BENEFITS ============== -->
-    <section class="py-16 sm:py-24">
+    <section class="py-20 sm:py-28">
       <div class="max-w-[1200px] mx-auto px-6">
-        <div class="text-center max-w-[760px] mx-auto mb-12 sm:mb-16">
-          <span class="inline-block text-xs font-bold tracking-[0.18em] uppercase bg-brand-500 text-black px-3.5 py-1.5 rounded-full mb-6">
-            Bénéfices
-          </span>
-          <h2 class="text-3xl sm:text-4xl lg:text-[56px] leading-[1.05] font-extrabold tracking-[-0.03em] mb-5">
-            Un suivi clair, pour des alternants sereins
-          </h2>
-          <p class="text-[17px] leading-[1.55] text-[var(--ui-text-muted)] max-w-[600px] mx-auto">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-end mb-12 sm:mb-16">
+          <div class="lg:col-span-7">
+            <span data-reveal class="eyebrow">Bénéfices</span>
+            <h2
+              data-reveal
+              style="--d:.05s"
+              class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance"
+            >
+              Un suivi clair, pour des alternants sereins
+            </h2>
+          </div>
+          <p
+            data-reveal
+            style="--d:.1s"
+            class="lg:col-span-5 text-[17px] leading-[1.6] text-[var(--ui-text-muted)] lg:pb-2"
+          >
             Du tableau de bord à l'évaluation finale, alternup t'accompagne à chaque étape du parcours de tes alternants.
           </p>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <!-- Carte 1 : Search -->
-          <article class="bg-[var(--ui-bg-muted)] rounded-3xl p-8 sm:p-10 flex flex-col min-h-[420px]">
-            <h3 class="inline-block self-start bg-brand-500 text-black text-[17px] font-bold py-1.5 px-3 rounded-lg mb-4">
-              Tous tes alternants en un coup d'œil
-            </h3>
-            <p class="text-[var(--ui-text-muted)] text-[15.5px] leading-[1.55] mb-8 max-w-[440px]">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          <!-- Carte 1 : Search (large) -->
+          <article data-reveal class="bento lg:col-span-7">
+            <div class="bento-head">
+              <span class="bento-index">01</span>
+              <h3 class="bento-title">Tous tes alternants en un coup d'œil</h3>
+            </div>
+            <p class="bento-text">
               Filtre par promo, entreprise, année ou statut.
               Tu vois en quelques secondes qui est à jour et qui a besoin de toi.
             </p>
-            <div class="mt-auto flex-1 flex items-center justify-center min-h-[200px]">
-              <div class="w-full max-w-[420px]">
-                <div class="bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full px-5 py-3.5 flex items-center gap-2.5 text-sm text-[var(--ui-text-muted)] mb-3.5">
+            <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
+              <div class="w-full max-w-[440px]">
+                <div class="bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full px-5 py-3.5 flex items-center gap-2.5 text-sm text-[var(--ui-text-muted)] mb-3.5 shadow-sm">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                     <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5" />
                     <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
@@ -228,16 +296,20 @@
           </article>
 
           <!-- Carte 2 : Alert -->
-          <article class="bg-[var(--ui-bg-muted)] rounded-3xl p-8 sm:p-10 flex flex-col min-h-[420px]">
-            <h3 class="inline-block self-start bg-brand-500 text-black text-[17px] font-bold py-1.5 px-3 rounded-lg mb-4">
-              Sois alerté avant que ça dérape
-            </h3>
-            <p class="text-[var(--ui-text-muted)] text-[15.5px] leading-[1.55] mb-8 max-w-[440px]">
+          <article data-reveal style="--d:.05s" class="bento lg:col-span-5">
+            <div class="bento-head">
+              <span class="bento-index">02</span>
+              <h3 class="bento-title">Sois alerté avant que ça dérape</h3>
+            </div>
+            <p class="bento-text">
               Rapport en retard, visite à programmer, échéance qui approche : alternup t'alerte au bon moment, pas une semaine après.
             </p>
-            <div class="mt-auto flex-1 flex items-center justify-center min-h-[200px]">
+            <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
               <div class="w-full max-w-[380px] relative">
-                <div class="bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start shadow-sm">
+                <!-- Pile de notifications suggérée -->
+                <div class="absolute inset-x-4 -top-3 h-full rounded-2xl bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] opacity-40" aria-hidden="true" />
+                <div class="absolute inset-x-2 -top-1.5 h-full rounded-2xl bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] opacity-70" aria-hidden="true" />
+                <div class="relative bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start shadow-md">
                   <div class="w-11 h-11 bg-brand-500 rounded-[10px] shrink-0 flex items-center justify-center">
                     <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
                       <path d="M3 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 4v-4H5a2 2 0 0 1-2-2V5z" stroke="#1F1F1E" stroke-width="2" stroke-linejoin="round" fill="none" />
@@ -256,14 +328,15 @@
           </article>
 
           <!-- Carte 3 : Network -->
-          <article class="bg-[var(--ui-bg-muted)] rounded-3xl p-8 sm:p-10 flex flex-col min-h-[420px]">
-            <h3 class="inline-block self-start bg-brand-500 text-black text-[17px] font-bold py-1.5 px-3 rounded-lg mb-4">
-              Tes alternants, tous reliés à toi
-            </h3>
-            <p class="text-[var(--ui-text-muted)] text-[15.5px] leading-[1.55] mb-8 max-w-[440px]">
+          <article data-reveal class="bento lg:col-span-5">
+            <div class="bento-head">
+              <span class="bento-index">03</span>
+              <h3 class="bento-title">Tes alternants, tous reliés à toi</h3>
+            </div>
+            <p class="bento-text">
               Visualise toute ta promo en un graphe. Tuteur au centre, alternants autour. Un clic sur un nœud, tu ouvres son dossier complet.
             </p>
-            <div class="mt-auto flex-1 flex items-center justify-center min-h-[200px]">
+            <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
               <div class="w-full h-[260px] relative">
                 <svg
                   class="absolute inset-0 w-full h-full text-[var(--ui-text-dimmed)]"
@@ -305,8 +378,8 @@
                   🎓
                 </div>
                 <div
-                  class="absolute rounded-full bg-[#1F1F1E] flex items-center justify-center z-10"
-                  style="width:70px;height:70px;left:50%;top:50%;transform:translate(-50%,-50%);border:1px solid #1F1F1E;"
+                  class="absolute rounded-full bg-[#1F1F1E] flex items-center justify-center z-10 shadow-[0_0_0_6px_rgba(241,222,2,0.25)]"
+                  style="width:70px;height:70px;left:50%;top:50%;transform:translate(-50%,-50%);"
                 >
                   <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
                     <circle cx="12" cy="8" r="4" stroke="#F1DE02" stroke-width="2" />
@@ -317,16 +390,17 @@
             </div>
           </article>
 
-          <!-- Carte 4 : Algo -->
-          <article class="bg-[var(--ui-bg-muted)] rounded-3xl p-8 sm:p-10 flex flex-col min-h-[420px]">
-            <h3 class="inline-block self-start bg-brand-500 text-black text-[17px] font-bold py-1.5 px-3 rounded-lg mb-4">
-              Une lecture des compétences qui parle
-            </h3>
-            <p class="text-[var(--ui-text-muted)] text-[15.5px] leading-[1.55] mb-8 max-w-[440px]">
+          <!-- Carte 4 : Compétences (large) -->
+          <article data-reveal style="--d:.05s" class="bento lg:col-span-7">
+            <div class="bento-head">
+              <span class="bento-index">04</span>
+              <h3 class="bento-title">Une lecture des compétences qui parle</h3>
+            </div>
+            <p class="bento-text">
               alternup compile les évaluations, les visites et les retours de l'entreprise pour te montrer la progression réelle, pas juste une moyenne.
             </p>
-            <div class="mt-auto flex-1 flex items-center justify-center min-h-[200px]">
-              <div class="w-full max-w-[380px] bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-5 shadow-sm">
+            <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
+              <div class="w-full max-w-[420px] bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-5 shadow-md">
                 <div class="flex items-center justify-between mb-4">
                   <div class="flex items-center gap-2.5 min-w-0">
                     <span
@@ -373,22 +447,30 @@
     </section>
 
     <!-- ============== CTA ============== -->
-    <section class="py-16 sm:py-24">
-      <div class="max-w-[820px] mx-auto px-6 text-center">
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-[-0.03em] mb-5">
-          Prêt à reprendre le contrôle ?
-        </h2>
-        <p class="text-[17px] text-[var(--ui-text-muted)] mb-8">
-          Crée ton compte gratuit et commence à suivre tes alternants en moins de 5 minutes.
-        </p>
-        <UButton
-          :to="loggedIn ? '/alternants' : '/register'"
-          color="primary"
-          size="xl"
-          class="rounded-full font-semibold px-7"
+    <section class="pb-20 sm:pb-28 pt-4">
+      <div class="max-w-[1200px] mx-auto px-6">
+        <div
+          data-reveal
+          class="dark-panel rounded-[32px] px-6 py-16 sm:py-24 text-center relative overflow-hidden"
         >
-          Créer un compte gratuit
-        </UButton>
+          <div class="dark-panel-glow dark-panel-glow--center" aria-hidden="true" />
+          <div class="relative max-w-[720px] mx-auto">
+            <h2 class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.05] font-extrabold tracking-[-0.03em] mb-5 text-white text-balance">
+              Prêt à reprendre le <span class="hl">contrôle</span> ?
+            </h2>
+            <p class="text-[17px] text-[#A8A8A6] mb-9">
+              Crée ton compte gratuit et commence à suivre tes alternants en moins de 5 minutes.
+            </p>
+            <UButton
+              :to="loggedIn ? '/alternants' : '/register'"
+              color="primary"
+              size="xl"
+              class="rounded-full font-semibold px-8 shadow-[0_8px_24px_rgba(241,222,2,0.25)]"
+            >
+              Créer un compte gratuit
+            </UButton>
+          </div>
+        </div>
       </div>
     </section>
   </div>
@@ -399,8 +481,16 @@ definePageMeta({ auth: false })
 
 const { loggedIn } = useUserSession()
 
-const colorMode = useColorMode()
-const isDark = computed(() => colorMode.value === 'dark')
+const tickerWords = [
+  'Visites',
+  'Livrables',
+  'Rapports',
+  'Compétences',
+  'Alertes',
+  'Signatures',
+  'Bulletins',
+  'Évaluations'
+]
 
 const problems = [
   "Un Excel par promo, qui n'est jamais à jour",
@@ -443,9 +533,262 @@ const skills = [
   { label: 'Tests automatisés', value: 74 },
   { label: 'Gestion de projet', value: 48 }
 ]
+
+// Apparition au scroll : ajoute .is-visible quand l'élément entre dans le viewport.
+onMounted(() => {
+  const targets = document.querySelectorAll('[data-reveal]')
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+    targets.forEach(el => el.classList.add('is-visible'))
+    return
+  }
+  const io = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible')
+        io.unobserve(entry.target)
+      }
+    }
+  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
+  targets.forEach(el => io.observe(el))
+  onUnmounted(() => io.disconnect())
+})
 </script>
 
 <style scoped>
+/* ─── Apparition au scroll ─── */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease var(--d, 0s),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1) var(--d, 0s);
+}
+[data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+/* ─── Hero ─── */
+.hero-bg {
+  background-image: radial-gradient(var(--ui-border-accented) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse 80% 70% at 50% 0%, black 20%, transparent 75%);
+  opacity: 0.55;
+}
+.hero-bg::after {
+  content: '';
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 600px;
+  background: radial-gradient(closest-side, rgba(241, 222, 2, 0.18), transparent);
+  filter: blur(20px);
+}
+
+/* Surlignage « marqueur » jaune */
+.hl {
+  position: relative;
+  display: inline-block;
+  padding: 0 0.12em;
+  background: #F1DE02;
+  color: #1F1F1E;
+  border-radius: 0.14em;
+  transform: rotate(-1.2deg);
+  box-decoration-break: clone;
+}
+
+/* Mot barré à la main */
+.strike {
+  position: relative;
+  display: inline-block;
+  white-space: nowrap;
+}
+.strike-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  color: #ef4444;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+/* Pastilles flottantes du hero */
+@keyframes float-y {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -8px; }
+}
+.float-chip {
+  animation: float-y 5s ease-in-out infinite;
+}
+.float-chip--slow {
+  animation-duration: 7s;
+  animation-delay: 1s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .float-chip {
+    animation: none;
+  }
+}
+
+/* ─── Ticker ─── */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  gap: 3.5rem;
+}
+.marquee-track {
+  display: flex;
+  gap: 3.5rem;
+  flex-shrink: 0;
+  min-width: 100%;
+  justify-content: space-around;
+  animation: marquee 36s linear infinite;
+}
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.875rem;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+  white-space: nowrap;
+}
+.marquee-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: #F1DE02;
+  transform: rotate(45deg);
+}
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-100% - 3.5rem)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+  }
+}
+
+/* ─── Titres de section ─── */
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ui-text-muted);
+  margin-bottom: 1.25rem;
+}
+.eyebrow::before {
+  content: '';
+  width: 22px;
+  height: 4px;
+  border-radius: 999px;
+  background: #F1DE02;
+}
+
+/* ─── Panneau sombre (Avec alternup + CTA) ─── */
+.dark-panel {
+  background: #1F1F1E;
+  border: 1px solid #1F1F1E;
+}
+.dark .dark-panel {
+  background: var(--ui-bg-muted);
+  border-color: var(--ui-border);
+}
+.dark-panel-glow {
+  position: absolute;
+  top: -120px;
+  right: -80px;
+  width: 420px;
+  height: 420px;
+  background: radial-gradient(closest-side, rgba(241, 222, 2, 0.14), transparent);
+  pointer-events: none;
+}
+.dark-panel-glow--center {
+  top: auto;
+  right: auto;
+  bottom: -180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 700px;
+  height: 500px;
+}
+
+/* ─── Cartes bento ─── */
+.bento {
+  display: flex;
+  flex-direction: column;
+  min-height: 440px;
+  padding: 2rem;
+  border-radius: 24px;
+  background: var(--ui-bg-muted);
+  border: 1px solid var(--ui-border);
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s ease, box-shadow 0.3s ease;
+}
+@media (min-width: 640px) {
+  .bento {
+    padding: 2.5rem;
+  }
+}
+.bento:hover {
+  transform: translateY(-4px);
+  border-color: var(--ui-border-accented);
+  box-shadow: 0 16px 40px rgba(31, 31, 30, 0.08);
+}
+@media (prefers-reduced-motion: reduce) {
+  .bento,
+  .bento:hover {
+    transform: none;
+  }
+}
+.bento-head {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+.bento-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: #F1DE02;
+  color: #1F1F1E;
+  font-size: 12px;
+  font-weight: 800;
+  flex-shrink: 0;
+}
+.bento-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+.bento-text {
+  color: var(--ui-text-muted);
+  font-size: 15.5px;
+  line-height: 1.55;
+  max-width: 440px;
+}
+
+/* ─── Éléments de maquette ─── */
 .chip {
   display: inline-flex;
   align-items: center;

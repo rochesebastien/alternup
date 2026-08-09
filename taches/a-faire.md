@@ -809,3 +809,39 @@ Détail dans `taches/lecons.md` (2026-08-03).
       serveur (UTC) et le rendu navigateur peuvent différer. Correctif propre : imposer
       `timeZone: 'Europe/Paris'` aux ~28 formateurs de l'app.
 - [ ] Page `/pricing` à créer, puis remettre le lien « Tarifs » dans la nav.
+
+## 2026-08-09 — Refonte visuelle de la homepage (`pages/index.vue`)
+
+Objectif : moderniser la landing sans toucher ni à la palette (jaune `#F1DE02`,
+fonds `#F9F9F9` / `#1F1F1E`, tokens `--ui-*`) ni aux textes (copie conservée à
+l'identique). Direction : éditorial/typographique plutôt que SaaS centré générique.
+
+- [x] Hero asymétrique (texte à gauche, visuel à droite en lg) : H1 en très grande
+      taille, « mieux » surligné façon marqueur jaune, « un Excel » barré à la main
+      (SVG), fond grille pointillée + halo jaune, carte étudiante en collage sur
+      aplat jaune décalé avec pastilles flottantes (« À jour », « ↑ +12 % »).
+- [x] Bandeau défilant (marquee CSS) avec les mots-clés du produit, entre hero et
+      section problème.
+- [x] En-têtes de section éditoriaux : eyebrow avec barre jaune + H2 à gauche,
+      paragraphe calé à droite (grille 12 colonnes), au lieu des badges pill centrés.
+- [x] « Sans / Avec alternup » en panneaux contrastés : Sans sur fond muted en
+      bordure pointillée avec ✗ rouges, Avec sur panneau sombre `#1F1F1E` avec ✓
+      jaunes et halo.
+- [x] Bénéfices en bento asymétrique 7/5–5/7 avec index numérotés (01–04) sur
+      carreau jaune ; maquettes internes conservées (recherche, notification avec
+      pile suggérée, graphe, compétences) et hover lift.
+- [x] CTA final en panneau sombre arrondi avec « contrôle » surligné jaune.
+- [x] Apparition au scroll (IntersectionObserver + `[data-reveal]`),
+      `prefers-reduced-motion` respecté partout (reveal, marquee, float, hover).
+- [x] Mode sombre : panneaux sombres basculés sur les tokens (`--ui-bg-muted` +
+      bordure) pour rester lisibles.
+
+### Vérifications
+
+- `npm run lint` ✅ · `npm test` ✅ (15 fichiers, 210 tests).
+- Rendu vérifié par screenshots Playwright sur le dev server : desktop 1440px
+  clair + sombre, mobile 390px. Aucune erreur console liée à la page
+  (le « Hydration completed but contains mismatches » en sombre vient du
+  color-mode `system`, préexistant).
+- Ancre `/#product_anchor` (lien « Produit » de la nav) conservée sur le H2 de la
+  section problème.
