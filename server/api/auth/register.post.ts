@@ -15,15 +15,44 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { password, ...data } = parsed.data
+  const { password, inviteToken, ...data } = parsed.data
   const passwordHash = await bcrypt.hash(password, PASSWORD_COST)
+
+  // Onboarding sur invitation : l'email et le rôle sont imposés par
+  // l'invitation, et le compte est rattaché au réseau du tuteur invitant.
+  let invitation = null
+  if (inviteToken) {
+    invitation = await prisma.invitation.findUnique({ where: { token: inviteToken } })
+    if (!invitation || invitation.acceptedAt) {
+      throw createError({ statusCode: 400, statusMessage: 'Invitation introuvable ou déjà utilisée.' })
+    }
+    if (invitation.expiresAt < new Date()) {
+      throw createError({ statusCode: 400, statusMessage: 'Cette invitation a expiré.' })
+    }
+    data.email = invitation.email
+    data.role = invitation.role
+  }
+
+  const select = { id: true, email: true, firstName: true, lastName: true, role: true } as const
+
+  // `let` n'étant pas rétréci dans les callbacks, on fige la valeur non nulle.
+  const inv = invitation
 
   let user
   try {
-    user = await prisma.user.create({
-      data: { ...data, passwordHash },
-      select: { id: true, email: true, firstName: true, lastName: true, role: true }
-    })
+    user = inv
+      ? await prisma.$transaction(async (tx) => {
+          const created = await tx.user.create({ data: { ...data, passwordHash }, select })
+          await tx.tutorStudent.create({
+            data: { tutorId: inv.tutorId, studentId: created.id }
+          })
+          await tx.invitation.update({
+            where: { id: inv.id },
+            data: { acceptedAt: new Date() }
+          })
+          return created
+        })
+      : await prisma.user.create({ data: { ...data, passwordHash }, select })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw createError({ statusCode: 409, statusMessage: 'Cette adresse e-mail est déjà utilisée.' })

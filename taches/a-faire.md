@@ -949,3 +949,29 @@ plugin sortira. À retirer à ce moment-là.
   - Dropdown compte (Mon compte / Déconnexion en rouge), page `/account`.
   - Dialog changelog, marges latérales, hover/actif nav, drag pastilles + badges : validés par captures Playwright.
 - `npm run lint` ✅ · `npm test` (216) ✅ · `npm run build` ✅
+
+---
+
+# Plan — Vue Alternants en cards + onboarding par invitation email (2026-08-10)
+
+> Branche : `claude/calendar-auth-ui-updates-srnz6g`
+
+- [x] Vue cards par défaut (grille responsive : avatar initiales, nom, email, rôle, risque, date, retrait)
+- [x] Switcher 2 tabs avec icônes (cards ↔ tableau), cards par défaut
+- [x] Bouton « Attribution » : reprend l'ancien « Ajouter » (rattacher un compte existant)
+- [x] Bouton « Ajouter » : onboarding par invitation email
+  - [x] Modèle Prisma `Invitation` + migration (token unique, expiration 7 j, unicité tuteur+email)
+  - [x] `POST /api/invitations` (tuteur) : upsert + envoi email (nodemailer, SMTP `NUXT_SMTP_*`), fallback lien à copier
+  - [x] `GET /api/invitations/[token]` public (préfixe ajouté à `public-routes.ts`)
+  - [x] `/register?invite=<token>` : email/rôle imposés, prénom/nom pré-remplis, bannière tuteur
+  - [x] `POST /api/auth/register` : transaction création compte + rattachement réseau + invitation consommée
+- [x] Tests : `tests/shared/invitations.test.ts` (5 tests) — 221 tests OK, lint OK, build OK
+
+## Revue
+
+Vérifié en conditions réelles (Postgres local + build de prod) : invitation créée par
+un tuteur, consultation publique du lien, inscription via token (rôle/email bien imposés
+côté serveur même si le client envoie autre chose), rattachement automatique au réseau,
+token à usage unique (400 à la seconde utilisation), 409 si un compte existe déjà pour
+l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invitation et de
+/register avec bannière d'invitation.
