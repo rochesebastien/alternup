@@ -232,7 +232,7 @@ async function assess(competencyId: string, level: CompetencyLevel) {
     <!-- ================= Vue Alternant / Stagiaire ================= -->
     <template v-if="!isTutor">
       <PageHeader
-        title="Mes compétences"
+        title="Compétences"
         subtitle="Votre progression par domaine."
       />
 

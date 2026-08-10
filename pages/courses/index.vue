@@ -1,7 +1,7 @@
 <template>
   <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
-      title="Mes cours"
+      title="Cours"
       subtitle="Sessions à venir et passées avec leurs notes personnelles."
     />
 

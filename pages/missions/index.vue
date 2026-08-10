@@ -1,7 +1,7 @@
 <template>
   <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
-      title="Mes missions"
+      title="Missions"
       :subtitle="`${missions.length} mission${missions.length > 1 ? 's' : ''} en cours ou passées`"
     />
 

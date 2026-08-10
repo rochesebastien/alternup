@@ -213,7 +213,7 @@ async function onCreateSubmit(
     <!-- Learner ------------------------------------------------------------->
     <template v-else>
       <PageHeader
-        title="Mes bulletins"
+        title="Bulletins"
         subtitle="Vos bulletins d'évaluation publiés."
       />
 

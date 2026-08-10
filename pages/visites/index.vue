@@ -382,7 +382,7 @@ async function onEditSubmit(): Promise<void> {
 
     <!-- Learner ------------------------------------------------------------->
     <template v-else>
-      <PageHeader title="Mes visites" />
+      <PageHeader title="Visites" />
 
       <div
         v-if="(visits ?? []).length === 0"

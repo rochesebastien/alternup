@@ -1,7 +1,7 @@
 <template>
   <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
-      :title="isTutor ? 'Rapports d\'étape' : 'Mes rapports d\'étape'"
+      title="Rapports d'étape"
       :subtitle="
         isTutor
           ? 'Rapports de vos alternants à suivre.'

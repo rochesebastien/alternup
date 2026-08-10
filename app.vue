@@ -39,16 +39,16 @@
                   Tableau de bord
                 </NuxtLink>
                 <NuxtLink v-if="isTutor" to="/alternants" :class="navLinkClass('/alternants')">
-                  Mes alternants
+                  Alternants
                 </NuxtLink>
                 <NuxtLink v-if="isTutor" to="/projects" :class="navLinkClass('/projects')">
-                  Mes projets
+                  Projets
                 </NuxtLink>
                 <NuxtLink v-if="isLearner" to="/courses" :class="navLinkClass('/courses')">
-                  Mes cours
+                  Cours
                 </NuxtLink>
                 <NuxtLink v-if="isLearner" to="/missions" :class="navLinkClass('/missions')">
-                  Mes missions
+                  Missions
                 </NuxtLink>
                 <NuxtLink to="/calendar" :class="navLinkClass('/calendar')">
                   Calendrier
@@ -152,10 +152,10 @@
               </template>
               <template v-else>
                 <NuxtLink to="/dashboard" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Tableau de bord</NuxtLink>
-                <NuxtLink v-if="isTutor" to="/alternants" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes alternants</NuxtLink>
-                <NuxtLink v-if="isTutor" to="/projects" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes projets</NuxtLink>
-                <NuxtLink v-if="isLearner" to="/courses" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes cours</NuxtLink>
-                <NuxtLink v-if="isLearner" to="/missions" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Mes missions</NuxtLink>
+                <NuxtLink v-if="isTutor" to="/alternants" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Alternants</NuxtLink>
+                <NuxtLink v-if="isTutor" to="/projects" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Projets</NuxtLink>
+                <NuxtLink v-if="isLearner" to="/courses" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Cours</NuxtLink>
+                <NuxtLink v-if="isLearner" to="/missions" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Missions</NuxtLink>
                 <NuxtLink to="/calendar" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Calendrier</NuxtLink>
                 <NuxtLink to="/presences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Présences</NuxtLink>
                 <NuxtLink to="/rapports" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Rapports</NuxtLink>
@@ -239,7 +239,7 @@ function navLinkClass(...paths: string[]) {
     (p) => route.path === p || route.path.startsWith(`${p}/`)
   )
   return [
-    'px-2.5 py-1.5 transition-colors',
+    'px-2.5 py-1.5 rounded-md transition-colors',
     active
       ? 'bg-[var(--ui-bg-inverted)] text-[var(--ui-text-inverted)]'
       : 'text-[var(--ui-text-muted)] hover:bg-[#F1DE02] hover:text-[#1F1F1E]'
