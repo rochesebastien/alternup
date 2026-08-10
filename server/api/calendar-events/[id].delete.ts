@@ -10,14 +10,14 @@ export default defineEventHandler(async (event) => {
   const tutor = await requireRole(event, Role.Tutor)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid event id' })
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'événement invalide." })
   }
 
   const existing = await loadCalendarEventVisibleTo(id.data, tutor)
   if (existing.tutorId !== tutor.id) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
 
   await prisma.calendarEvent.delete({ where: { id: id.data } })
-  return { message: 'Event deleted' }
+  return { message: 'Événement supprimé.' }
 })

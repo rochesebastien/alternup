@@ -228,7 +228,7 @@ async function assess(competencyId: string, level: CompetencyLevel) {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <!-- ================= Vue Alternant / Stagiaire ================= -->
     <template v-if="!isTutor">
       <PageHeader
@@ -303,14 +303,16 @@ async function assess(competencyId: string, level: CompetencyLevel) {
             <h3 class="text-base font-semibold text-[var(--ui-text)]">
               {{ domain.label }}
             </h3>
-            <UButton
-              color="error"
-              variant="ghost"
-              icon="i-lucide-trash-2"
-              size="xs"
-              aria-label="Supprimer le domaine"
-              @click="removeDomain(domain.id)"
-            />
+            <UTooltip text="Supprimer le domaine">
+              <UButton
+                color="error"
+                variant="ghost"
+                icon="i-lucide-trash-2"
+                size="xs"
+                aria-label="Supprimer le domaine"
+                @click="removeDomain(domain.id)"
+              />
+            </UTooltip>
           </div>
 
           <ul class="space-y-2">
@@ -320,14 +322,16 @@ async function assess(competencyId: string, level: CompetencyLevel) {
               class="flex items-center justify-between gap-4"
             >
               <span class="text-sm text-[var(--ui-text)]">{{ c.label }}</span>
-              <UButton
-                color="error"
-                variant="ghost"
-                icon="i-lucide-trash-2"
-                size="xs"
-                aria-label="Supprimer la compétence"
-                @click="removeCompetency(c.id)"
-              />
+              <UTooltip text="Supprimer la compétence">
+                <UButton
+                  color="error"
+                  variant="ghost"
+                  icon="i-lucide-trash-2"
+                  size="xs"
+                  aria-label="Supprimer la compétence"
+                  @click="removeCompetency(c.id)"
+                />
+              </UTooltip>
             </li>
             <li
               v-if="domain.competencies.length === 0"

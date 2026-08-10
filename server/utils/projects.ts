@@ -27,7 +27,7 @@ export async function loadProjectVisibleTo(id: string, user: User) {
     }
   })
   if (!project) {
-    throw createError({ statusCode: 404, statusMessage: 'Project not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Projet introuvable.' })
   }
 
   const visible =
@@ -35,21 +35,21 @@ export async function loadProjectVisibleTo(id: string, user: User) {
     project.assignments.some((a) => a.studentId === user.id)
 
   if (!visible) {
-    throw createError({ statusCode: 404, statusMessage: 'Project not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Projet introuvable.' })
   }
   return project
 }
 
 export async function loadProjectOwnedBy(id: string, user: User) {
   if (user.role !== Role.Tutor) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
   const project = await prisma.project.findUnique({ where: { id } })
   if (!project) {
-    throw createError({ statusCode: 404, statusMessage: 'Project not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Projet introuvable.' })
   }
   if (project.createdById !== user.id) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
   return project
 }
@@ -63,12 +63,12 @@ export async function loadAssignmentVisibleTo(id: string, user: User) {
     }
   })
   if (!assignment) {
-    throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Affectation introuvable.' })
   }
   const isTutorOwner = assignment.project.createdById === user.id
   const isStudent = assignment.studentId === user.id
   if (!isTutorOwner && !isStudent) {
-    throw createError({ statusCode: 404, statusMessage: 'Assignment not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Affectation introuvable.' })
   }
   return assignment
 }

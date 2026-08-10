@@ -10,17 +10,20 @@ export default defineEventHandler(async (event) => {
 
   const learnerId = uuid.safeParse(getRouterParam(event, 'learnerId'))
   if (!learnerId.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid learner id' })
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant invalide.' })
   }
 
   try {
     await prisma.tutorStudent.delete({
       where: { tutorId_studentId: { tutorId: tutor.id, studentId: learnerId.data } }
     })
-    return { message: 'Learner removed' }
+    return { message: 'Personne retirée de votre réseau.' }
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
-      throw createError({ statusCode: 404, statusMessage: 'Relation not found' })
+      throw createError({
+        statusCode: 404,
+        statusMessage: "Cette personne n'est pas rattachée à votre compte."
+      })
     }
     throw err
   }

@@ -1,8 +1,8 @@
 <template>
-  <div class="mx-auto max-w-6xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
       title="Calendrier"
-      :subtitle="isTutor ? 'Sessions et rendez-vous avec vos learners.' : 'Vos cours et rendez-vous à venir.'"
+      :subtitle="isTutor ? 'Sessions et rendez-vous avec vos alternants.' : 'Vos cours et rendez-vous à venir.'"
     >
       <template v-if="isTutor" #actions>
         <UButton color="neutral" icon="i-lucide-plus" @click="openCreate">
@@ -21,7 +21,12 @@
 
     <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-4">
       <ClientOnly>
-        <FullCalendar v-if="calendarOptions" :options="calendarOptions" />
+        <div class="sx-calendar-shell">
+          <ScheduleXCalendar v-if="calendarApp" :calendar-app="calendarApp" />
+          <div v-else class="flex justify-center py-12">
+            <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
+          </div>
+        </div>
         <template #fallback>
           <div class="flex justify-center py-12">
             <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
@@ -121,12 +126,12 @@
             <UInput v-model="createState.title" class="w-full" />
           </UFormField>
 
-          <UFormField label="Learner" name="studentId" required>
+          <UFormField label="Alternant ou stagiaire" name="studentId" required>
             <USelect
               v-model="createState.studentId"
               :items="learnerItems"
               value-key="value"
-              placeholder="Sélectionner un learner…"
+              placeholder="Sélectionner un alternant…"
               class="w-full"
             />
           </UFormField>
@@ -172,16 +177,28 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import { Role } from '~/shared/utils/enums'
-import FullCalendar from '@fullcalendar/vue3'
-import dayGridPlugin from '@fullcalendar/daygrid'
-import timeGridPlugin from '@fullcalendar/timegrid'
-import interactionPlugin from '@fullcalendar/interaction'
-import listPlugin from '@fullcalendar/list'
-import frLocale from '@fullcalendar/core/locales/fr'
-import type { EventClickArg } from '@fullcalendar/core'
+import { ScheduleXCalendar } from '@schedule-x/vue'
 import {
-  toFullCalendarEvents,
-  type ApiCalendarEvent
+  createCalendar,
+  viewDay,
+  viewList,
+  viewMonthGrid,
+  viewWeek,
+  type CalendarApp,
+  type CalendarEvent,
+  type CalendarType,
+  type PluginBase
+} from '@schedule-x/calendar'
+import { createEventsServicePlugin } from '@schedule-x/events-service'
+import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls'
+import { createCurrentTimePlugin } from '@schedule-x/current-time'
+import { createDragAndDropPlugin } from '@schedule-x/drag-and-drop'
+import { createResizePlugin } from '@schedule-x/resize'
+import '@schedule-x/theme-shadcn/dist/index.css'
+import {
+  toDisplayEvents,
+  type ApiCalendarEvent,
+  type CalendarCategoryId
 } from '~/shared/utils/calendar-display'
 import {
   findNoteForSession,
@@ -195,6 +212,7 @@ definePageMeta({
 })
 
 const toast = useToast()
+const colorMode = useColorMode()
 const { user } = useUserSession()
 const isTutor = computed(() => user.value?.role === Role.Tutor)
 // Forwarde les cookies de session lors du rendu serveur (sinon 401 sur les $fetch SSR)
@@ -204,13 +222,14 @@ interface CourseNote extends NoteByAssignmentRef {
   assignment?: { course?: { id: string; title: string } }
 }
 
-const eventsUrl = computed(() => `/api/users/${user.value?.id ?? ''}/calendar`)
-
+// `/api/calendar-events` filtre selon le rôle (tutorId pour un tuteur,
+// studentId sinon) — contrairement à `/api/users/[id]/calendar` qui ne cherche
+// que par studentId et renvoyait donc toujours une liste vide aux tuteurs.
 const {
   data: events,
   error: loadError,
   refresh: refreshEvents
-} = await useFetch<ApiCalendarEvent[]>(eventsUrl, { default: () => [] })
+} = await useFetch<ApiCalendarEvent[]>('/api/calendar-events', { default: () => [] })
 
 const { data: notes, refresh: refreshNotes } = await useFetch<CourseNote[]>(
   '/api/course-notes',
@@ -235,21 +254,234 @@ const learnerItems = computed(() =>
   }))
 )
 
-const calendarOptions = computed(() => ({
-  plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin],
-  initialView: 'timeGridWeek',
-  headerToolbar: {
-    left: 'prev,next today',
-    center: 'title',
-    right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
+/* ───────────────────────── Calendrier (Schedule-X) ───────────────────────── */
+
+/** Lundi — l'énumération `WeekDay` de Schedule-X n'est pas exportée (1 = lundi). */
+const MONDAY = 1
+/** Première heure visible à l'ouverture de la grille semaine / jour. */
+const FIRST_VISIBLE_HOUR = 7
+/** Heure par défaut d'un événement créé depuis un clic sur une case « jour ». */
+const DEFAULT_CREATE_HOUR = 9
+/** Granularité du glisser-déposer et du redimensionnement, en minutes. */
+const DRAG_INTERVAL_MINUTES = 15
+
+/**
+ * Une « calendar » Schedule-X par catégorie d'événement. Les couleurs sont
+ * alignées sur la palette de l'app : vert pour les sessions de cours, jaune de
+ * marque (#F1DE02) pour les visites, neutre pour le reste.
+ */
+const calendars: Record<CalendarCategoryId, CalendarType> = {
+  session: {
+    colorName: 'session',
+    label: 'Session de cours',
+    lightColors: { main: '#047857', container: '#D1FAE5', onContainer: '#053B2C' },
+    darkColors: { main: '#6EE7B7', container: '#064E3B', onContainer: '#D1FAE5' }
   },
-  locale: frLocale,
-  height: 'auto',
-  weekNumbers: false,
-  nowIndicator: true,
-  events: toFullCalendarEvents(events.value ?? []),
-  eventClick: onEventClick
-}))
+  visite: {
+    colorName: 'visite',
+    label: 'Visite',
+    lightColors: { main: '#9C8E00', container: '#FFFBB3', onContainer: '#483F00' },
+    darkColors: { main: '#F1DE02', container: '#483F00', onContainer: '#FFFBB3' }
+  },
+  autre: {
+    colorName: 'autre',
+    label: 'Autre',
+    lightColors: { main: '#6B6B6A', container: '#F1F1EE', onContainer: '#1F1F1E' },
+    darkColors: { main: '#A8A8A6', container: '#3A3A39', onContainer: '#F4F4F3' }
+  }
+}
+
+// On s'appuie sur le namespace global (déclaré par `types/temporal.d.ts`) et
+// non sur les types exportés par `temporal-polyfill` : c'est ce même global que
+// Schedule-X lit, et les deux jeux de déclarations ne sont pas interchangeables.
+type TemporalApi = typeof Temporal
+type PlainDateTime = Temporal.PlainDateTime
+
+const calendarApp = shallowRef<CalendarApp | null>(null)
+let eventsService: ReturnType<typeof createEventsServicePlugin> | null = null
+let calendarControls: ReturnType<typeof createCalendarControlsPlugin> | null = null
+let temporal: TemporalApi | null = null
+
+/**
+ * Schedule-X v4 ne manipule plus des chaînes de dates mais des objets
+ * `Temporal` qu'il lit sur le global (c'est une `peerDependency` de
+ * `@schedule-x/calendar`). Tant que tous les navigateurs ne l'implémentent pas,
+ * on charge le polyfill — côté client seulement, et seulement s'il manque, pour
+ * que la librairie et nous partagions bien la même implémentation : Schedule-X
+ * valide les dates de ses événements avec `instanceof`.
+ */
+async function loadTemporal(): Promise<TemporalApi> {
+  if (!('Temporal' in globalThis)) {
+    await import('temporal-polyfill/global')
+  }
+  return Temporal
+}
+
+/** Chaîne ISO (UTC) → `Temporal.ZonedDateTime` dans le fuseau du navigateur. */
+function toZoned(api: TemporalApi, iso: string) {
+  return api.Instant.from(iso).toZonedDateTimeISO(api.Now.timeZoneId())
+}
+
+/** Date d'un événement Schedule-X → chaîne ISO (UTC) acceptée par l'API. */
+function toIsoString(value: CalendarEvent['start']): string {
+  return 'toInstant' in value ? value.toInstant().toString() : value.toString()
+}
+
+function toScheduleXEvents(api: TemporalApi, list: ApiCalendarEvent[]): CalendarEvent[] {
+  return toDisplayEvents(list).map((display) => ({
+    id: display.id,
+    title: display.title,
+    start: toZoned(api, display.start),
+    end: toZoned(api, display.end),
+    calendarId: display.calendarId,
+    // Propriété « étrangère » : Schedule-X la conserve telle quelle et nous la
+    // restitue dans les callbacks, ce qui évite de re-chercher l'événement.
+    rawEvent: display.rawEvent
+  }))
+}
+
+/**
+ * `@schedule-x/drag-and-drop` 3.7.3 (dernière version publiée) expose encore les
+ * anciens noms `create*DragHandler`, alors que `@schedule-x/calendar` v4 appelle
+ * `start*Drag`. Les signatures sont identiques : on ajoute les alias manquants
+ * pour rétablir le glisser-déposer. Quand le plugin passera en v4, les méthodes
+ * existeront déjà et rien ne sera écrasé.
+ */
+function createCompatibleDragAndDropPlugin(minutesPerInterval: number) {
+  const plugin = createDragAndDropPlugin(minutesPerInterval)
+  const bridged = plugin as unknown as Record<string, unknown>
+  const aliases: Record<string, string> = {
+    startTimeGridDrag: 'createTimeGridDragHandler',
+    startDateGridDrag: 'createDateGridDragHandler',
+    startMonthGridDrag: 'createMonthGridDragHandler'
+  }
+  for (const [modernName, legacyName] of Object.entries(aliases)) {
+    if (typeof bridged[modernName] === 'function') continue
+    const legacy = bridged[legacyName]
+    if (typeof legacy !== 'function') continue
+    bridged[modernName] = (...args: unknown[]) =>
+      (legacy as (...a: unknown[]) => unknown).apply(plugin, args)
+  }
+  return plugin
+}
+
+/**
+ * Amène le calendrier sur une date sans le recréer (plugin calendar-controls).
+ * @param localDateTime valeur d'un champ `datetime-local` (« 2026-05-18T09:00 »)
+ */
+function focusCalendarOn(localDateTime: string) {
+  const [datePart] = localDateTime.split('T')
+  if (!temporal || !calendarControls || !datePart) return
+  calendarControls.setDate(temporal.PlainDate.from(datePart))
+}
+
+/**
+ * Sans le plugin `scroll-controller`, la grille horaire s'ouvre sur minuit.
+ * On la repositionne sur le début de journée « utile » après le premier rendu.
+ */
+function scrollToWorkingHours(wrapper?: HTMLElement) {
+  if (!wrapper) return
+  requestAnimationFrame(() => {
+    const container = wrapper.querySelector('.sx__view-container')
+    const grid = wrapper.querySelector('.sx__week-grid')
+    if (!(container instanceof HTMLElement) || !(grid instanceof HTMLElement)) return
+    container.scrollTop = (grid.clientHeight / 24) * FIRST_VISIBLE_HOUR
+  })
+}
+
+onMounted(async () => {
+  const api = await loadTemporal()
+  temporal = api
+
+  eventsService = createEventsServicePlugin()
+  calendarControls = createCalendarControlsPlugin()
+
+  const plugins: PluginBase<string>[] = [
+    eventsService,
+    calendarControls,
+    createCurrentTimePlugin()
+  ]
+  // Seul le tuteur peut modifier un événement (PUT /api/calendar-events/[id]).
+  if (isTutor.value) {
+    plugins.push(
+      createCompatibleDragAndDropPlugin(DRAG_INTERVAL_MINUTES),
+      createResizePlugin(DRAG_INTERVAL_MINUTES)
+    )
+  }
+
+  calendarApp.value = createCalendar(
+    {
+      locale: 'fr-FR',
+      firstDayOfWeek: MONDAY,
+      theme: 'shadcn',
+      isDark: colorMode.value === 'dark',
+      views: [viewMonthGrid, viewWeek, viewDay, viewList],
+      defaultView: viewWeek.name,
+      calendars,
+      monthGridOptions: { nEventsPerDay: 4 },
+      events: toScheduleXEvents(api, events.value ?? []),
+      callbacks: {
+        onRender: ($app) => scrollToWorkingHours($app.elements.calendarWrapper),
+        onEventClick: (calendarEvent) => openEventDetail(calendarEvent.rawEvent as ApiCalendarEvent),
+        // Clic sur un créneau horaire (semaine / jour) ou sur un jour (mois, liste)
+        onClickDateTime: (dateTime) => openCreateAt(dateTime.toPlainDateTime()),
+        onClickDate: (date) => openCreateAt(date.toPlainDateTime({ hour: DEFAULT_CREATE_HOUR })),
+        onBeforeEventUpdateAsync: persistEventDates
+      }
+    },
+    plugins
+  )
+})
+
+// Le calendrier n'est pas recréé quand les données changent : le service
+// d'événements remplace simplement la liste, ce qui préserve la vue et la date
+// courantes choisies par l'utilisateur.
+watch(events, (list) => {
+  if (!temporal || !eventsService) return
+  eventsService.set(toScheduleXEvents(temporal, list ?? []))
+})
+
+// Synchronise le thème du calendrier avec le mode clair / sombre de l'app.
+watch(
+  () => colorMode.value,
+  (mode) => calendarApp.value?.setTheme(mode === 'dark' ? 'dark' : 'light')
+)
+
+/**
+ * Glisser-déposer et redimensionnement : Schedule-X attend un booléen avant
+ * d'entériner le déplacement. On persiste d'abord, et un `false` en cas
+ * d'échec réseau remet l'événement à sa position d'origine.
+ */
+async function persistEventDates(
+  _oldEvent: CalendarEvent,
+  newEvent: CalendarEvent
+): Promise<boolean> {
+  const startTime = toIsoString(newEvent.start)
+  const endTime = toIsoString(newEvent.end)
+  try {
+    await $fetch(`/api/calendar-events/${newEvent.id}`, {
+      method: 'PUT',
+      body: { startTime, endTime }
+    })
+    // Aligne la copie locale (utilisée par les modales) sans relancer un
+    // rafraîchissement complet, qui écraserait le rendu en cours de Schedule-X.
+    const local = (events.value ?? []).find((e) => e.id === newEvent.id)
+    if (local) {
+      local.startTime = startTime
+      local.endTime = endTime
+    }
+    toast.add({ title: 'Événement déplacé', color: 'success' })
+    return true
+  } catch (err: unknown) {
+    toast.add({
+      title: readErrorMessage(err) ?? 'Impossible de déplacer l\'événement.',
+      color: 'error'
+    })
+    return false
+  }
+}
+
+/* ─────────────────────────── Modales (inchangées) ─────────────────────────── */
 
 const selectedEvent = ref<ApiCalendarEvent | null>(null)
 const noteModalOpen = ref(false)
@@ -280,8 +512,7 @@ const noteModalTitle = computed(() => {
   return selectedEvent.value.courseAssignment?.course.title ?? selectedEvent.value.title
 })
 
-function onEventClick(arg: EventClickArg) {
-  const raw = arg.event.extendedProps.rawEvent as ApiCalendarEvent
+function openEventDetail(raw: ApiCalendarEvent) {
   selectedEvent.value = raw
   noteError.value = null
 
@@ -360,18 +591,36 @@ const createState = reactive({ title: '', studentId: '', startTime: '', endTime:
 const createPending = ref(false)
 const createError = ref<string | null>(null)
 
-function openCreate() {
+function resetCreateState() {
   createState.title = ''
   createState.studentId = ''
   createState.startTime = ''
   createState.endTime = ''
   createError.value = null
+}
+
+function openCreate() {
+  resetCreateState()
+  createOpen.value = true
+}
+
+/**
+ * Clic sur un créneau vide : ouvre la création pré-remplie sur une heure.
+ * Réservé au tuteur, seul rôle autorisé à créer un événement.
+ */
+function openCreateAt(start: PlainDateTime) {
+  if (!isTutor.value) return
+  const end = start.add({ hours: 1 })
+  resetCreateState()
+  createState.startTime = start.toString({ smallestUnit: 'minute' })
+  createState.endTime = end.toString({ smallestUnit: 'minute' })
   createOpen.value = true
 }
 
 async function onCreateSubmit() {
   createPending.value = true
   createError.value = null
+  const createdOn = createState.startTime
   try {
     await $fetch('/api/calendar-events', {
       method: 'POST',
@@ -385,6 +634,8 @@ async function onCreateSubmit() {
     createOpen.value = false
     toast.add({ title: 'Événement créé', color: 'success' })
     await refreshEvents()
+    // L'événement peut tomber hors de la période affichée : on s'y déplace.
+    focusCalendarOn(createdOn)
   } catch (err: unknown) {
     createError.value = readErrorMessage(err) ?? 'Impossible de créer l\'événement.'
   } finally {
@@ -419,75 +670,64 @@ function readErrorMessage(err: unknown): string | null {
 </script>
 
 <style>
-/* FullCalendar — mapping sur les tokens UI (clair / sombre) */
-.fc {
+/* Schedule-X (thème shadcn) — mapping sur les tokens UI (clair / sombre).
+   Les règles ciblent `.sx-calendar-shell` : le calendrier est rendu par Preact,
+   ses nœuds ne portent donc pas d'attribut de scope Vue. */
+
+/* Hauteur fixe : `.sx__view-container` scrolle en interne, donc la grille des
+   24 h reste accessible sans étirer la page. */
+.sx-calendar-shell {
+  height: 700px;
+}
+.sx-calendar-shell .sx-vue-calendar-wrapper {
+  height: 100%;
+}
+
+/* Le thème shadcn embarque sa propre palette : on la remplace par celle de
+   l'app. Comme les variables `--ui-*` basculent déjà avec la classe `.dark`,
+   une seule déclaration couvre les deux thèmes. Le sélecteur `.is-dark` est
+   répété pour passer devant la règle `html:has(.is-shadcn) .is-dark` du thème,
+   plus spécifique que la variante sans `.is-dark`. */
+.sx-calendar-shell .sx__calendar-wrapper,
+.sx-calendar-shell .sx__calendar-wrapper.is-dark {
+  --sx-color-background: var(--ui-bg-elevated);
+  --sx-color-surface: var(--ui-bg-elevated);
+  --sx-color-surface-dim: var(--ui-bg-muted);
+  --sx-color-surface-bright: var(--ui-bg-elevated);
+  --sx-color-surface-container: var(--ui-bg-muted);
+  --sx-color-surface-container-low: var(--ui-bg-muted);
+  --sx-color-surface-container-high: var(--ui-bg-accented);
+  --sx-color-on-background: var(--ui-text);
+  --sx-color-on-surface: var(--ui-text);
+  --sx-internal-color-text: var(--ui-text);
+  --sx-internal-color-light-gray: var(--ui-bg-muted);
+  --sx-internal-color-gray-ripple-background: var(--ui-bg-accented);
+  --sx-color-outline: var(--ui-border-accented);
+  --sx-color-outline-variant: var(--ui-border);
+  --sx-color-popup-border: var(--ui-border);
+  --sx-border: 1px solid var(--ui-border);
+  --sx-color-primary: var(--ui-text);
+  --sx-color-on-primary: var(--ui-text-inverted);
+  --sx-color-primary-container: var(--ui-bg-inverted);
+  --sx-color-on-primary-container: var(--ui-text-inverted);
+  --sx-rounding-extra-small: var(--ui-radius);
+  --sx-rounding-small: var(--ui-radius);
+  --sx-rounding-medium: var(--ui-radius);
   font-family: inherit;
-  color: var(--ui-text);
-
-  --fc-border-color: var(--ui-border);
-  --fc-page-bg-color: var(--ui-bg);
-  --fc-neutral-bg-color: var(--ui-bg-muted);
-  --fc-list-event-hover-bg-color: var(--ui-bg-elevated);
-  --fc-today-bg-color: color-mix(in oklab, var(--ui-primary) 12%, transparent);
-  --fc-now-indicator-color: #ef4444;
-
-  /* Boutons toolbar */
-  --fc-button-bg-color: var(--ui-bg-elevated);
-  --fc-button-border-color: var(--ui-border);
-  --fc-button-text-color: var(--ui-text);
-  --fc-button-hover-bg-color: var(--ui-bg-accented);
-  --fc-button-hover-border-color: var(--ui-border-accented);
-  --fc-button-active-bg-color: var(--ui-bg-inverted);
-  --fc-button-active-border-color: var(--ui-bg-inverted);
-
-  /* Évènements → chips neutres foncés (style minimaliste) */
-  --fc-event-bg-color: var(--ui-bg-inverted);
-  --fc-event-border-color: var(--ui-bg-inverted);
-  --fc-event-text-color: var(--ui-text-inverted);
 }
 
-.fc .fc-toolbar-title {
-  font-size: 1.15rem;
-  font-weight: 600;
+/* La carte de la page porte déjà une bordure : celle du calendrier ferait doublon. */
+.sx-calendar-shell .sx__calendar {
+  border: none;
 }
 
-.fc .fc-button {
-  font-weight: 500;
-  border-radius: var(--ui-radius);
-  padding: 0.4rem 0.8rem;
-  font-size: 0.875rem;
-  text-transform: none;
-  box-shadow: none;
+/* Les événements ouvrent la modale de détail : le curseur et un léger
+   estompage au survol le signalent. */
+.sx-calendar-shell .sx__event {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
 }
-.fc .fc-button:focus,
-.fc .fc-button:focus-visible {
-  box-shadow: 0 0 0 2px var(--ui-bg), 0 0 0 4px color-mix(in oklab, var(--ui-text) 25%, transparent);
-}
-/* Le bouton actif (vue courante + Aujourd'hui) → foncé sur texte inversé */
-.fc .fc-button-primary:not(:disabled).fc-button-active,
-.fc .fc-button-primary:not(:disabled):active {
-  color: var(--ui-text-inverted);
-}
-
-/* Cellules / headers */
-.fc-theme-standard td,
-.fc-theme-standard th,
-.fc-theme-standard .fc-scrollgrid {
-  border-color: var(--ui-border);
-}
-.fc .fc-col-header-cell-cushion,
-.fc .fc-daygrid-day-number,
-.fc .fc-list-day-text,
-.fc .fc-list-day-side-text,
-.fc .fc-timegrid-axis-cushion,
-.fc .fc-timegrid-slot-label-cushion {
-  color: var(--ui-text);
-}
-.fc .fc-day-other .fc-daygrid-day-number {
-  color: var(--ui-text-dimmed);
-}
-.fc .fc-list-empty {
-  color: var(--ui-text-muted);
-  background: var(--ui-bg-muted);
+.sx-calendar-shell .sx__event:hover {
+  opacity: 0.9;
 }
 </style>

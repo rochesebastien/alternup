@@ -166,6 +166,24 @@ export interface ReminderItem {
   reminder: true
 }
 
+/** Notification persistée, telle que renvoyée par `GET /api/notifications`. */
+export interface NotificationItem {
+  id: string
+  /** Colonne libre en base : voir `NotificationType` pour les valeurs connues. */
+  type: string
+  title: string
+  body: string | null
+  link: string | null
+  readAt: string | null
+  createdAt: string
+}
+
+/** Fil complet : notifications persistées + relances recalculées. */
+export interface NotificationFeed {
+  notifications: NotificationItem[]
+  reminders: ReminderItem[]
+}
+
 export interface VisitReminderSource {
   id: string
   scheduledAt: string | Date

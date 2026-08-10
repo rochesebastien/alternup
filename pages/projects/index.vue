@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-5xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
       title="Projets"
       :subtitle="`${projects.length} projet${projects.length > 1 ? 's' : ''}`"
@@ -20,11 +20,14 @@
     />
 
     <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden">
+      <!-- `tbody` : survol de ligne (corps uniquement, pas l'en-tête) pour
+           relier visuellement un projet à ses actions de fin de ligne. -->
       <UTable
         :columns="columns"
         :data="projects"
         :loading="status === 'pending'"
         empty="Aucun projet pour le moment. Créez-en un pour commencer."
+        :ui="{ tbody: '[&>tr]:transition-colors [&>tr]:hover:bg-[var(--ui-bg-muted)]' }"
       >
         <template #title-cell="{ row }">
           <NuxtLink
@@ -47,22 +50,26 @@
 
         <template #actions-cell="{ row }">
           <div class="flex justify-end gap-1">
-            <UButton
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-pencil"
-              size="sm"
-              :aria-label="`Éditer ${row.original.title}`"
-              @click="openEdit(row.original)"
-            />
-            <UButton
-              variant="ghost"
-              color="neutral"
-              icon="i-lucide-trash-2"
-              size="sm"
-              :aria-label="`Supprimer ${row.original.title}`"
-              @click="openRemove(row.original)"
-            />
+            <UTooltip text="Modifier le projet">
+              <UButton
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-pencil"
+                size="sm"
+                :aria-label="`Éditer ${row.original.title}`"
+                @click="openEdit(row.original)"
+              />
+            </UTooltip>
+            <UTooltip text="Supprimer le projet">
+              <UButton
+                variant="ghost"
+                color="neutral"
+                icon="i-lucide-trash-2"
+                size="sm"
+                :aria-label="`Supprimer ${row.original.title}`"
+                @click="openRemove(row.original)"
+              />
+            </UTooltip>
           </div>
         </template>
       </UTable>

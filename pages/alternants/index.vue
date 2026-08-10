@@ -1,5 +1,5 @@
 <template>
-  <div class="mx-auto max-w-5xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
       title="Alternants & stagiaires"
       :subtitle="`${learners.length} ${learners.length > 1 ? 'personnes rattachées' : 'personne rattachée'}`"
@@ -20,11 +20,14 @@
     />
 
     <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden">
+      <!-- `tbody` : survol de ligne (corps uniquement, pas l'en-tête) pour
+           relier visuellement une personne à ses actions de fin de ligne. -->
       <UTable
         :columns="columns"
         :data="learners"
         :loading="status === 'pending'"
         empty="Aucun alternant rattaché pour le moment."
+        :ui="{ tbody: '[&>tr]:transition-colors [&>tr]:hover:bg-[var(--ui-bg-muted)]' }"
       >
         <template #fullName-cell="{ row }">
           <NuxtLink
@@ -55,14 +58,16 @@
         </template>
 
         <template #actions-cell="{ row }">
-          <UButton
-            color="neutral"
-            variant="ghost"
-            icon="i-lucide-trash-2"
-            size="sm"
-            :aria-label="`Retirer ${row.original.firstName} ${row.original.lastName}`"
-            @click="openRemove(row.original)"
-          />
+          <UTooltip text="Retirer du réseau">
+            <UButton
+              color="neutral"
+              variant="ghost"
+              icon="i-lucide-trash-2"
+              size="sm"
+              :aria-label="`Retirer ${row.original.firstName} ${row.original.lastName}`"
+              @click="openRemove(row.original)"
+            />
+          </UTooltip>
         </template>
       </UTable>
     </div>
@@ -71,22 +76,34 @@
       <template #body>
         <UForm
           :state="addState"
-          :schema="addLearnerByEmailSchema"
+          :schema="addLearnerSchema"
           class="space-y-4"
           @submit="onAddSubmit"
         >
-          <UFormField label="Email du learner" name="email" required>
-            <UInput
-              v-model="addState.email"
-              type="email"
-              placeholder="learner@exemple.com"
-              autocomplete="email"
+          <UFormField label="Alternant ou stagiaire" name="userId" required>
+            <USelectMenu
+              v-model="addState.userId"
+              value-key="value"
+              :items="availableItems"
+              :loading="availableStatus === 'pending'"
+              :filter-fields="['label', 'description']"
+              :search-input="{ placeholder: 'Rechercher un nom ou un email…' }"
+              placeholder="Sélectionner une personne…"
               class="w-full"
-            />
+            >
+              <template #empty="{ searchTerm }">
+                {{
+                  searchTerm
+                    ? 'Aucun résultat pour cette recherche'
+                    : 'Aucun alternant ou stagiaire disponible'
+                }}
+              </template>
+            </USelectMenu>
           </UFormField>
 
           <p class="text-xs text-[var(--ui-text-muted)]">
-            Le compte doit déjà exister avec le rôle Alternant ou Stagiaire.
+            Seuls les comptes existants avec le rôle Alternant ou Stagiaire, pas encore
+            rattachés à votre réseau, sont proposés.
           </p>
 
           <UAlert
@@ -108,7 +125,7 @@
       </template>
     </UModal>
 
-    <UModal v-model:open="removeOpen" title="Retirer ce learner ?">
+    <UModal v-model:open="removeOpen" title="Retirer cet alternant ou stagiaire ?">
       <template #body>
         <p class="text-sm text-[var(--ui-text-muted)]">
           Vous êtes sur le point de retirer
@@ -217,41 +234,70 @@ function errorDetail(err: { data?: { statusMessage?: string }; message?: string 
   return err.data?.statusMessage || err.message
 }
 
-const addLearnerByEmailSchema = z.object({
-  email: z.string().trim().toLowerCase().email("Email invalide")
+// --- Ajout : sélection parmi les comptes rattachables ------------------------
+interface AvailableLearner {
+  id: string
+  firstName: string
+  lastName: string
+  email: string
+  role: 'Alternant' | 'Stagiaire'
+}
+
+const {
+  data: availableData,
+  status: availableStatus,
+  refresh: refreshAvailable
+} = await useFetch<AvailableLearner[]>(
+  () => `/api/tutors/${tutorId.value}/learners/available`,
+  { default: () => [], immediate: !!tutorId.value }
+)
+
+// Le nom porte la recherche, l'email lève l'ambiguïté entre homonymes.
+const availableItems = computed(() =>
+  (availableData.value ?? []).map((u) => ({
+    label: `${u.firstName} ${u.lastName}`,
+    description: u.email,
+    value: u.id
+  }))
+)
+
+const addLearnerSchema = z.object({
+  userId: z.guid('Sélectionnez un alternant ou un stagiaire.')
 })
 
-type AddLearnerForm = z.input<typeof addLearnerByEmailSchema>
+type AddLearnerForm = { userId?: string }
 
 const addOpen = ref(false)
-const addState = reactive<AddLearnerForm>({ email: '' })
+const addState = reactive<AddLearnerForm>({ userId: undefined })
 const addPending = ref(false)
 const addError = ref<string | null>(null)
 
 function openAdd() {
-  addState.email = ''
+  addState.userId = undefined
   addError.value = null
   addOpen.value = true
+  refreshAvailable()
 }
 
 async function onAddSubmit() {
-  if (!tutorId.value) return
+  if (!tutorId.value || !addState.userId) return
   addPending.value = true
   addError.value = null
+  const selected = availableItems.value.find((item) => item.value === addState.userId)
   try {
     await $fetch(`/api/tutors/${tutorId.value}/learners`, {
       method: 'POST',
-      body: { email: addState.email }
+      body: { userId: addState.userId }
     })
     addOpen.value = false
-    await Promise.all([refresh(), refreshRisk()])
+    await Promise.all([refresh(), refreshRisk(), refreshAvailable()])
     toast.add({
-      title: 'Learner ajouté',
-      description: `${addState.email} est désormais rattaché à votre réseau.`,
+      title: 'Personne ajoutée',
+      description: `${selected?.label ?? 'Cette personne'} est désormais rattachée à votre réseau.`,
       color: 'success'
     })
   } catch (err: unknown) {
-    addError.value = readErrorMessage(err) ?? 'Impossible d\'ajouter ce learner.'
+    addError.value = readErrorMessage(err) ?? 'Impossible d\'ajouter cette personne.'
   } finally {
     addPending.value = false
   }
@@ -279,14 +325,14 @@ async function confirmRemove() {
       { method: 'DELETE' }
     )
     removeOpen.value = false
-    await Promise.all([refresh(), refreshRisk()])
+    await Promise.all([refresh(), refreshRisk(), refreshAvailable()])
     toast.add({
-      title: 'Learner retiré',
+      title: 'Personne retirée',
       description: `${target.firstName} ${target.lastName} a été retiré de votre réseau.`,
       color: 'success'
     })
   } catch (err: unknown) {
-    removeError.value = readErrorMessage(err) ?? 'Impossible de retirer ce learner.'
+    removeError.value = readErrorMessage(err) ?? 'Impossible de retirer cette personne.'
   } finally {
     removePending.value = false
   }

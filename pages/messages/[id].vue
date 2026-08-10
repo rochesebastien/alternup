@@ -59,7 +59,7 @@ async function send(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <div class="space-y-3">
       <UButton
         variant="link"

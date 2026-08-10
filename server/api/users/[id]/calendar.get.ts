@@ -17,7 +17,7 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid user id' })
+    throw createError({ statusCode: 400, statusMessage: 'Identifiant utilisateur invalide.' })
   }
 
   await assertCanReadAssignment(user, id.data)

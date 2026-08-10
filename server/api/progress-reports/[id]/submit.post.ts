@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   const report = await loadReportVisibleTo(idp.data, user)
   if (report.studentId !== user.id) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
   if (!canTransition(report.status, 'soumis')) {
     throw createError({

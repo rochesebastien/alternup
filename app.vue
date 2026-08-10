@@ -1,12 +1,13 @@
 <template>
-  <UApp>
+  <!-- `tooltip` : délai court et global pour toutes les infobulles de l'app. -->
+  <UApp :tooltip="{ delayDuration: 200, skipDelayDuration: 300 }">
     <div class="min-h-screen flex flex-col bg-[var(--ui-bg)] text-[var(--ui-text)]">
       <!-- ============== NAV (Linear-style) ============== -->
       <nav
         class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/85 backdrop-blur print:hidden"
         aria-label="Principal"
       >
-        <div class="mx-auto max-w-7xl h-full px-6 flex items-center justify-between gap-6">
+        <div class="w-full h-full px-6 flex items-center justify-between gap-6">
           <div class="flex items-center gap-8">
             <NuxtLink :to="loggedIn ? '/dashboard' : '/'" class="flex items-center gap-2" aria-label="alternup, accueil">
               <!-- Les deux variantes sont rendues côté serveur et permutées en CSS
@@ -88,31 +89,35 @@
           </div>
 
           <div class="flex items-center gap-1 sm:gap-2">
-            <UButton
-              :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
-              color="neutral"
-              variant="ghost"
-              size="sm"
-              class="rounded-full"
-              :aria-label="isDark ? 'Activer le thème clair' : 'Activer le thème sombre'"
-              @click="toggleColorMode"
-            />
+            <UTooltip :text="themeLabel">
+              <UButton
+                :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                class="rounded-full text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]"
+                :aria-label="themeLabel"
+                @click="toggleColorMode"
+              />
+            </UTooltip>
 
             <template v-if="loggedIn && user">
               <NotificationBell />
               <span class="hidden lg:inline text-sm text-[var(--ui-text-muted)] mr-1">
                 {{ user.firstName }} {{ user.lastName }}
               </span>
-              <UButton
-                color="neutral"
-                variant="ghost"
-                icon="i-lucide-log-out"
-                size="sm"
-                class="rounded-full"
-                :loading="loggingOut"
-                :aria-label="'Déconnexion'"
-                @click="onLogout"
-              />
+              <UTooltip text="Se déconnecter">
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  icon="i-lucide-log-out"
+                  size="sm"
+                  class="rounded-full text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]"
+                  :loading="loggingOut"
+                  :aria-label="'Déconnexion'"
+                  @click="onLogout"
+                />
+              </UTooltip>
             </template>
             <template v-else>
               <UButton
@@ -139,7 +144,7 @@
               color="neutral"
               variant="ghost"
               size="sm"
-              class="rounded-full md:hidden"
+              class="rounded-full md:hidden text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]"
               aria-label="Menu"
               @click="mobileOpen = !mobileOpen"
             />
@@ -159,7 +164,7 @@
             v-if="mobileOpen"
             class="md:hidden border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/95 backdrop-blur"
           >
-            <div class="mx-auto max-w-7xl px-6 py-4 flex flex-col gap-3 text-sm font-medium">
+            <div class="w-full px-6 py-4 flex flex-col gap-3 text-sm font-medium">
               <template v-if="!loggedIn">
                 <NuxtLink to="/#product_anchor" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Produit</NuxtLink>
                 <NuxtLink to="/features" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Fonctionnalités</NuxtLink>
@@ -218,7 +223,7 @@
 
       <!-- Footer minimal sur les pages applicatives -->
       <footer v-else class="mt-auto border-t border-[var(--ui-border)] print:hidden">
-        <div class="mx-auto max-w-6xl px-6 h-14 flex items-center justify-between text-xs text-[var(--ui-text-dimmed)]">
+        <div class="w-full px-6 h-14 flex items-center justify-between text-xs text-[var(--ui-text-dimmed)]">
           <span>© 2026 Alternup</span>
           <span>v{{ appVersion }}</span>
         </div>
@@ -256,6 +261,10 @@ const notificationCount = useNotificationCountState()
 
 const colorMode = useColorMode()
 const isDark = computed(() => colorMode.value === 'dark')
+// Même libellé pour l'infobulle et l'aria-label : une seule source de vérité.
+const themeLabel = computed(() =>
+  isDark.value ? 'Activer le thème clair' : 'Activer le thème sombre'
+)
 
 function toggleColorMode() {
   colorMode.preference = isDark.value ? 'light' : 'dark'

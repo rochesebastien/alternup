@@ -184,7 +184,7 @@ async function onEditSubmit(): Promise<void> {
 </script>
 
 <template>
-  <div class="mx-auto max-w-4xl px-6 py-10 space-y-6">
+  <div class="w-full px-6 py-10 space-y-6">
     <!-- Tuteur -------------------------------------------------------------->
     <template v-if="isTutor">
       <PageHeader

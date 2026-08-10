@@ -24,10 +24,13 @@ export default defineEventHandler(async (event) => {
     select: { id: true, role: true, firstName: true, lastName: true, email: true }
   })
   if (!learner) {
-    throw createError({ statusCode: 404, statusMessage: 'Learner not found' })
+    throw createError({ statusCode: 404, statusMessage: 'Utilisateur introuvable.' })
   }
   if (learner.role !== Role.Alternant && learner.role !== Role.Stagiaire) {
-    throw createError({ statusCode: 400, statusMessage: 'Target user is not a learner' })
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Cet utilisateur n'est ni alternant ni stagiaire."
+    })
   }
 
   try {
@@ -42,7 +45,10 @@ export default defineEventHandler(async (event) => {
     return { ...relation.student, addedAt: relation.addedAt }
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw createError({ statusCode: 409, statusMessage: 'Learner already linked to this tutor' })
+      throw createError({
+        statusCode: 409,
+        statusMessage: 'Cette personne est déjà rattachée à votre compte.'
+      })
     }
     throw err
   }

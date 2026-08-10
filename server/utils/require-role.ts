@@ -12,7 +12,7 @@ export async function requireRole(
 ) {
   const user = await requireAuth(event)
   if (!allowed.includes(user.role)) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
   return user
 }

@@ -21,19 +21,19 @@ export default defineEventHandler(async (event) => {
   const user = await requireAuth(event)
   const id = uuid.safeParse(getRouterParam(event, 'id'))
   if (!id.success) {
-    throw createError({ statusCode: 400, statusMessage: 'Invalid event id' })
+    throw createError({ statusCode: 400, statusMessage: "Identifiant d'événement invalide." })
   }
 
   const calEvent = await loadCalendarEventVisibleTo(id.data, user)
   if (!calEvent.courseAssignmentId) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'This event is not linked to a course session'
+      statusMessage: "Cet événement n'est pas rattaché à une séance de cours."
     })
   }
 
   if (user.role !== Role.Tutor && user.id !== calEvent.studentId) {
-    throw createError({ statusCode: 403, statusMessage: 'Forbidden' })
+    throw createError({ statusCode: 403, statusMessage: 'Accès refusé.' })
   }
 
   const parsed = eventNoteUpsertSchema.safeParse(await readBody(event))

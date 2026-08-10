@@ -94,6 +94,16 @@ html, body {
   transition: background-color .25s ease, color .25s ease;
 }
 
+/* Affordance — curseur des éléments actionnables.
+   Le preflight de Tailwind v4 ne rétablit plus `cursor: pointer` sur les
+   boutons : sans cette règle, rien ne distingue au survol un bouton d'un
+   simple bloc de texte (y compris la barre d'outils du calendrier). */
+button:not(:disabled):not([aria-disabled='true']),
+[role='button']:not([aria-disabled='true']),
+summary {
+  cursor: pointer;
+}
+
 /* Page transitions */
 .page-enter-active,
 .page-leave-active {
