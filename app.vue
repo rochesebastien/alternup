@@ -29,56 +29,35 @@
               >
             </NuxtLink>
 
-            <div class="hidden md:flex items-center gap-6 text-sm font-medium">
+            <div class="hidden md:flex items-center gap-2 text-sm font-medium">
               <template v-if="!loggedIn">
-                <NuxtLink to="/#product_anchor" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Produit</NuxtLink>
-                <NuxtLink to="/features" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors">Fonctionnalités</NuxtLink>
+                <NuxtLink to="/#product_anchor" :class="navLinkClass()">Produit</NuxtLink>
+                <NuxtLink to="/features" :class="navLinkClass('/features')">Fonctionnalités</NuxtLink>
               </template>
               <template v-else>
-                <NuxtLink
-                  to="/dashboard"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
+                <NuxtLink to="/dashboard" :class="navLinkClass('/dashboard')">
                   Tableau de bord
                 </NuxtLink>
-                <NuxtLink
-                  v-if="isTutor"
-                  to="/alternants"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
+                <NuxtLink v-if="isTutor" to="/alternants" :class="navLinkClass('/alternants')">
                   Mes alternants
                 </NuxtLink>
-                <NuxtLink
-                  v-if="isTutor"
-                  to="/projects"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
+                <NuxtLink v-if="isTutor" to="/projects" :class="navLinkClass('/projects')">
                   Mes projets
                 </NuxtLink>
-                <NuxtLink
-                  v-if="isLearner"
-                  to="/courses"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
+                <NuxtLink v-if="isLearner" to="/courses" :class="navLinkClass('/courses')">
                   Mes cours
                 </NuxtLink>
-                <NuxtLink
-                  v-if="isLearner"
-                  to="/missions"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
+                <NuxtLink v-if="isLearner" to="/missions" :class="navLinkClass('/missions')">
                   Mes missions
                 </NuxtLink>
-                <NuxtLink
-                  to="/calendar"
-                  class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
-                >
+                <NuxtLink to="/calendar" :class="navLinkClass('/calendar')">
                   Calendrier
                 </NuxtLink>
                 <UDropdownMenu :items="suiviItems" :content="{ align: 'start' }">
                   <button
                     type="button"
-                    class="flex items-center gap-1 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+                    class="flex items-center gap-1"
+                    :class="navLinkClass(...SUIVI_PATHS)"
                   >
                     Suivi
                     <UIcon name="i-lucide-chevron-down" class="size-4" />
@@ -89,6 +68,7 @@
           </div>
 
           <div class="flex items-center gap-1 sm:gap-2">
+            <ChangelogDialog />
             <UTooltip :text="themeLabel">
               <UButton
                 :icon="isDark ? 'i-lucide-sun' : 'i-lucide-moon'"
@@ -103,21 +83,22 @@
 
             <template v-if="loggedIn && user">
               <NotificationBell />
-              <span class="hidden lg:inline text-sm text-[var(--ui-text-muted)] mr-1">
-                {{ user.firstName }} {{ user.lastName }}
-              </span>
-              <UTooltip text="Se déconnecter">
+              <UDropdownMenu :items="accountItems" :content="{ align: 'end' }">
                 <UButton
                   color="neutral"
                   variant="ghost"
-                  icon="i-lucide-log-out"
                   size="sm"
+                  icon="i-lucide-circle-user-round"
+                  trailing-icon="i-lucide-chevron-down"
                   class="rounded-full text-[var(--ui-text-muted)] hover:text-[var(--ui-text)]"
                   :loading="loggingOut"
-                  :aria-label="'Déconnexion'"
-                  @click="onLogout"
-                />
-              </UTooltip>
+                  aria-label="Menu du compte"
+                >
+                  <span class="hidden lg:inline">
+                    {{ user.firstName }} {{ user.lastName }}
+                  </span>
+                </UButton>
+              </UDropdownMenu>
             </template>
             <template v-else>
               <UButton
@@ -199,7 +180,11 @@
       </nav>
 
       <main class="flex-grow pt-14 print:pt-0">
-        <NuxtPage />
+        <!-- Les vues applicatives sont centrées avec des marges latérales ;
+             les pages publiques et d'authentification restent pleine largeur. -->
+        <div :class="isFullBleed ? '' : 'max-w-7xl mx-auto w-full print:max-w-none'">
+          <NuxtPage />
+        </div>
       </main>
 
       <!-- ============== FOOTER ============== -->
@@ -244,6 +229,23 @@ const isLearner = computed(
   () => user.value?.role === Role.Alternant || user.value?.role === Role.Stagiaire
 )
 
+// Liens de la nav desktop : hover en carré jaune de marque, page active en
+// fond inversé (noir en clair / blanc en sombre). `paths` accepte plusieurs
+// racines pour les entrées regroupées (menu « Suivi »).
+const SUIVI_PATHS = ['/presences', '/rapports', '/bulletins', '/competences', '/visites', '/annonces', '/messages']
+
+function navLinkClass(...paths: string[]) {
+  const active = paths.some(
+    (p) => route.path === p || route.path.startsWith(`${p}/`)
+  )
+  return [
+    'px-2.5 py-1.5 transition-colors',
+    active
+      ? 'bg-[var(--ui-bg-inverted)] text-[var(--ui-text-inverted)]'
+      : 'text-[var(--ui-text-muted)] hover:bg-[#F1DE02] hover:text-[#1F1F1E]'
+  ]
+}
+
 // Modules de suivi regroupés dans un menu déroulant (nav desktop).
 const suiviItems = [[
   { label: 'Présences', icon: 'i-lucide-clipboard-check', to: '/presences' },
@@ -254,6 +256,12 @@ const suiviItems = [[
   { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
   { label: 'Messages', icon: 'i-lucide-mail', to: '/messages' }
 ]]
+
+// Menu du compte (nav) : lien vers le profil, puis déconnexion en rouge.
+const accountItems = computed(() => [
+  [{ label: 'Mon compte', icon: 'i-lucide-user', to: '/account' }],
+  [{ label: 'Déconnexion', icon: 'i-lucide-log-out', color: 'error' as const, onSelect: () => onLogout() }]
+])
 
 // Compteur du centre de notifications, alimenté par <NotificationBell /> (nav
 // desktop) et réutilisé tel quel dans le menu mobile — aucune requête en double.
@@ -278,6 +286,12 @@ watch(() => route.fullPath, () => { mobileOpen.value = false })
 
 // Footer marketing complet uniquement sur les pages publiques (landing, features, tarifs)
 const isMarketing = computed(() => ['/', '/features'].includes(route.path))
+
+// Pages rendues pleine largeur (sections marketing et fond des pages d'auth) ;
+// toutes les autres vues sont centrées avec des marges latérales.
+const isFullBleed = computed(() =>
+  ['/', '/features', '/login', '/register'].includes(route.path)
+)
 
 async function onLogout() {
   loggingOut.value = true

@@ -15,6 +15,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const ev = await loadOwnedEvent(idp.data, user)
+  if (!ev.studentId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Impossible de pointer la présence : aucun alternant sur cet événement.'
+    })
+  }
 
   const body = await readBody(event)
   const parsed = attendanceInputSchema.safeParse(body)

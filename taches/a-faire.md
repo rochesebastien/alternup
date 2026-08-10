@@ -904,3 +904,48 @@ plugin sortira. À retirer à ce moment-là.
 - [x] Vérif d'intégration en Node (DOM stubbé) : `createCalendar` accepte la
       config exacte de la page, `events-service.set`, `calendar-controls.setDate`,
       `setTheme('dark')` et les alias DnD répondent
+
+---
+
+# Plan — Calendrier (événement sans alternant, présence obligatoire), taille calendrier, refonte login/register, dropdown compte (2026-08-10)
+
+> Branche : `claude/calendar-auth-ui-updates-srnz6g`
+
+## 1. Événement sans alternant + présence obligatoire
+- [x] Prisma : `CalendarEvent.studentId` nullable + champ `presenceRequired Boolean @default(false)`
+- [x] Migration SQL `optional_student_presence_required`
+- [x] Zod (`shared/utils/calendar.ts`) : `studentId` optionnel, `presenceRequired`, garde-fous (courseAssignment/présence exigent un alternant)
+- [x] API POST : `assertTutorOwnsLearner` seulement si alternant fourni
+- [x] API attendance : ignorer/refuser les événements sans alternant
+- [x] UI modale création : sélection alternant optionnelle + switch « Présence obligatoire »
+- [x] Modale détail : afficher l'alternant et le badge présence
+- [x] Tests `tests/shared/calendar.test.ts` mis à jour
+
+## 2. Taille du calendrier
+- [x] Hauteur adaptée au viewport (plus de débordement de page)
+
+## 3. Refonte login/register
+- [x] Fond jaune strié (SVG généré, `public/images/auth-bg.svg`)
+- [x] Split : formulaire à gauche, texte sombre « Manage your student like never » à droite
+- [x] Composant partagé `AuthShell.vue` utilisé par les deux pages
+
+## 4. Dropdown compte (nav)
+- [x] Remplacer nom + bouton déconnexion par un `UDropdownMenu` (Mon compte / Déconnexion en rouge)
+- [x] Page `/account` minimale (infos du compte)
+
+## Ajouts en cours de route (même session)
+- [x] Bouton Megaphone (nav) ouvrant la dialog « Nouveautés » (`components/ChangelogDialog.vue`, données dans `shared/utils/changelog.ts`)
+- [x] Vues applicatives centrées (`max-w-7xl mx-auto` dans `app.vue`), pages publiques/auth pleine largeur
+- [x] Nav : hover carré jaune #F1DE02, page active en fond inversé (noir/blanc)
+- [x] Home : pastilles du hero repositionnées vers le centre (positions des flèches du schéma)
+- [x] Home : badges « À jour » et « ↑ +12 % » de la carte draggables (même mécanique GSAP)
+
+## Revue
+- Vérifié en local (Postgres 16 + `prisma migrate deploy` + comptes de test) :
+  - POST /api/calendar-events sans `studentId` → 201 ; avec `presenceRequired` sans alternant → 400.
+  - UI : sélection « Aucun » par défaut, case « Présence obligatoire » visible seulement avec un alternant,
+    badge rouge dans la modale de détail, calendrier ajusté au viewport.
+  - Login/register : fond `public/images/auth-bg.svg`, formulaire à gauche, accroche à droite.
+  - Dropdown compte (Mon compte / Déconnexion en rouge), page `/account`.
+  - Dialog changelog, marges latérales, hover/actif nav, drag pastilles + badges : validés par captures Playwright.
+- `npm run lint` ✅ · `npm test` (216) ✅ · `npm run build` ✅

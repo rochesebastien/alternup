@@ -138,17 +138,26 @@
                 </div>
               </div>
 
-              <!-- Pastilles flottantes -->
-              <div
-                class="float-chip absolute -top-1 -right-2 rotate-6 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold shadow-lg flex items-center gap-2"
-              >
-                <span class="w-2 h-2 rounded-full bg-brand-500" aria-hidden="true" />
-                À jour
+              <!-- Pastilles flottantes de la carte, draggables comme celles du hero :
+                   le conteneur porte la position (et le drag GSAP, qui écrit
+                   `transform`), l'intérieur garde le flottement CSS (`translate`)
+                   et la rotation (`rotate`) — les trois propriétés se composent. -->
+              <div class="float-chip-drag absolute -top-1 -right-2">
+                <div
+                  class="float-chip bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold shadow-lg flex items-center gap-2"
+                  style="rotate: 6deg"
+                >
+                  <span class="w-2 h-2 rounded-full bg-brand-500" aria-hidden="true" />
+                  À jour
+                </div>
               </div>
-              <div
-                class="float-chip float-chip--slow absolute -bottom-2 -left-1 -rotate-3 bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full px-3.5 py-1.5 text-[13px] font-bold shadow-lg text-emerald-600"
-              >
-                ↑ +12 %
+              <div class="float-chip-drag absolute -bottom-2 -left-1">
+                <div
+                  class="float-chip float-chip--slow bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full px-3.5 py-1.5 text-[13px] font-bold shadow-lg text-emerald-600"
+                  style="rotate: -3deg"
+                >
+                  ↑ +12 %
+                </div>
               </div>
             </div>
           </div>
@@ -523,7 +532,7 @@ const pastilles: HeroPastille[] = [
     dot: true,
     rot: -5,
     style: 'pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold text-[var(--ui-text-toned)]',
-    pos: { top: '13%', left: '2%' },
+    pos: { top: '20%', left: '9%' },
     show: 'hidden lg:block'
   },
   {
@@ -531,7 +540,7 @@ const pastilles: HeroPastille[] = [
     dot: true,
     rot: 4,
     style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
-    pos: { bottom: '12%', left: '3.5%' },
+    pos: { bottom: '26%', left: '7%' },
     show: 'hidden xl:block'
   },
   {
@@ -539,7 +548,7 @@ const pastilles: HeroPastille[] = [
     icon: 'i-lucide-file-text',
     rot: 6,
     style: 'pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold text-[var(--ui-text-toned)]',
-    pos: { top: '7%', right: '3%' },
+    pos: { top: '11%', right: '17%' },
     show: 'hidden lg:block'
   },
   {
@@ -547,14 +556,14 @@ const pastilles: HeroPastille[] = [
     dot: true,
     rot: -4,
     style: 'pl-2.5 pr-3 py-1 text-[12.5px] font-semibold text-[var(--ui-text-toned)]',
-    pos: { bottom: '9%', right: '4.5%' },
+    pos: { bottom: '21%', right: '20%' },
     show: 'hidden lg:block'
   },
   {
     label: '↑ +12 %',
     rot: -6,
     style: 'px-3.5 py-1.5 text-[13px] font-bold text-emerald-600',
-    pos: { top: '44%', left: '0.5%' },
+    pos: { top: '48%', left: '6.5%' },
     show: 'hidden xl:block'
   },
   {
@@ -562,7 +571,7 @@ const pastilles: HeroPastille[] = [
     icon: 'i-lucide-target',
     rot: 3,
     style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
-    pos: { top: '60%', right: '1%' },
+    pos: { top: '42%', right: '5%' },
     show: 'hidden xl:block'
   }
 ]
@@ -648,6 +657,21 @@ onMounted(async () => {
   const tweens: ReturnType<typeof gsap.to>[] = []
   const draggables: ReturnType<typeof Draggable.create> = []
 
+  // Drag commun (pastilles du hero et badges de la carte) : le conteneur est
+  // déplacé, l'élément interne sert de poignée et reçoit l'effet de saisie.
+  function makeDraggable(el: HTMLElement) {
+    const inner = el.firstElementChild as HTMLElement
+    draggables.push(...Draggable.create(el, {
+      type: 'x,y',
+      trigger: inner,
+      bounds: layer,
+      cursor: 'grab',
+      activeCursor: 'grabbing',
+      onPress: () => gsap.to(inner, { scale: 1.08, duration: 0.2, ease: 'power2.out' }),
+      onRelease: () => gsap.to(inner, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.65)' })
+    }))
+  }
+
   items.forEach((el, i) => {
     const inner = el.firstElementChild as HTMLElement
 
@@ -665,16 +689,14 @@ onMounted(async () => {
       }))
     }
 
-    draggables.push(...Draggable.create(el, {
-      type: 'x,y',
-      trigger: inner,
-      bounds: layer,
-      cursor: 'grab',
-      activeCursor: 'grabbing',
-      onPress: () => gsap.to(inner, { scale: 1.08, duration: 0.2, ease: 'power2.out' }),
-      onRelease: () => gsap.to(inner, { scale: 1, duration: 0.5, ease: 'elastic.out(1, 0.65)' })
-    }))
+    makeDraggable(el)
   })
+
+  // Badges de la carte étudiant (« À jour », « ↑ +12 % ») : leur flottement
+  // reste en CSS (propriété `translate`), le drag s'y compose sans conflit.
+  document
+    .querySelectorAll<HTMLElement>('.float-chip-drag')
+    .forEach((el) => makeDraggable(el))
 
   killPastilles = () => {
     draggables.forEach(d => d.kill())
@@ -761,8 +783,15 @@ onUnmounted(() => {
   0%, 100% { translate: 0 0; }
   50% { translate: 0 -8px; }
 }
+.float-chip-drag {
+  will-change: transform;
+}
 .float-chip {
   animation: float-y 5s ease-in-out infinite;
+  cursor: grab;
+}
+.float-chip:active {
+  cursor: grabbing;
 }
 .float-chip--slow {
   animation-duration: 7s;

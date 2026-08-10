@@ -1,11 +1,18 @@
 export interface ApiCalendarEvent {
   id: string
-  studentId: string
+  studentId: string | null
   tutorId: string
   title: string
   startTime: string
   endTime: string
   courseAssignmentId: string | null
+  presenceRequired: boolean
+  student?: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  } | null
   courseAssignment?: {
     id: string
     course: { id: string; title: string }

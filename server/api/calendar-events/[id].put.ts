@@ -49,6 +49,13 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  if (data.presenceRequired && !existing.studentId) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'La présence obligatoire nécessite un alternant.'
+    })
+  }
+
   if (data.courseAssignmentId) {
     const assignment = await prisma.courseAssignment.findUnique({
       where: { id: data.courseAssignmentId },
