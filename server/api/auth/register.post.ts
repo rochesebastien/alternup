@@ -1,6 +1,7 @@
 import bcrypt from 'bcrypt'
 import { Prisma } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
+import { notifyUser } from '~/server/utils/notifications'
 import { formatZodIssues, registerInputSchema } from '~/shared/utils/auth-credentials'
 
 const PASSWORD_COST = 12
@@ -58,6 +59,16 @@ export default defineEventHandler(async (event) => {
       throw createError({ statusCode: 409, statusMessage: 'Cette adresse e-mail est déjà utilisée.' })
     }
     throw err
+  }
+
+  // Suivi d'acceptation : le tuteur invitant est prévenu (best effort).
+  if (inv) {
+    await notifyUser(inv.tutorId, {
+      type: 'invitation_acceptee',
+      title: `${user.firstName} ${user.lastName} a accepté votre invitation`,
+      body: `Le compte ${user.email} a été créé et rattaché à votre réseau.`,
+      link: '/alternants'
+    })
   }
 
   await setUserSession(event, { user })

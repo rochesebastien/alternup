@@ -23,17 +23,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     // Serveur uniquement
     databaseUrl: process.env.DATABASE_URL,
-    // SMTP pour les emails transactionnels (invitations). Surchargeable au
-    // runtime via NUXT_SMTP_HOST, NUXT_SMTP_PORT, NUXT_SMTP_USER,
-    // NUXT_SMTP_PASS et NUXT_SMTP_FROM. Sans hôte configuré, aucun email ne
-    // part et l'UI propose le lien d'invitation à copier.
-    smtp: {
-      host: '',
-      port: '',
-      user: '',
-      pass: '',
-      from: ''
-    },
     // nuxt-auth-utils lit NUXT_SESSION_PASSWORD automatiquement via runtimeConfig.session
     session: {
       cookie: {

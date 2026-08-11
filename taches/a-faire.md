@@ -975,3 +975,15 @@ côté serveur même si le client envoie autre chose), rattachement automatique 
 token à usage unique (400 à la seconde utilisation), 409 si un compte existe déjà pour
 l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invitation et de
 /register avec bannière d'invitation.
+
+## Ajustement — Invitation par lien seul + suivi d'acceptation (2026-08-11)
+
+- [x] Retrait de l'envoi d'email : `server/utils/mail.ts` supprimé, `nodemailer` désinstallé,
+      `runtimeConfig.smtp` et clefs `NUXT_SMTP_*` retirées
+- [x] `POST /api/invitations` renvoie le lien généré (valable 7 jours), à transmettre par le tuteur
+- [x] `GET /api/invitations` : liste des invitations du tuteur (suivi)
+- [x] `DELETE /api/invitations/[id]` : révoquer un lien / retirer une ligne du suivi
+- [x] Helper partagé `invitationStatus()` : `pending` / `accepted` / `expired`
+- [x] Section « Invitations » sur /alternants : statut, date d'acceptation, copie du lien, révocation
+- [x] Notification `invitation_acceptee` au tuteur à l'acceptation (icône `user-check`)
+- [x] Tests : 224 tests OK (statuts d'invitation couverts), lint OK, build OK

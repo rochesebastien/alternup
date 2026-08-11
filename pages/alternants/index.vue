@@ -149,6 +149,70 @@
       </UTable>
     </div>
 
+    <!-- Suivi des invitations : qui a accepté, qui est en attente, qui a expiré. -->
+    <section v-if="invitations.length" class="space-y-3">
+      <h2 class="text-sm font-semibold text-[var(--ui-text)]">Invitations</h2>
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] divide-y divide-[var(--ui-border)]">
+        <div
+          v-for="inv in invitations"
+          :key="inv.id"
+          class="p-4 flex items-center justify-between gap-4 flex-wrap"
+        >
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-[var(--ui-text)] truncate">
+              {{ inv.firstName || inv.lastName ? `${inv.firstName ?? ''} ${inv.lastName ?? ''}`.trim() : inv.email }}
+            </p>
+            <p class="text-xs text-[var(--ui-text-muted)] truncate">
+              {{ inv.email }} · {{ inv.role }} · Créée le {{ formatDate(inv.createdAt) }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <UBadge
+              v-if="statusOf(inv) === 'accepted'"
+              color="success"
+              variant="soft"
+              icon="i-lucide-user-check"
+            >
+              Acceptée le {{ formatDate(inv.acceptedAt!) }}
+            </UBadge>
+            <UBadge
+              v-else-if="statusOf(inv) === 'pending'"
+              color="warning"
+              variant="soft"
+              icon="i-lucide-clock"
+            >
+              En attente — expire le {{ formatDate(inv.expiresAt) }}
+            </UBadge>
+            <UBadge v-else color="neutral" variant="soft" icon="i-lucide-clock-alert">
+              Expirée
+            </UBadge>
+
+            <UTooltip v-if="statusOf(inv) === 'pending'" text="Copier le lien">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-copy"
+                size="sm"
+                :aria-label="`Copier le lien d'invitation de ${inv.email}`"
+                @click="copyLink(inv.inviteUrl)"
+              />
+            </UTooltip>
+            <UTooltip :text="statusOf(inv) === 'pending' ? 'Révoquer le lien' : 'Supprimer du suivi'">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-x"
+                size="sm"
+                :aria-label="`Supprimer l'invitation de ${inv.email}`"
+                @click="deleteInvitation(inv)"
+              />
+            </UTooltip>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- Attribution : rattacher un compte apprenant existant à son réseau. -->
     <UModal v-model:open="addOpen" title="Attribuer un alternant ou stagiaire">
       <template #body>
@@ -209,15 +273,11 @@
       <template #body>
         <div v-if="inviteResult" class="space-y-4">
           <UAlert
-            :color="inviteResult.emailSent ? 'success' : 'warning'"
+            color="success"
             variant="soft"
-            :icon="inviteResult.emailSent ? 'i-lucide-mail-check' : 'i-lucide-mail-warning'"
-            :title="inviteResult.emailSent
-              ? `Invitation envoyée à ${inviteResult.email}`
-              : 'Invitation créée, mais l\'email n\'a pas pu être envoyé'"
-            :description="inviteResult.emailSent
-              ? 'La personne recevra un lien d\'inscription valable 7 jours. Son compte sera rattaché à votre réseau automatiquement.'
-              : 'Transmettez-lui le lien d\'inscription ci-dessous (valable 7 jours).'"
+            icon="i-lucide-link"
+            :title="`Lien d'invitation généré pour ${inviteResult.email}`"
+            description="Transmettez ce lien à la personne : il est valable 7 jours. La section « Invitations » vous indiquera quand elle l'aura accepté."
           />
 
           <UFormField label="Lien d'invitation">
@@ -229,7 +289,7 @@
                   variant="outline"
                   icon="i-lucide-copy"
                   aria-label="Copier le lien d'invitation"
-                  @click="copyInviteUrl"
+                  @click="copyLink(inviteResult.inviteUrl)"
                 />
               </UTooltip>
             </div>
@@ -277,8 +337,9 @@
           </UFormField>
 
           <p class="text-xs text-[var(--ui-text-muted)]">
-            La personne recevra par email un lien d'inscription pré-rempli, valable 7 jours.
-            À la création de son compte, elle sera rattachée automatiquement à votre réseau.
+            Un lien d'inscription pré-rempli, valable 7 jours, sera généré : transmettez-le
+            à la personne. À la création de son compte, elle sera rattachée automatiquement
+            à votre réseau.
           </p>
 
           <UAlert
@@ -292,8 +353,8 @@
             <UButton color="neutral" variant="ghost" @click="inviteOpen = false">
               Annuler
             </UButton>
-            <UButton type="submit" color="neutral" icon="i-lucide-send" :loading="invitePending">
-              Envoyer l'invitation
+            <UButton type="submit" color="neutral" icon="i-lucide-link" :loading="invitePending">
+              Générer le lien
             </UButton>
           </div>
         </UForm>
@@ -334,7 +395,12 @@
 <script setup lang="ts">
 import { z } from 'zod'
 import type { TableColumn, TabsItem } from '@nuxt/ui'
-import { invitationCreateSchema } from '~/shared/utils/invitations'
+import {
+  invitationCreateSchema,
+  invitationStatus,
+  type InvitationStatus,
+  type TutorInvitation
+} from '~/shared/utils/invitations'
 
 definePageMeta({
   middleware: ['role'],
@@ -490,12 +556,38 @@ async function onAddSubmit() {
   }
 }
 
-// --- Ajouter : onboarding par invitation email --------------------------------
+// --- Ajouter : onboarding par lien d'invitation -------------------------------
 interface InviteResult {
   id: string
   email: string
   inviteUrl: string
-  emailSent: boolean
+  expiresAt: string
+}
+
+const { data: invitationsData, refresh: refreshInvitations } = await useFetch<TutorInvitation[]>(
+  '/api/invitations',
+  { default: () => [] }
+)
+const invitations = computed(() => invitationsData.value ?? [])
+
+function statusOf(inv: TutorInvitation): InvitationStatus {
+  return invitationStatus(inv)
+}
+
+async function deleteInvitation(inv: TutorInvitation) {
+  try {
+    await $fetch(`/api/invitations/${inv.id}`, { method: 'DELETE' })
+    await refreshInvitations()
+    toast.add({
+      title: statusOf(inv) === 'pending' ? 'Invitation révoquée' : 'Invitation supprimée du suivi',
+      color: 'success'
+    })
+  } catch (err: unknown) {
+    toast.add({
+      title: readErrorMessage(err) ?? 'Impossible de supprimer cette invitation.',
+      color: 'error'
+    })
+  }
 }
 
 type InviteForm = {
@@ -544,13 +636,7 @@ async function onInviteSubmit() {
         role: inviteState.role
       }
     })
-    if (inviteResult.value.emailSent) {
-      toast.add({
-        title: 'Invitation envoyée',
-        description: `Un lien d'inscription a été envoyé à ${inviteResult.value.email}.`,
-        color: 'success'
-      })
-    }
+    await refreshInvitations()
   } catch (err: unknown) {
     inviteError.value = readErrorMessage(err) ?? 'Impossible d\'envoyer l\'invitation.'
   } finally {
@@ -558,9 +644,8 @@ async function onInviteSubmit() {
   }
 }
 
-async function copyInviteUrl() {
-  if (!inviteResult.value) return
-  await navigator.clipboard.writeText(inviteResult.value.inviteUrl)
+async function copyLink(url: string) {
+  await navigator.clipboard.writeText(url)
   toast.add({ title: 'Lien copié', color: 'success' })
 }
 

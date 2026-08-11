@@ -2,7 +2,6 @@ import { randomBytes } from 'node:crypto'
 import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { requireRole } from '~/server/utils/require-role'
-import { sendMail } from '~/server/utils/mail'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
 import { invitationCreateSchema, INVITATION_TTL_DAYS } from '~/shared/utils/invitations'
 
@@ -58,27 +57,13 @@ export default defineEventHandler(async (event) => {
     }
   })
 
+  // Pas d'envoi d'email pour l'instant : le tuteur transmet lui-même le lien.
   const inviteUrl = `${getRequestURL(event).origin}/register?invite=${invitation.token}`
-  const tutorName = `${tutor.firstName} ${tutor.lastName}`
-  const roleLabel = role === 'Alternant' ? 'alternant' : 'stagiaire'
 
-  const { sent } = await sendMail({
-    to: email,
-    subject: `${tutorName} vous invite à rejoindre Alternup`,
-    text:
-      `Bonjour,\n\n` +
-      `${tutorName} vous invite à créer votre compte ${roleLabel} sur Alternup, ` +
-      `l'application de suivi des alternants et stagiaires.\n\n` +
-      `Créez votre compte en suivant ce lien (valable ${INVITATION_TTL_DAYS} jours) :\n` +
-      `${inviteUrl}\n\n` +
-      `À bientôt,\nL'équipe Alternup`,
-    html:
-      `<p>Bonjour,</p>` +
-      `<p><strong>${tutorName}</strong> vous invite à créer votre compte ${roleLabel} sur ` +
-      `<strong>Alternup</strong>, l'application de suivi des alternants et stagiaires.</p>` +
-      `<p><a href="${inviteUrl}">Créer mon compte</a> (lien valable ${INVITATION_TTL_DAYS} jours)</p>` +
-      `<p>À bientôt,<br>L'équipe Alternup</p>`
-  })
-
-  return { id: invitation.id, email: invitation.email, inviteUrl, emailSent: sent }
+  return {
+    id: invitation.id,
+    email: invitation.email,
+    inviteUrl,
+    expiresAt: invitation.expiresAt.toISOString()
+  }
 })

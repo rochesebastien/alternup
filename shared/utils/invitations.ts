@@ -34,3 +34,30 @@ export interface PublicInvitation {
   tutor: { firstName: string; lastName: string }
   expiresAt: string
 }
+
+/** Invitation telle que listée pour le tuteur qui l'a émise (suivi d'acceptation). */
+export interface TutorInvitation {
+  id: string
+  email: string
+  firstName: string | null
+  lastName: string | null
+  role: (typeof LEARNER_ROLES)[number]
+  inviteUrl: string
+  createdAt: string
+  expiresAt: string
+  acceptedAt: string | null
+}
+
+export type InvitationStatus = 'pending' | 'accepted' | 'expired'
+
+/**
+ * Statut d'une invitation : acceptée dès qu'elle a été consommée (même si sa
+ * date d'expiration est passée depuis), expirée sinon au-delà de `expiresAt`.
+ */
+export function invitationStatus(
+  invitation: { acceptedAt: string | Date | null; expiresAt: string | Date },
+  now: Date = new Date()
+): InvitationStatus {
+  if (invitation.acceptedAt) return 'accepted'
+  return new Date(invitation.expiresAt) < now ? 'expired' : 'pending'
+}
