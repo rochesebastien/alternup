@@ -80,3 +80,11 @@
 **Erreur :** `server/middleware/auth-guard.ts` exige une session pour tout ce qui commence par `/api/`, avec une liste blanche limitée aux routes métier. Or les modules Nuxt exposent leurs propres endpoints sous `/api/_` : `@nuxt/icon` sert les icônes locales via `/api/_nuxt_icon/*` (401 → icônes cassées pour tout visiteur anonyme) et `nuxt-auth-utils` expose `/api/_auth/session`, qui doit répondre une session vide plutôt qu'un 401.
 **Correction :** `PUBLIC_API_PREFIXES = ['/api/_']` dans `shared/utils/public-routes.ts`, pris en compte par `isPublicApiRoute()` + tests dédiés.
 **Règle à appliquer :** Un garde global sur `/api/` doit toujours laisser passer le préfixe `/api/_` (endpoints des modules). Vérifier une page publique déconnecté, pas seulement connecté.
+
+## USelect (Nuxt UI / Reka) — item à valeur vide interdit (2026-08-10)
+- Un item de `USelect` avec `value: ''` fait planter le montage du popup Reka
+  (`A <SelectItem /> must have a value prop that is not an empty string`) : le menu
+  semble s'ouvrir (`aria-expanded=true`) mais aucune option ne se rend, sans erreur visible.
+- Règle : pour une option « Aucun », utiliser une valeur sentinelle non vide (ex. `'none'`)
+  et la convertir en `null` à la soumission.
+- Toujours tester l'ouverture réelle des menus après avoir modifié leurs items.

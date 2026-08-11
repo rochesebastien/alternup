@@ -95,6 +95,17 @@
 
           <div v-else>
             <p class="text-sm text-[var(--ui-text-muted)]">{{ selectedEvent.title }}</p>
+            <p v-if="selectedEvent.student" class="text-sm text-[var(--ui-text-muted)] mt-2">
+              Avec {{ selectedEvent.student.firstName }} {{ selectedEvent.student.lastName }}
+            </p>
+            <UBadge
+              v-if="selectedEvent.presenceRequired"
+              color="error"
+              variant="soft"
+              class="mt-2"
+            >
+              Présence obligatoire
+            </UBadge>
             <div v-if="isTutor" class="flex justify-end gap-2 mt-6">
               <UButton color="neutral" variant="ghost" @click="noteModalOpen = false">
                 Fermer
@@ -126,13 +137,25 @@
             <UInput v-model="createState.title" class="w-full" />
           </UFormField>
 
-          <UFormField label="Alternant ou stagiaire" name="studentId" required>
+          <UFormField
+            label="Alternant ou stagiaire"
+            name="studentId"
+            help="Optionnel : laissez vide pour un événement libre."
+          >
             <USelect
               v-model="createState.studentId"
-              :items="learnerItems"
+              :items="learnerSelectItems"
               value-key="value"
-              placeholder="Sélectionner un alternant…"
+              placeholder="Aucun"
               class="w-full"
+            />
+          </UFormField>
+
+          <UFormField v-if="selectedStudentId" name="presenceRequired">
+            <UCheckbox
+              v-model="createState.presenceRequired"
+              label="Présence obligatoire"
+              description="La présence de l'alternant ou du stagiaire est attendue."
             />
           </UFormField>
 
@@ -252,6 +275,19 @@ const learnerItems = computed(() =>
     label: `${l.firstName} ${l.lastName} (${l.email})`,
     value: l.id
   }))
+)
+// « Aucun » en tête : l'alternant est optionnel à la création d'un événement.
+// Valeur sentinelle non vide : Reka (USelect) rejette les items à valeur ''.
+const NO_STUDENT = 'none'
+const learnerSelectItems = computed(() => [
+  { label: 'Aucun', value: NO_STUDENT },
+  ...learnerItems.value
+])
+/** Alternant réellement sélectionné (ni vide, ni « Aucun »). */
+const selectedStudentId = computed(() =>
+  createState.studentId && createState.studentId !== NO_STUDENT
+    ? createState.studentId
+    : null
 )
 
 /* ───────────────────────── Calendrier (Schedule-X) ───────────────────────── */
@@ -574,7 +610,9 @@ const createOpen = ref(false)
 const createSchema = z
   .object({
     title: z.string().trim().min(1, 'Titre requis').max(200),
-    studentId: z.string().uuid('Sélection requise'),
+    // Chaîne vide = aucun alternant : l'événement est « libre ».
+    studentId: z.string(),
+    presenceRequired: z.boolean(),
     startTime: z.string().min(1, 'Date requise'),
     endTime: z.string().min(1, 'Date requise')
   })
@@ -587,17 +625,29 @@ const createSchema = z
     { message: 'La fin doit être après le début', path: ['endTime'] }
   )
 
-const createState = reactive({ title: '', studentId: '', startTime: '', endTime: '' })
+const createState = reactive({
+  title: '',
+  studentId: '',
+  presenceRequired: false,
+  startTime: '',
+  endTime: ''
+})
 const createPending = ref(false)
 const createError = ref<string | null>(null)
 
 function resetCreateState() {
   createState.title = ''
   createState.studentId = ''
+  createState.presenceRequired = false
   createState.startTime = ''
   createState.endTime = ''
   createError.value = null
 }
+
+// La présence obligatoire n'a de sens qu'avec un alternant sélectionné.
+watch(selectedStudentId, (id) => {
+  if (!id) createState.presenceRequired = false
+})
 
 function openCreate() {
   resetCreateState()
@@ -626,7 +676,8 @@ async function onCreateSubmit() {
       method: 'POST',
       body: {
         title: createState.title,
-        studentId: createState.studentId,
+        studentId: selectedStudentId.value,
+        presenceRequired: createState.presenceRequired,
         startTime: new Date(createState.startTime).toISOString(),
         endTime: new Date(createState.endTime).toISOString()
       }
@@ -674,10 +725,12 @@ function readErrorMessage(err: unknown): string | null {
    Les règles ciblent `.sx-calendar-shell` : le calendrier est rendu par Preact,
    ses nœuds ne portent donc pas d'attribut de scope Vue. */
 
-/* Hauteur fixe : `.sx__view-container` scrolle en interne, donc la grille des
-   24 h reste accessible sans étirer la page. */
+/* Hauteur calée sur le viewport (nav 3.5rem + paddings + en-tête de page +
+   footer ≈ 19rem) : le calendrier tient dans la page sans la faire déborder,
+   `.sx__view-container` scrolle en interne pour le reste de la grille 24 h. */
 .sx-calendar-shell {
-  height: 700px;
+  height: calc(100vh - 19rem);
+  min-height: 420px;
 }
 .sx-calendar-shell .sx-vue-calendar-wrapper {
   height: 100%;

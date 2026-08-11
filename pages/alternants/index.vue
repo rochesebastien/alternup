@@ -5,9 +5,22 @@
       :subtitle="`${learners.length} ${learners.length > 1 ? 'personnes rattachées' : 'personne rattachée'}`"
     >
       <template #actions>
-        <UButton color="neutral" icon="i-lucide-plus" @click="openAdd">
-          Ajouter
-        </UButton>
+        <div class="flex items-center gap-2">
+          <UTabs
+            v-model="viewMode"
+            :items="viewTabs"
+            :content="false"
+            size="xs"
+            color="neutral"
+            aria-label="Mode d'affichage"
+          />
+          <UButton color="neutral" variant="outline" icon="i-lucide-user-plus" @click="openAdd">
+            Attribution
+          </UButton>
+          <UButton color="neutral" icon="i-lucide-plus" @click="openInvite">
+            Ajouter
+          </UButton>
+        </div>
       </template>
     </PageHeader>
 
@@ -19,7 +32,71 @@
       :description="errorDetail(error)"
     />
 
-    <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden">
+    <!-- Vue cards (par défaut) : adaptée aux petits effectifs d'un tuteur. -->
+    <div v-if="viewMode === 'cards'">
+      <div
+        v-if="learners.length === 0"
+        class="rounded-lg border border-dashed border-[var(--ui-border)] p-10 text-center text-sm text-[var(--ui-text-muted)]"
+      >
+        Aucun alternant rattaché pour le moment.
+      </div>
+      <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div
+          v-for="learner in learners"
+          :key="learner.id"
+          class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5 flex flex-col gap-4 transition-colors hover:border-[var(--ui-border-accented)]"
+        >
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3 min-w-0">
+              <div
+                class="size-10 shrink-0 rounded-full bg-[var(--ui-bg-accented)] flex items-center justify-center text-sm font-semibold text-[var(--ui-text)]"
+                aria-hidden="true"
+              >
+                {{ initialsOf(learner) }}
+              </div>
+              <div class="min-w-0">
+                <NuxtLink
+                  :to="`/alternants/${learner.id}`"
+                  class="block font-medium text-[var(--ui-text)] truncate hover:underline underline-offset-4"
+                >
+                  {{ learner.firstName }} {{ learner.lastName }}
+                </NuxtLink>
+                <p class="text-sm text-[var(--ui-text-muted)] truncate">{{ learner.email }}</p>
+              </div>
+            </div>
+            <UTooltip text="Retirer du réseau">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-trash-2"
+                size="sm"
+                :aria-label="`Retirer ${learner.firstName} ${learner.lastName}`"
+                @click="openRemove(learner)"
+              />
+            </UTooltip>
+          </div>
+
+          <div class="flex items-center justify-between gap-2 mt-auto">
+            <div class="flex items-center gap-2">
+              <UBadge color="neutral" variant="subtle" class="font-normal">
+                {{ learner.role }}
+              </UBadge>
+              <RiskBadge
+                v-if="riskOf(learner.id)"
+                :level="riskOf(learner.id)!.level"
+                :score="riskOf(learner.id)!.score"
+              />
+            </div>
+            <span class="text-xs text-[var(--ui-text-dimmed)]">
+              Ajouté le {{ formatDate(learner.addedAt) }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Vue tableau -->
+    <div v-else class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden">
       <!-- `tbody` : survol de ligne (corps uniquement, pas l'en-tête) pour
            relier visuellement une personne à ses actions de fin de ligne. -->
       <UTable
@@ -72,7 +149,72 @@
       </UTable>
     </div>
 
-    <UModal v-model:open="addOpen" title="Ajouter un alternant ou stagiaire">
+    <!-- Suivi des invitations : qui a accepté, qui est en attente, qui a expiré. -->
+    <section v-if="invitations.length" class="space-y-3">
+      <h2 class="text-sm font-semibold text-[var(--ui-text)]">Invitations</h2>
+      <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] divide-y divide-[var(--ui-border)]">
+        <div
+          v-for="inv in invitations"
+          :key="inv.id"
+          class="p-4 flex items-center justify-between gap-4 flex-wrap"
+        >
+          <div class="min-w-0">
+            <p class="text-sm font-medium text-[var(--ui-text)] truncate">
+              {{ inv.firstName || inv.lastName ? `${inv.firstName ?? ''} ${inv.lastName ?? ''}`.trim() : inv.email }}
+            </p>
+            <p class="text-xs text-[var(--ui-text-muted)] truncate">
+              {{ inv.email }} · {{ inv.role }} · Créée le {{ formatDate(inv.createdAt) }}
+            </p>
+          </div>
+
+          <div class="flex items-center gap-2 shrink-0">
+            <UBadge
+              v-if="statusOf(inv) === 'accepted'"
+              color="success"
+              variant="soft"
+              icon="i-lucide-user-check"
+            >
+              Acceptée le {{ formatDate(inv.acceptedAt!) }}
+            </UBadge>
+            <UBadge
+              v-else-if="statusOf(inv) === 'pending'"
+              color="warning"
+              variant="soft"
+              icon="i-lucide-clock"
+            >
+              En attente — expire le {{ formatDate(inv.expiresAt) }}
+            </UBadge>
+            <UBadge v-else color="neutral" variant="soft" icon="i-lucide-clock-alert">
+              Expirée
+            </UBadge>
+
+            <UTooltip v-if="statusOf(inv) === 'pending'" text="Copier le lien">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-copy"
+                size="sm"
+                :aria-label="`Copier le lien d'invitation de ${inv.email}`"
+                @click="copyLink(inv.inviteUrl)"
+              />
+            </UTooltip>
+            <UTooltip :text="statusOf(inv) === 'pending' ? 'Révoquer le lien' : 'Supprimer du suivi'">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                icon="i-lucide-x"
+                size="sm"
+                :aria-label="`Supprimer l'invitation de ${inv.email}`"
+                @click="deleteInvitation(inv)"
+              />
+            </UTooltip>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Attribution : rattacher un compte apprenant existant à son réseau. -->
+    <UModal v-model:open="addOpen" title="Attribuer un alternant ou stagiaire">
       <template #body>
         <UForm
           :state="addState"
@@ -118,7 +260,101 @@
               Annuler
             </UButton>
             <UButton type="submit" color="neutral" :loading="addPending">
-              Ajouter
+              Attribuer
+            </UButton>
+          </div>
+        </UForm>
+      </template>
+    </UModal>
+
+    <!-- Ajouter : onboarding par invitation — un lien d'inscription est envoyé
+         par email, le compte créé est rattaché automatiquement au tuteur. -->
+    <UModal v-model:open="inviteOpen" title="Inviter un alternant ou stagiaire">
+      <template #body>
+        <div v-if="inviteResult" class="space-y-4">
+          <UAlert
+            color="success"
+            variant="soft"
+            icon="i-lucide-link"
+            :title="`Lien d'invitation généré pour ${inviteResult.email}`"
+            description="Transmettez ce lien à la personne : il est valable 7 jours. La section « Invitations » vous indiquera quand elle l'aura accepté."
+          />
+
+          <UFormField label="Lien d'invitation">
+            <div class="flex gap-2">
+              <UInput :model-value="inviteResult.inviteUrl" readonly class="w-full font-mono" />
+              <UTooltip text="Copier le lien">
+                <UButton
+                  color="neutral"
+                  variant="outline"
+                  icon="i-lucide-copy"
+                  aria-label="Copier le lien d'invitation"
+                  @click="copyLink(inviteResult.inviteUrl)"
+                />
+              </UTooltip>
+            </div>
+          </UFormField>
+
+          <div class="flex justify-end pt-2">
+            <UButton color="neutral" @click="inviteOpen = false">
+              Terminer
+            </UButton>
+          </div>
+        </div>
+
+        <UForm
+          v-else
+          :state="inviteState"
+          :schema="invitationCreateSchema"
+          class="space-y-4"
+          @submit="onInviteSubmit"
+        >
+          <UFormField label="Email" name="email" required>
+            <UInput
+              v-model="inviteState.email"
+              type="email"
+              placeholder="prenom.nom@exemple.com"
+              class="w-full"
+            />
+          </UFormField>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <UFormField label="Prénom" name="firstName">
+              <UInput v-model="inviteState.firstName" class="w-full" />
+            </UFormField>
+            <UFormField label="Nom" name="lastName">
+              <UInput v-model="inviteState.lastName" class="w-full" />
+            </UFormField>
+          </div>
+
+          <UFormField label="Rôle" name="role" required>
+            <USelect
+              v-model="inviteState.role"
+              :items="inviteRoleItems"
+              value-key="value"
+              class="w-full"
+            />
+          </UFormField>
+
+          <p class="text-xs text-[var(--ui-text-muted)]">
+            Un lien d'inscription pré-rempli, valable 7 jours, sera généré : transmettez-le
+            à la personne. À la création de son compte, elle sera rattachée automatiquement
+            à votre réseau.
+          </p>
+
+          <UAlert
+            v-if="inviteError"
+            color="error"
+            variant="soft"
+            :title="inviteError"
+          />
+
+          <div class="flex justify-end gap-2 pt-2">
+            <UButton color="neutral" variant="ghost" @click="inviteOpen = false">
+              Annuler
+            </UButton>
+            <UButton type="submit" color="neutral" icon="i-lucide-link" :loading="invitePending">
+              Générer le lien
             </UButton>
           </div>
         </UForm>
@@ -158,7 +394,13 @@
 
 <script setup lang="ts">
 import { z } from 'zod'
-import type { TableColumn } from '@nuxt/ui'
+import type { TableColumn, TabsItem } from '@nuxt/ui'
+import {
+  invitationCreateSchema,
+  invitationStatus,
+  type InvitationStatus,
+  type TutorInvitation
+} from '~/shared/utils/invitations'
 
 definePageMeta({
   middleware: ['role'],
@@ -190,6 +432,17 @@ const {
 )
 
 const learners = computed(() => data.value ?? [])
+
+// Bascule cards / tableau — cards par défaut : un tuteur suit peu de personnes.
+const viewMode = ref<'cards' | 'table'>('cards')
+const viewTabs: TabsItem[] = [
+  { value: 'cards', icon: 'i-lucide-layout-grid' },
+  { value: 'table', icon: 'i-lucide-table' }
+]
+
+function initialsOf(learner: { firstName: string; lastName: string }): string {
+  return `${learner.firstName[0] ?? ''}${learner.lastName[0] ?? ''}`.toUpperCase()
+}
 
 interface RiskEntry {
   student: { id: string; firstName: string; lastName: string }
@@ -301,6 +554,99 @@ async function onAddSubmit() {
   } finally {
     addPending.value = false
   }
+}
+
+// --- Ajouter : onboarding par lien d'invitation -------------------------------
+interface InviteResult {
+  id: string
+  email: string
+  inviteUrl: string
+  expiresAt: string
+}
+
+const { data: invitationsData, refresh: refreshInvitations } = await useFetch<TutorInvitation[]>(
+  '/api/invitations',
+  { default: () => [] }
+)
+const invitations = computed(() => invitationsData.value ?? [])
+
+function statusOf(inv: TutorInvitation): InvitationStatus {
+  return invitationStatus(inv)
+}
+
+async function deleteInvitation(inv: TutorInvitation) {
+  try {
+    await $fetch(`/api/invitations/${inv.id}`, { method: 'DELETE' })
+    await refreshInvitations()
+    toast.add({
+      title: statusOf(inv) === 'pending' ? 'Invitation révoquée' : 'Invitation supprimée du suivi',
+      color: 'success'
+    })
+  } catch (err: unknown) {
+    toast.add({
+      title: readErrorMessage(err) ?? 'Impossible de supprimer cette invitation.',
+      color: 'error'
+    })
+  }
+}
+
+type InviteForm = {
+  email: string
+  firstName: string
+  lastName: string
+  role: 'Alternant' | 'Stagiaire'
+}
+
+const inviteRoleItems = [
+  { label: 'Stagiaire', value: 'Stagiaire' },
+  { label: 'Alternant', value: 'Alternant' }
+]
+
+const inviteOpen = ref(false)
+const inviteState = reactive<InviteForm>({
+  email: '',
+  firstName: '',
+  lastName: '',
+  role: 'Stagiaire'
+})
+const invitePending = ref(false)
+const inviteError = ref<string | null>(null)
+const inviteResult = ref<InviteResult | null>(null)
+
+function openInvite() {
+  inviteState.email = ''
+  inviteState.firstName = ''
+  inviteState.lastName = ''
+  inviteState.role = 'Stagiaire'
+  inviteError.value = null
+  inviteResult.value = null
+  inviteOpen.value = true
+}
+
+async function onInviteSubmit() {
+  invitePending.value = true
+  inviteError.value = null
+  try {
+    inviteResult.value = await $fetch<InviteResult>('/api/invitations', {
+      method: 'POST',
+      body: {
+        email: inviteState.email,
+        firstName: inviteState.firstName || undefined,
+        lastName: inviteState.lastName || undefined,
+        role: inviteState.role
+      }
+    })
+    await refreshInvitations()
+  } catch (err: unknown) {
+    inviteError.value = readErrorMessage(err) ?? 'Impossible d\'envoyer l\'invitation.'
+  } finally {
+    invitePending.value = false
+  }
+}
+
+async function copyLink(url: string) {
+  await navigator.clipboard.writeText(url)
+  toast.add({ title: 'Lien copié', color: 'success' })
 }
 
 const removeOpen = ref(false)

@@ -50,6 +50,40 @@ describe('calendarEventCreateSchema', () => {
         .success
     ).toBe(false)
   })
+
+  it('accepts an event without a student', () => {
+    const { studentId: _studentId, ...withoutStudent } = baseEvent
+    const result = calendarEventCreateSchema.safeParse(withoutStudent)
+    expect(result.success).toBe(true)
+    if (result.success) expect(result.data.presenceRequired).toBe(false)
+  })
+
+  it('accepts presenceRequired when a student is set', () => {
+    expect(
+      calendarEventCreateSchema.safeParse({ ...baseEvent, presenceRequired: true })
+        .success
+    ).toBe(true)
+  })
+
+  it('rejects presenceRequired without a student', () => {
+    expect(
+      calendarEventCreateSchema.safeParse({
+        ...baseEvent,
+        studentId: null,
+        presenceRequired: true
+      }).success
+    ).toBe(false)
+  })
+
+  it('rejects a courseAssignmentId without a student', () => {
+    expect(
+      calendarEventCreateSchema.safeParse({
+        ...baseEvent,
+        studentId: null,
+        courseAssignmentId: '22222222-2222-2222-2222-222222222222'
+      }).success
+    ).toBe(false)
+  })
 })
 
 describe('calendarEventUpdateSchema', () => {

@@ -14,6 +14,7 @@ const baseFreeEvent: ApiCalendarEvent = {
   startTime: '2026-05-18T08:00:00Z',
   endTime: '2026-05-18T09:00:00Z',
   courseAssignmentId: null,
+  presenceRequired: false,
   courseAssignment: null
 }
 
@@ -25,6 +26,7 @@ const baseCourseEvent: ApiCalendarEvent = {
   startTime: '2026-05-18T10:00:00Z',
   endTime: '2026-05-18T12:00:00Z',
   courseAssignmentId: 'a1',
+  presenceRequired: false,
   courseAssignment: { id: 'a1', course: { id: 'c1', title: 'Mathématiques' } }
 }
 

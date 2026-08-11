@@ -1,6 +1,6 @@
 <template>
-  <div class="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-16">
-    <div class="w-full max-w-sm">
+  <AuthShell>
+    <div>
       <div class="mb-8">
         <h1 class="text-2xl font-semibold tracking-tight text-[var(--ui-text)]">Connexion</h1>
         <p class="text-sm text-[var(--ui-text-muted)] mt-1.5">
@@ -62,7 +62,7 @@
         </NuxtLink>
       </p>
     </div>
-  </div>
+  </AuthShell>
 </template>
 
 <script setup lang="ts">

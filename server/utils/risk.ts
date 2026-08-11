@@ -126,7 +126,10 @@ export async function assessStudentsRisk(
   const buckets = new Map<string, Bucket>(studentIds.map((id) => [id, emptyBucket()]))
 
   for (const attendance of attendances) {
-    const bucket = buckets.get(attendance.event.studentId)
+    // `studentId` est nullable : un événement sans alternant n'est jamais pointé,
+    // et ne pèse donc dans le risque d'aucun étudiant.
+    const studentId = attendance.event.studentId
+    const bucket = studentId ? buckets.get(studentId) : undefined
     if (!bucket) continue
     bucket.sessions += 1
     if (attendance.status === AttendanceStatus.absent) bucket.unexcusedAbsences += 1

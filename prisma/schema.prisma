@@ -35,6 +35,7 @@ model User {
   // Relations: réseau tuteur ↔ étudiants
   tutoredStudents TutorStudent[] @relation("Tutor")
   tutors          TutorStudent[] @relation("Student")
+  invitationsSent Invitation[]   @relation("InvitationSender")
 
   // Relations: contenus créés
   coursesCreated  Course[]  @relation("CourseCreator")
@@ -92,6 +93,28 @@ model TutorStudent {
 
   @@id([tutorId, studentId])
   @@map("tutor_students")
+}
+
+// Invitation d'onboarding : un tuteur invite un alternant/stagiaire par email.
+// Le lien (token) mène sur /register pré-rempli ; à l'inscription le compte est
+// créé avec le rôle invité et rattaché automatiquement au réseau du tuteur.
+model Invitation {
+  id         String    @id @default(uuid()) @db.Uuid
+  tutorId    String    @map("tutor_id") @db.Uuid
+  email      String
+  firstName  String?   @map("first_name")
+  lastName   String?   @map("last_name")
+  role       Role      @default(Stagiaire)
+  token      String    @unique
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz
+  acceptedAt DateTime? @map("accepted_at") @db.Timestamptz
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  tutor User @relation("InvitationSender", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  // Une seule invitation active par (tuteur, email) : ré-inviter la remplace.
+  @@unique([tutorId, email])
+  @@map("invitations")
 }
 
 model Course {
@@ -191,15 +214,18 @@ model ProjectUpdate {
 
 model CalendarEvent {
   id                 String   @id @default(uuid()) @db.Uuid
-  studentId          String   @map("student_id") @db.Uuid
+  // Optionnel : un tuteur peut créer un événement sans alternant/stagiaire.
+  studentId          String?  @map("student_id") @db.Uuid
   tutorId            String   @map("tutor_id") @db.Uuid
   courseAssignmentId String?  @map("course_assignment_id") @db.Uuid
   title              String
   startTime          DateTime @map("start_time") @db.Timestamptz
   endTime            DateTime @map("end_time") @db.Timestamptz
+  // Présence de l'alternant exigée (n'a de sens que si `studentId` est renseigné).
+  presenceRequired   Boolean  @default(false) @map("presence_required")
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  student          User              @relation("EventStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  student          User?             @relation("EventStudent", fields: [studentId], references: [id], onDelete: Cascade)
   tutor            User              @relation("EventTutor", fields: [tutorId], references: [id], onDelete: Cascade)
   courseAssignment CourseAssignment? @relation(fields: [courseAssignmentId], references: [id], onDelete: SetNull)
   attendance       Attendance?

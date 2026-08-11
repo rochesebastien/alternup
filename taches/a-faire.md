@@ -904,3 +904,86 @@ plugin sortira. À retirer à ce moment-là.
 - [x] Vérif d'intégration en Node (DOM stubbé) : `createCalendar` accepte la
       config exacte de la page, `events-service.set`, `calendar-controls.setDate`,
       `setTheme('dark')` et les alias DnD répondent
+
+---
+
+# Plan — Calendrier (événement sans alternant, présence obligatoire), taille calendrier, refonte login/register, dropdown compte (2026-08-10)
+
+> Branche : `claude/calendar-auth-ui-updates-srnz6g`
+
+## 1. Événement sans alternant + présence obligatoire
+- [x] Prisma : `CalendarEvent.studentId` nullable + champ `presenceRequired Boolean @default(false)`
+- [x] Migration SQL `optional_student_presence_required`
+- [x] Zod (`shared/utils/calendar.ts`) : `studentId` optionnel, `presenceRequired`, garde-fous (courseAssignment/présence exigent un alternant)
+- [x] API POST : `assertTutorOwnsLearner` seulement si alternant fourni
+- [x] API attendance : ignorer/refuser les événements sans alternant
+- [x] UI modale création : sélection alternant optionnelle + switch « Présence obligatoire »
+- [x] Modale détail : afficher l'alternant et le badge présence
+- [x] Tests `tests/shared/calendar.test.ts` mis à jour
+
+## 2. Taille du calendrier
+- [x] Hauteur adaptée au viewport (plus de débordement de page)
+
+## 3. Refonte login/register
+- [x] Fond jaune strié (SVG généré, `public/images/auth-bg.svg`)
+- [x] Split : formulaire à gauche, texte sombre « Manage your student like never » à droite
+- [x] Composant partagé `AuthShell.vue` utilisé par les deux pages
+
+## 4. Dropdown compte (nav)
+- [x] Remplacer nom + bouton déconnexion par un `UDropdownMenu` (Mon compte / Déconnexion en rouge)
+- [x] Page `/account` minimale (infos du compte)
+
+## Ajouts en cours de route (même session)
+- [x] Bouton Megaphone (nav) ouvrant la dialog « Nouveautés » (`components/ChangelogDialog.vue`, données dans `shared/utils/changelog.ts`)
+- [x] Vues applicatives centrées (`max-w-7xl mx-auto` dans `app.vue`), pages publiques/auth pleine largeur
+- [x] Nav : hover carré jaune #F1DE02, page active en fond inversé (noir/blanc)
+- [x] Home : pastilles du hero repositionnées vers le centre (positions des flèches du schéma)
+- [x] Home : badges « À jour » et « ↑ +12 % » de la carte draggables (même mécanique GSAP)
+
+## Revue
+- Vérifié en local (Postgres 16 + `prisma migrate deploy` + comptes de test) :
+  - POST /api/calendar-events sans `studentId` → 201 ; avec `presenceRequired` sans alternant → 400.
+  - UI : sélection « Aucun » par défaut, case « Présence obligatoire » visible seulement avec un alternant,
+    badge rouge dans la modale de détail, calendrier ajusté au viewport.
+  - Login/register : fond `public/images/auth-bg.svg`, formulaire à gauche, accroche à droite.
+  - Dropdown compte (Mon compte / Déconnexion en rouge), page `/account`.
+  - Dialog changelog, marges latérales, hover/actif nav, drag pastilles + badges : validés par captures Playwright.
+- `npm run lint` ✅ · `npm test` (216) ✅ · `npm run build` ✅
+
+---
+
+# Plan — Vue Alternants en cards + onboarding par invitation email (2026-08-10)
+
+> Branche : `claude/calendar-auth-ui-updates-srnz6g`
+
+- [x] Vue cards par défaut (grille responsive : avatar initiales, nom, email, rôle, risque, date, retrait)
+- [x] Switcher 2 tabs avec icônes (cards ↔ tableau), cards par défaut
+- [x] Bouton « Attribution » : reprend l'ancien « Ajouter » (rattacher un compte existant)
+- [x] Bouton « Ajouter » : onboarding par invitation email
+  - [x] Modèle Prisma `Invitation` + migration (token unique, expiration 7 j, unicité tuteur+email)
+  - [x] `POST /api/invitations` (tuteur) : upsert + envoi email (nodemailer, SMTP `NUXT_SMTP_*`), fallback lien à copier
+  - [x] `GET /api/invitations/[token]` public (préfixe ajouté à `public-routes.ts`)
+  - [x] `/register?invite=<token>` : email/rôle imposés, prénom/nom pré-remplis, bannière tuteur
+  - [x] `POST /api/auth/register` : transaction création compte + rattachement réseau + invitation consommée
+- [x] Tests : `tests/shared/invitations.test.ts` (5 tests) — 221 tests OK, lint OK, build OK
+
+## Revue
+
+Vérifié en conditions réelles (Postgres local + build de prod) : invitation créée par
+un tuteur, consultation publique du lien, inscription via token (rôle/email bien imposés
+côté serveur même si le client envoie autre chose), rattachement automatique au réseau,
+token à usage unique (400 à la seconde utilisation), 409 si un compte existe déjà pour
+l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invitation et de
+/register avec bannière d'invitation.
+
+## Ajustement — Invitation par lien seul + suivi d'acceptation (2026-08-11)
+
+- [x] Retrait de l'envoi d'email : `server/utils/mail.ts` supprimé, `nodemailer` désinstallé,
+      `runtimeConfig.smtp` et clefs `NUXT_SMTP_*` retirées
+- [x] `POST /api/invitations` renvoie le lien généré (valable 7 jours), à transmettre par le tuteur
+- [x] `GET /api/invitations` : liste des invitations du tuteur (suivi)
+- [x] `DELETE /api/invitations/[id]` : révoquer un lien / retirer une ligne du suivi
+- [x] Helper partagé `invitationStatus()` : `pending` / `accepted` / `expired`
+- [x] Section « Invitations » sur /alternants : statut, date d'acceptation, copie du lien, révocation
+- [x] Notification `invitation_acceptee` au tuteur à l'acceptation (icône `user-check`)
+- [x] Tests : 224 tests OK (statuts d'invitation couverts), lint OK, build OK

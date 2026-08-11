@@ -6,7 +6,8 @@ export default defineEventHandler(async (event) => {
   const user = await requireRole(event, Role.Tutor)
 
   const events = await prisma.calendarEvent.findMany({
-    where: { tutorId: user.id },
+    // Seuls les événements liés à un alternant sont « pointables ».
+    where: { tutorId: user.id, studentId: { not: null } },
     orderBy: { startTime: 'desc' },
     include: {
       student: { select: { id: true, firstName: true, lastName: true } },

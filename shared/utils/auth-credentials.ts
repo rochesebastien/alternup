@@ -20,7 +20,10 @@ export const registerInputSchema = z.object({
     .min(8, 'Le mot de passe doit contenir au moins 8 caractères.'),
   firstName: name,
   lastName: name,
-  role: z.nativeEnum(Role).default(Role.Alternant)
+  role: z.nativeEnum(Role).default(Role.Alternant),
+  // Jeton d'invitation (onboarding envoyé par un tuteur). Quand il est
+  // présent, le serveur impose l'email et le rôle portés par l'invitation.
+  inviteToken: z.string().max(200).optional()
 })
 
 export const loginInputSchema = z.object({

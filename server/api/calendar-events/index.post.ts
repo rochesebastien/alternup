@@ -25,7 +25,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  await assertTutorOwnsLearner(tutor, parsed.data.studentId)
+  // L'alternant est optionnel : la propriété n'est vérifiée que s'il est fourni.
+  if (parsed.data.studentId) {
+    await assertTutorOwnsLearner(tutor, parsed.data.studentId)
+  }
 
   if (parsed.data.courseAssignmentId) {
     const assignment = await prisma.courseAssignment.findUnique({
