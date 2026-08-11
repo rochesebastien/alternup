@@ -19,7 +19,7 @@
       color="error"
       variant="soft"
       :title="error.statusMessage ?? 'Fiche introuvable'"
-      description="Cette personne n'existe pas ou n'est pas rattachée à votre réseau."
+      description="Cette personne n'existe pas ou n'est pas sous votre responsabilité."
     />
 
     <template v-else-if="overview">
@@ -46,7 +46,7 @@
       </PageHeader>
 
       <p v-if="overview.student.addedAt" class="-mt-2 text-sm text-[var(--ui-text-muted)]">
-        Rattaché à votre réseau depuis le {{ formatDate(overview.student.addedAt) }}.
+        Sous votre responsabilité depuis le {{ formatDate(overview.student.addedAt) }}.
       </p>
 
       <section

@@ -24,6 +24,10 @@ const { user } = useUserSession()
 const isTutor = computed<boolean>(() => user.value?.role === Role.Tutor)
 const toast = useToast()
 
+// Apprenant suivi (sélecteur de la barre de navigation) : quand il est défini,
+// la vue tuteur ne montre que ses journées et ses sessions.
+const { focus, focusName, filterByFocus } = useLearnerFocus()
+
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'medium' })
 const timeFormatter = new Intl.DateTimeFormat('fr-FR', {
   hour: '2-digit',
@@ -121,7 +125,8 @@ const formMinutes = computed<number | null>(() => {
 
 function openCheckIn(): void {
   editingId.value = null
-  dayForm.studentId = ''
+  // Le tuteur pointe le plus souvent pour l'apprenant qu'il suit déjà.
+  dayForm.studentId = focus.value?.id ?? ''
   dayForm.date = today.value
   // « Je suis arrivé à… » : l'heure courante est le point de départ le plus
   // probable, l'utilisateur n'a plus qu'à corriger. Le départ est proposé une
@@ -244,16 +249,25 @@ const learnerItems = computed<Array<{ label: string, value: string }>>(() =>
   (learners.value ?? []).map((l) => ({ label: `${l.firstName} ${l.lastName}`, value: l.id }))
 )
 
+// Journées visibles par le tuteur : tout son réseau, ou le seul apprenant suivi.
+const visibleEntries = computed<PresenceEntry[]>(() =>
+  filterByFocus(entries.value, (e) => e.studentId)
+)
+
 const networkWeekMinutes = computed<number>(() =>
-  totalMinutes(entries.value.filter((e) => e.date >= weekStart.value))
+  totalMinutes(visibleEntries.value.filter((e) => e.date >= weekStart.value))
+)
+
+const visibleSessions = computed<TutorSession[]>(() =>
+  filterByFocus(tutorSessions.value ?? [], (s) => s.student?.id)
 )
 
 const pastSessions = computed<TutorSession[]>(() =>
-  (tutorSessions.value ?? []).filter((s) => new Date(s.startTime).getTime() <= now.value)
+  visibleSessions.value.filter((s) => new Date(s.startTime).getTime() <= now.value)
 )
 
 const upcomingSessions = computed<TutorSession[]>(() =>
-  (tutorSessions.value ?? [])
+  visibleSessions.value
     .filter((s) => new Date(s.startTime).getTime() > now.value)
     .slice()
     .reverse()
@@ -307,7 +321,7 @@ const learnerRate = computed<string>(() => {
     <template v-if="isTutor">
       <PageHeader
         title="Présences"
-        subtitle="Pointez l'assiduité de vos sessions et les journées de votre réseau."
+        subtitle="Pointez l'assiduité de vos sessions et les journées de vos apprenants."
       >
         <template #actions>
           <UButton
@@ -324,13 +338,13 @@ const learnerRate = computed<string>(() => {
         <StatCard
           label="Heures cette semaine"
           :value="formatDuration(networkWeekMinutes)"
-          hint="Réseau, depuis lundi"
+          :hint="focusName ? `${focusName}, depuis lundi` : 'Tous les apprenants, depuis lundi'"
           icon="i-lucide-hourglass"
         />
         <StatCard
           label="Journées pointées"
-          :value="entries.length"
-          hint="Toutes personnes"
+          :value="visibleEntries.length"
+          :hint="focusName ?? 'Toutes personnes'"
           icon="i-lucide-calendar-check"
         />
         <StatCard
@@ -345,13 +359,13 @@ const learnerRate = computed<string>(() => {
       <section class="space-y-3">
         <h2 class="text-base font-semibold text-[var(--ui-text)]">Journées pointées</h2>
         <div
-          v-if="entries.length === 0"
+          v-if="visibleEntries.length === 0"
           class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
         >
-          Aucune journée pointée pour l'instant.
+          {{ focusName ? `Aucune journée pointée pour ${focusName}.` : "Aucune journée pointée pour l'instant." }}
         </div>
         <PresenceEntryCard
-          v-for="entry in entries"
+          v-for="entry in visibleEntries"
           :key="entry.id"
           :entry="entry"
           show-student

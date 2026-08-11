@@ -152,7 +152,7 @@ async function onPublishSubmit(): Promise<void> {
         v-if="learners.length === 0"
         class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
       >
-        Aucun alternant dans votre réseau.
+        Aucun alternant sous votre responsabilité.
       </div>
 
       <div v-else class="space-y-4">

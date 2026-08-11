@@ -248,7 +248,7 @@ function fullName(person: Person): string {
           v-else
           class="rounded-md border border-dashed border-[var(--ui-border)] p-6 text-center text-sm text-[var(--ui-text-muted)]"
         >
-          Aucun signal de décrochage : tout votre réseau est sur les rails.
+          Aucun signal de décrochage : toutes les personnes sous votre responsabilité sont sur les rails.
         </div>
       </div>
 

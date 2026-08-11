@@ -63,6 +63,8 @@
                     <UIcon name="i-lucide-chevron-down" class="size-4" />
                   </button>
                 </UDropdownMenu>
+                <!-- Apprenant suivi : filtre transverse aux pages de Suivi. -->
+                <LearnerFocusSwitcher class="hidden md:block ml-1" />
               </template>
             </div>
           </div>
@@ -157,6 +159,8 @@
                 <NuxtLink v-if="isLearner" to="/courses" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Cours</NuxtLink>
                 <NuxtLink v-if="isLearner" to="/missions" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Missions</NuxtLink>
                 <NuxtLink to="/calendar" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Calendrier</NuxtLink>
+                <!-- Même sélecteur qu'en desktop : il pilote les pages de Suivi listées juste après. -->
+                <LearnerFocusSwitcher block class="my-1" />
                 <NuxtLink to="/presences" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Présences</NuxtLink>
                 <NuxtLink to="/rapports" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Rapports</NuxtLink>
                 <NuxtLink to="/annonces" class="text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="mobileOpen = false">Annonces</NuxtLink>

@@ -24,7 +24,7 @@ export default defineEventHandler(async (event) => {
   if (!learnerIds.includes(studentId)) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Cet étudiant ne fait pas partie de votre réseau."
+      statusMessage: "Cet étudiant n'est pas sous votre responsabilité."
     })
   }
 

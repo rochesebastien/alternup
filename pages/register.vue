@@ -15,7 +15,7 @@
         variant="soft"
         icon="i-lucide-mail-check"
         :title="`Invitation de ${invitation.tutor.firstName} ${invitation.tutor.lastName}`"
-        :description="`Vous rejoindrez son réseau en tant ${invitation.role === 'Alternant' ? 'qu\'alternant' : 'que stagiaire'}.`"
+        :description="`Vous serez placé sous sa responsabilité en tant ${invitation.role === 'Alternant' ? 'qu\'alternant' : 'que stagiaire'}.`"
       />
 
       <UAlert

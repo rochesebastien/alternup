@@ -42,7 +42,7 @@
     >
       {{
         isTutor
-          ? 'Aucun rapport à suivre pour le moment.'
+          ? (focusName ? `Aucun rapport de ${focusName} pour le moment.` : 'Aucun rapport à suivre pour le moment.')
           : 'Vous n\'avez pas encore de rapport. Créez-en un pour commencer.'
       }}
     </div>
@@ -172,7 +172,13 @@ const { data, status, error, refresh } = await useFetch<ProgressReportItem[]>(
   { default: () => [] }
 )
 
-const reports = computed<ProgressReportItem[]>(() => data.value ?? [])
+// Apprenant suivi (sélecteur de la barre de navigation) : la liste du tuteur
+// se restreint à ses rapports. Sans sélection, `filterByFocus` ne filtre rien.
+const { focusName, filterByFocus } = useLearnerFocus()
+
+const reports = computed<ProgressReportItem[]>(() =>
+  filterByFocus(data.value ?? [], (r) => r.studentId)
+)
 const toReviewCount = computed<number>(
   () => reports.value.filter((r) => r.status === 'soumis').length
 )

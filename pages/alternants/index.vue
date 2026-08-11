@@ -2,7 +2,7 @@
   <div class="w-full px-6 py-10 space-y-6">
     <PageHeader
       title="Alternants & stagiaires"
-      :subtitle="`${learners.length} ${learners.length > 1 ? 'personnes rattachées' : 'personne rattachée'}`"
+      :subtitle="`${learners.length} ${learners.length > 1 ? 'personnes' : 'personne'} sous votre responsabilité`"
     >
       <template #actions>
         <div class="flex items-center gap-2">
@@ -38,7 +38,7 @@
         v-if="learners.length === 0"
         class="rounded-lg border border-dashed border-[var(--ui-border)] p-10 text-center text-sm text-[var(--ui-text-muted)]"
       >
-        Aucun alternant rattaché pour le moment.
+        Aucun alternant sous votre responsabilité pour le moment.
       </div>
       <div v-else class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         <div
@@ -64,7 +64,7 @@
                 <p class="text-sm text-[var(--ui-text-muted)] truncate">{{ learner.email }}</p>
               </div>
             </div>
-            <UTooltip text="Retirer du réseau">
+            <UTooltip text="Retirer de mon suivi">
               <UButton
                 color="neutral"
                 variant="ghost"
@@ -103,7 +103,7 @@
         :columns="columns"
         :data="learners"
         :loading="status === 'pending'"
-        empty="Aucun alternant rattaché pour le moment."
+        empty="Aucun alternant sous votre responsabilité pour le moment."
         :ui="{ tbody: '[&>tr]:transition-colors [&>tr]:hover:bg-[var(--ui-bg-muted)]' }"
       >
         <template #fullName-cell="{ row }">
@@ -135,7 +135,7 @@
         </template>
 
         <template #actions-cell="{ row }">
-          <UTooltip text="Retirer du réseau">
+          <UTooltip text="Retirer de mon suivi">
             <UButton
               color="neutral"
               variant="ghost"
@@ -245,7 +245,7 @@
 
           <p class="text-xs text-[var(--ui-text-muted)]">
             Seuls les comptes existants avec le rôle Alternant ou Stagiaire, pas encore
-            rattachés à votre réseau, sont proposés.
+            sous votre responsabilité, sont proposés.
           </p>
 
           <UAlert
@@ -338,8 +338,8 @@
 
           <p class="text-xs text-[var(--ui-text-muted)]">
             Un lien d'inscription pré-rempli, valable 7 jours, sera généré : transmettez-le
-            à la personne. À la création de son compte, elle sera rattachée automatiquement
-            à votre réseau.
+            à la personne. À la création de son compte, elle sera automatiquement placée
+            sous votre responsabilité.
           </p>
 
           <UAlert
@@ -368,7 +368,7 @@
           <span class="font-semibold">
             {{ pendingRemove?.firstName }} {{ pendingRemove?.lastName }}
           </span>
-          de votre réseau. Cette action n'affecte pas le compte de la personne.
+          de votre suivi. Cette action n'affecte pas le compte de la personne.
         </p>
 
         <UAlert
@@ -546,7 +546,7 @@ async function onAddSubmit() {
     await Promise.all([refresh(), refreshRisk(), refreshAvailable()])
     toast.add({
       title: 'Personne ajoutée',
-      description: `${selected?.label ?? 'Cette personne'} est désormais rattachée à votre réseau.`,
+      description: `${selected?.label ?? 'Cette personne'} est désormais sous votre responsabilité.`,
       color: 'success'
     })
   } catch (err: unknown) {
@@ -674,7 +674,7 @@ async function confirmRemove() {
     await Promise.all([refresh(), refreshRisk(), refreshAvailable()])
     toast.add({
       title: 'Personne retirée',
-      description: `${target.firstName} ${target.lastName} a été retiré de votre réseau.`,
+      description: `${target.firstName} ${target.lastName} n'est plus sous votre responsabilité.`,
       color: 'success'
     })
   } catch (err: unknown) {

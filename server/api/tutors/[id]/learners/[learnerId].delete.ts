@@ -17,12 +17,12 @@ export default defineEventHandler(async (event) => {
     await prisma.tutorStudent.delete({
       where: { tutorId_studentId: { tutorId: tutor.id, studentId: learnerId.data } }
     })
-    return { message: 'Personne retirée de votre réseau.' }
+    return { message: 'Personne retirée de votre suivi.' }
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
       throw createError({
         statusCode: 404,
-        statusMessage: "Cette personne n'est pas rattachée à votre compte."
+        statusMessage: "Cette personne n'est pas sous votre responsabilité."
       })
     }
     throw err

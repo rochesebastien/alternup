@@ -33,7 +33,7 @@ export default defineEventHandler(async (event) => {
   if (!ids.includes(studentId)) {
     throw createError({
       statusCode: 400,
-      statusMessage: "Cet étudiant n'est pas rattaché à votre réseau."
+      statusMessage: "Cet étudiant n'est pas sous votre responsabilité."
     })
   }
 

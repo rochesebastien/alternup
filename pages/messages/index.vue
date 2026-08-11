@@ -20,9 +20,17 @@ interface ConversationSummary {
   updatedAt: string
 }
 
-const { data: conversations } = await useFetch<ConversationSummary[]>(
+const { data: conversationsData } = await useFetch<ConversationSummary[]>(
   '/api/conversations',
   { default: () => [] }
+)
+
+// Apprenant suivi (sélecteur de la barre de navigation) : le tuteur ne voit que
+// la conversation le concernant. Sans sélection, rien n'est filtré.
+const { focusName, filterByFocus } = useLearnerFocus()
+
+const conversations = computed<ConversationSummary[]>(() =>
+  filterByFocus(conversationsData.value ?? [], (c) => c.other.id)
 )
 
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
@@ -51,7 +59,7 @@ function truncate(text: string, max = 80): string {
       v-if="(conversations ?? []).length === 0"
       class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
     >
-      Aucune conversation pour le moment.
+      {{ focusName ? `Aucune conversation avec ${focusName}.` : 'Aucune conversation pour le moment.' }}
     </div>
 
     <div v-else class="space-y-3">

@@ -69,7 +69,7 @@ function onPrint(): void {
       color="error"
       variant="soft"
       title="Livret indisponible"
-      description="Cette personne n'existe pas ou n'est pas rattachée à votre réseau."
+      description="Cette personne n'existe pas ou n'est pas sous votre responsabilité."
     />
 
     <template v-else-if="livret">

@@ -66,7 +66,7 @@ export default defineEventHandler(async (event) => {
     await notifyUser(inv.tutorId, {
       type: 'invitation_acceptee',
       title: `${user.firstName} ${user.lastName} a accepté votre invitation`,
-      body: `Le compte ${user.email} a été créé et rattaché à votre réseau.`,
+      body: `Le compte ${user.email} a été créé et placé sous votre responsabilité.`,
       link: '/alternants'
     })
   }

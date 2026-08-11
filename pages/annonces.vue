@@ -46,11 +46,21 @@ interface LearnerAnnouncement {
 
 // --- Chargement -------------------------------------------------------------
 const {
-  data: tutorAnnouncements,
+  data: tutorAnnouncementsData,
   refresh: refreshTutor
 } = await useFetch<TutorAnnouncement[]>('/api/announcements', {
   default: () => [],
   immediate: isTutor.value
+})
+
+// Apprenant suivi (sélecteur de la barre de navigation) : on ne garde que les
+// annonces qui lui ont été adressées. Sans sélection, rien n'est filtré.
+const { focus, focusName } = useLearnerFocus()
+
+const tutorAnnouncements = computed<TutorAnnouncement[]>(() => {
+  const all = tutorAnnouncementsData.value ?? []
+  if (!focus.value) return all
+  return all.filter((a) => a.recipients.some((r) => r.studentId === focus.value?.id))
 })
 
 const {
@@ -173,10 +183,10 @@ onMounted(async () => {
       </PageHeader>
 
       <div
-        v-if="(tutorAnnouncements ?? []).length === 0"
+        v-if="tutorAnnouncements.length === 0"
         class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
       >
-        Aucune annonce publiée pour le moment.
+        {{ focusName ? `Aucune annonce adressée à ${focusName}.` : 'Aucune annonce publiée pour le moment.' }}
       </div>
 
       <div v-else class="space-y-4">

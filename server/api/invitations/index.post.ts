@@ -27,7 +27,7 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 409,
       statusMessage:
-        'Un compte existe déjà avec cet email. Utilisez « Attribution » pour le rattacher à votre réseau.'
+        'Un compte existe déjà avec cet email. Utilisez « Attribution » pour le placer sous votre responsabilité.'
     })
   }
 
