@@ -1,13 +1,17 @@
-import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
-import { requireRole } from '~/server/utils/require-role'
-import { learnerIdsOf } from '~/server/utils/network'
+import { requireAuth } from '~/server/utils/require-role'
+import { networkIdsOf } from '~/server/utils/network'
 import { excerpt, notifyUsers } from '~/server/utils/notifications'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
 import { announcementCreateSchema } from '~/shared/utils/announcements'
 
+/**
+ * Publication d'une annonce. Ouverte à tous les rôles : un tuteur adresse ses
+ * apprenants, un alternant/stagiaire adresse son ou ses tuteurs. Les
+ * destinataires restent bornés au réseau de l'auteur.
+ */
 export default defineEventHandler(async (event) => {
-  const user = await requireRole(event, Role.Tutor)
+  const user = await requireAuth(event)
 
   const parsed = announcementCreateSchema.safeParse(await readBody(event))
   if (!parsed.success) {
@@ -20,7 +24,7 @@ export default defineEventHandler(async (event) => {
 
   const { title, body, pinned, recipientIds } = parsed.data
 
-  const allowed = new Set(await learnerIdsOf(user.id))
+  const allowed = new Set(await networkIdsOf(user))
   const invalid = recipientIds.some((id) => !allowed.has(id))
   if (invalid) {
     throw createError({
