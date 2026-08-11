@@ -129,7 +129,9 @@ const inviteToken = computed(() =>
   typeof route.query.invite === 'string' ? route.query.invite : null
 )
 
-const { data: invitation, error: inviteFetchError } = await useFetch<PublicInvitation>(
+// `PublicInvitation | null` explicitement : sans invitation dans l'URL, la
+// requête n'est jamais lancée et `data` reste sur le défaut `null`.
+const { data: invitation, error: inviteFetchError } = await useFetch<PublicInvitation | null>(
   () => `/api/invitations/${inviteToken.value}`,
   { immediate: !!inviteToken.value, default: () => null }
 )
