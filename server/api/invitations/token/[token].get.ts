@@ -6,6 +6,12 @@ import type { PublicInvitation } from '~/shared/utils/invitations'
  * Consultation publique d'une invitation par son token (page /register).
  * Route volontairement hors authentification (cf. `public-routes.ts`) : le
  * token, aléatoire et à durée de vie courte, fait office de capacité d'accès.
+ *
+ * Elle vit dans un sous-dossier `token/` et non à la racine `invitations/` :
+ * deux fichiers `[token].get.ts` et `[id].delete.ts` dans un même dossier
+ * partagent le même segment dynamique côté routeur Nitro, qui ne retient qu'un
+ * seul nom de paramètre. `getRouterParam(event, 'token')` renvoyait alors
+ * `undefined` et tous les liens d'invitation répondaient 404.
  */
 export default defineEventHandler(async (event): Promise<PublicInvitation> => {
   const token = z.string().min(1).max(200).safeParse(getRouterParam(event, 'token'))

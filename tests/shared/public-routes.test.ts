@@ -15,9 +15,16 @@ describe('isPublicApiRoute', () => {
     '/api/auth/me',
     '/api/alternants',
     '/api/tutors/123/learners',
-    '/api/projects/abc'
+    '/api/projects/abc',
+    // Seule la consultation par token est publique dans le dossier invitations.
+    '/api/invitations',
+    '/api/invitations/23fd8f00-6c23-4acc-b184-da450759b251'
   ])('blocks %s', (path) => {
     expect(isPublicApiRoute(path)).toBe(false)
+  })
+
+  it('lets the invitation token lookup through', () => {
+    expect(isPublicApiRoute('/api/invitations/token/elNHzFcbekExo3EQSuBaup7')).toBe(true)
   })
 
   it('strips a query string before matching', () => {

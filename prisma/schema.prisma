@@ -54,6 +54,8 @@ model User {
 
   // Relations: modules PRONOTE (présences, rapports, annonces)
   attendancesRecorded    Attendance[]            @relation("AttendanceRecorder")
+  presenceEntries        PresenceEntry[]         @relation("PresenceStudent")
+  presenceEntriesRecorded PresenceEntry[]        @relation("PresenceRecorder")
   reportsAsStudent       ProgressReport[]        @relation("ReportStudent")
   reportsAsTutor         ProgressReport[]        @relation("ReportTutor")
   announcementsAuthored  Announcement[]          @relation("AnnouncementAuthor")
@@ -265,6 +267,33 @@ model Attendance {
   recordedBy User          @relation("AttendanceRecorder", fields: [recordedById], references: [id], onDelete: Cascade)
 
   @@map("attendances")
+}
+
+// A bis. Pointage journalier — déclaré par l'alternant/stagiaire lui-même (ou
+// par son tuteur) : « je suis là aujourd'hui, arrivé à 9h00, reparti à 17h30 ».
+// Indépendant des sessions du calendrier (`Attendance`), qui restent pointées
+// par le tuteur session par session.
+//
+// Les horaires sont stockés en minutes depuis minuit (heure locale déclarée) et
+// non en `Timestamptz` : une heure d'arrivée est une heure de pendule, elle ne
+// doit pas se décaler selon le fuseau du serveur ou du navigateur qui l'affiche.
+model PresenceEntry {
+  id           String   @id @default(uuid()) @db.Uuid
+  studentId    String   @map("student_id") @db.Uuid
+  date         DateTime @db.Date
+  startMinute  Int      @map("start_minute")
+  endMinute    Int      @map("end_minute")
+  note         String?
+  recordedById String   @map("recorded_by") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  student    User @relation("PresenceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy User @relation("PresenceRecorder", fields: [recordedById], references: [id], onDelete: Cascade)
+
+  // Un seul pointage par personne et par jour : re-pointer met à jour la ligne.
+  @@unique([studentId, date])
+  @@map("presence_entries")
 }
 
 // B. Rapports d'étape — livret d'apprentissage. Machine à états côté serveur.

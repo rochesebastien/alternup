@@ -987,3 +987,64 @@ l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invita
 - [x] Section « Invitations » sur /alternants : statut, date d'acceptation, copie du lien, révocation
 - [x] Notification `invitation_acceptee` au tuteur à l'acceptation (icône `user-check`)
 - [x] Tests : 224 tests OK (statuts d'invitation couverts), lint OK, build OK
+
+---
+
+# Plan — Compte modifiable, pointage journalier, correctif invitation (2026-08-11)
+
+> Branche : `claude/account-presences-invite-oa1wrv`
+
+## A. Correctif — lien d'invitation toujours « invalide »
+
+- [x] Diagnostic : collision de noms de paramètres Nitro (`[token].get.ts` et `[id].delete.ts`
+      dans le même dossier → le segment est nommé `id`, `getRouterParam(event, 'token')` est
+      `undefined` → 404 systématique)
+- [x] Déplacer la route publique vers `/api/invitations/token/[token]`
+- [x] Restreindre le préfixe public à `/api/invitations/token/`
+- [x] Mettre à jour `/register` + tests
+
+## B. `/account` — modification du profil et du mot de passe
+
+- [x] `shared/utils/account.ts` : schémas Zod (identité, changement de mot de passe)
+- [x] `PUT /api/account/profile` : prénom/nom + rafraîchissement de la session
+- [x] `PUT /api/account/password` : vérification du mot de passe actuel + confirmation
+- [x] Refonte de `pages/account.vue` (lecture + formulaires, thème de l'app)
+
+## C. `/presences` — pointage journalier (arrivée / départ)
+
+- [x] Modèle Prisma `PresenceEntry` (1 pointage par personne et par jour) + migration
+- [x] `shared/utils/presence-entries.ts` : schémas + helpers horaires
+- [x] `GET/POST /api/presence-entries`, `DELETE /api/presence-entries/[id]`
+- [x] UI alternant : carte « pointer aujourd'hui », historique, cumul d'heures
+- [x] UI tuteur : pointage pour un apprenant + journal de son réseau
+- [x] Tests unitaires + vérification bout en bout (Postgres local)
+
+## Revue
+
+**A. Invitation.** Cause racine trouvée en reproduisant le bug sur un Postgres local :
+`GET /api/invitations/<token>` répondait 404 pour *tous* les tokens. Les deux fichiers
+`[token].get.ts` et `[id].delete.ts` partageaient le même segment dynamique, dont Nitro
+ne retient qu'un seul nom (`id`) → `getRouterParam(event, 'token')` valait `undefined`.
+La route publique vit désormais sous `token/[token]`. Vérifié bout en bout : lecture
+publique du lien (200), inscription via le token (email et rôle imposés par l'invitation
+même quand le client en envoie d'autres), rattachement au réseau, invitation marquée
+acceptée, et les routes voisines (`GET`/`POST`/`DELETE /api/invitations`) toujours en 401
+pour un visiteur anonyme. Leçon consignée dans `taches/lecons.md`.
+
+**B. Compte.** `/account` passe en lecture + édition : prénom/nom (session réécrite dans
+la foulée, sinon la barre de navigation garde l'ancien nom) et mot de passe (mot de passe
+actuel exigé, confirmation, refus de réutiliser l'ancien). Email et rôle restent en
+lecture seule. Vérifié : mise à jour du profil, `GET /api/auth/me` à jour, 400 sur nom
+vide, 400 « Mot de passe actuel incorrect », 400 sur confirmation divergente, puis
+connexion refusée avec l'ancien mot de passe et acceptée avec le nouveau.
+
+**C. Présences.** Nouveau modèle `PresenceEntry` (un pointage par personne et par jour,
+horaires en minutes depuis minuit pour ne dépendre d'aucun fuseau). L'apprenant déclare
+sa journée depuis une carte « Pointage du jour » (arrivée pré-remplie à l'heure courante
+arrondie, départ +8 h, jamais un intervalle invalide à l'ouverture), la modifie ou
+l'annule ; le tuteur pointe pour un apprenant de son réseau via une modale et voit le
+journal de tout son réseau. Contrôles vérifiés : upsert sur re-pointage du même jour,
+400 si le départ précède l'arrivée, 404 si on pointe pour quelqu'un hors réseau.
+Captures Playwright des deux vues (apprenant / tuteur), aucune erreur console.
+
+`npm run lint` ✅ · `npm test` (266) ✅ · `npm run build` ✅
