@@ -2,18 +2,22 @@
 import type { AttendanceStatus } from '~/shared/utils/enums'
 import { Role } from '~/shared/utils/enums'
 import {
+  DEFAULT_PRESENCE_KIND,
   formatDuration,
   minutesFromTime,
   presenceEntryDaySchema,
   presenceEntryTutorFormSchema,
+  presenceKindIcon,
+  presenceKindLabel,
   roundedNowTime,
   startOfWeekKey,
   timeFromMinutes,
   toDateKey,
-  totalMinutes,
+  workedMinutes,
   MINUTES_IN_DAY,
   WORKDAY_MINUTES,
-  type PresenceEntry
+  type PresenceEntry,
+  type PresenceKind
 } from '~/shared/utils/presence-entries'
 
 definePageMeta({
@@ -81,7 +85,7 @@ const todayEntry = computed<PresenceEntry | null>(
 )
 
 const weekMinutes = computed<number>(() =>
-  totalMinutes(myEntries.value.filter((e) => e.date >= weekStart.value))
+  workedMinutes(myEntries.value.filter((e) => e.date >= weekStart.value))
 )
 const weekDays = computed<number>(
   () => myEntries.value.filter((e) => e.date >= weekStart.value).length
@@ -93,13 +97,13 @@ const dayForm = reactive<{
   date: string
   startTime: string
   endTime: string
-  note: string
+  kind: PresenceKind
 }>({
   studentId: '',
   date: today.value,
   startTime: '09:00',
   endTime: '17:00',
-  note: ''
+  kind: DEFAULT_PRESENCE_KIND
 })
 
 // Le fuseau du serveur n'est pas forcément celui du navigateur : on réaligne le
@@ -136,7 +140,7 @@ function openCheckIn(): void {
   dayForm.endTime = timeFromMinutes(
     Math.min(minutesFromTime(dayForm.startTime) + WORKDAY_MINUTES, MINUTES_IN_DAY - 1)
   )
-  dayForm.note = ''
+  dayForm.kind = DEFAULT_PRESENCE_KIND
   formError.value = null
   formOpen.value = true
 }
@@ -147,7 +151,7 @@ function openEdit(entry: PresenceEntry): void {
   dayForm.date = entry.date
   dayForm.startTime = entry.startTime
   dayForm.endTime = entry.endTime
-  dayForm.note = entry.note ?? ''
+  dayForm.kind = entry.kind
   formError.value = null
   formOpen.value = true
 }
@@ -163,7 +167,7 @@ async function submitDay(): Promise<void> {
         date: dayForm.date,
         startTime: dayForm.startTime,
         endTime: dayForm.endTime,
-        note: dayForm.note.trim() || null
+        kind: dayForm.kind
       }
     })
     formOpen.value = false
@@ -255,8 +259,17 @@ const visibleEntries = computed<PresenceEntry[]>(() =>
 )
 
 const networkWeekMinutes = computed<number>(() =>
-  totalMinutes(visibleEntries.value.filter((e) => e.date >= weekStart.value))
+  workedMinutes(visibleEntries.value.filter((e) => e.date >= weekStart.value))
 )
+
+// --- Historique d'un pointage (tuteur uniquement) ----------------------------
+const historyTarget = ref<PresenceEntry | null>(null)
+const historyOpen = ref<boolean>(false)
+
+function openHistory(entry: PresenceEntry): void {
+  historyTarget.value = entry
+  historyOpen.value = true
+}
 
 const visibleSessions = computed<TutorSession[]>(() =>
   filterByFocus(tutorSessions.value ?? [], (s) => s.student?.id)
@@ -369,9 +382,10 @@ const learnerRate = computed<string>(() => {
           :key="entry.id"
           :entry="entry"
           show-student
-          editable
+          show-history
           @edit="openEdit"
           @remove="askRemove"
+          @history="openHistory"
         />
       </section>
 
@@ -482,14 +496,15 @@ const learnerRate = computed<string>(() => {
                 · {{ formatDuration(todayEntry.minutes) }}
               </span>
             </p>
-            <p v-if="todayEntry.note" class="text-sm text-[var(--ui-text-toned)]">
-              {{ todayEntry.note }}
+            <p class="text-sm text-[var(--ui-text-toned)] flex items-center gap-1.5">
+              <UIcon :name="presenceKindIcon(todayEntry.kind)" class="size-3.5 shrink-0" />
+              {{ presenceKindLabel(todayEntry.kind) }}
             </p>
             <p v-if="todayEntry.recordedBy" class="text-xs text-[var(--ui-text-dimmed)]">
               Pointé par {{ todayEntry.recordedBy.firstName }} {{ todayEntry.recordedBy.lastName }}
             </p>
           </div>
-          <div class="flex items-center gap-2 shrink-0">
+          <div v-if="!todayEntry.locked" class="flex items-center gap-2 shrink-0">
             <UButton
               color="neutral"
               variant="outline"
@@ -507,6 +522,10 @@ const learnerRate = computed<string>(() => {
               @click="askRemove(todayEntry)"
             />
           </div>
+          <p v-else class="text-xs text-[var(--ui-text-dimmed)] flex items-center gap-1.5 shrink-0">
+            <UIcon name="i-lucide-lock" class="size-4 shrink-0" />
+            Pointage verrouillé — seul votre tuteur peut le corriger.
+          </p>
         </div>
 
         <!-- Invitation à pointer -->
@@ -547,12 +566,8 @@ const learnerRate = computed<string>(() => {
             </UFormField>
           </div>
 
-          <UFormField label="Commentaire" name="note" hint="Optionnel">
-            <UInput
-              v-model="dayForm.note"
-              placeholder="Télétravail, rendez-vous client…"
-              class="w-full"
-            />
+          <UFormField label="Type de journée" name="kind" required>
+            <PresenceKindPicker v-model="dayForm.kind" />
           </UFormField>
 
           <div class="flex items-center justify-between gap-4 flex-wrap">
@@ -611,7 +626,6 @@ const learnerRate = computed<string>(() => {
           v-for="entry in myEntries"
           :key="entry.id"
           :entry="entry"
-          editable
           @edit="openEdit"
           @remove="askRemove"
         />
@@ -678,8 +692,8 @@ const learnerRate = computed<string>(() => {
             </UFormField>
           </div>
 
-          <UFormField label="Commentaire" name="note" hint="Optionnel">
-            <UInput v-model="dayForm.note" class="w-full" />
+          <UFormField label="Type de journée" name="kind" required>
+            <PresenceKindPicker v-model="dayForm.kind" />
           </UFormField>
 
           <p v-if="formMinutes" class="text-sm text-[var(--ui-text-muted)]">
@@ -729,5 +743,8 @@ const learnerRate = computed<string>(() => {
         </div>
       </template>
     </UModal>
+
+    <!-- Historique d'un pointage (tuteur uniquement) -->
+    <PresenceHistoryDialog v-model:open="historyOpen" :entry="historyTarget" />
   </div>
 </template>

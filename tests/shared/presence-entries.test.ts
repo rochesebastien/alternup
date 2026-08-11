@@ -1,15 +1,20 @@
 import { describe, expect, it } from 'vitest'
 import {
+  countsAsWorked,
   formatDuration,
   minutesFromTime,
   presenceEntryDaySchema,
   presenceEntryTutorFormSchema,
   presenceEntryUpsertSchema,
+  presenceKindIcon,
+  presenceKindLabel,
+  presenceKindShortLabel,
   roundedNowTime,
   startOfWeekKey,
   timeFromMinutes,
   toDateKey,
-  totalMinutes
+  totalMinutes,
+  workedMinutes
 } from '~/shared/utils/presence-entries'
 
 const GUID = '23fd8f00-6c23-4acc-b184-da450759b251'
@@ -73,11 +78,62 @@ describe('totalMinutes', () => {
   })
 })
 
+describe('types de journée', () => {
+  it.each([
+    ['entreprise_sur_site', 'Entreprise : sur site', 'Sur site', 'i-lucide-building-2'],
+    ['entreprise_teletravail', 'Entreprise : en télétravail', 'Télétravail', 'i-lucide-house'],
+    ['entreprise_conges', 'Entreprise : congés', 'Congés', 'i-lucide-palmtree'],
+    ['ecole_formation', 'École : en formation', 'Formation', 'i-lucide-graduation-cap']
+  ] as const)('%s -> libellés et icône attendus', (kind, label, shortLabel, icon) => {
+    expect(presenceKindLabel(kind)).toBe(label)
+    expect(presenceKindShortLabel(kind)).toBe(shortLabel)
+    expect(presenceKindIcon(kind)).toBe(icon)
+  })
+})
+
+describe('countsAsWorked', () => {
+  it('exclut uniquement les congés des cumuls', () => {
+    expect(countsAsWorked('entreprise_sur_site')).toBe(true)
+    expect(countsAsWorked('entreprise_teletravail')).toBe(true)
+    expect(countsAsWorked('ecole_formation')).toBe(true)
+    expect(countsAsWorked('entreprise_conges')).toBe(false)
+  })
+})
+
+describe('workedMinutes', () => {
+  it('additionne les minutes hors journées de congés', () => {
+    const entries = [
+      { minutes: 480, kind: 'entreprise_sur_site' as const },
+      { minutes: 420, kind: 'entreprise_conges' as const },
+      { minutes: 300, kind: 'ecole_formation' as const }
+    ]
+    expect(workedMinutes(entries)).toBe(780)
+  })
+
+  it('renvoie 0 sans entrées', () => {
+    expect(workedMinutes([])).toBe(0)
+  })
+})
+
 describe('presenceEntryDaySchema', () => {
   const valid = { date: '2026-08-11', startTime: '09:00', endTime: '17:30' }
 
   it('accepte une journée valide', () => {
     expect(presenceEntryDaySchema.safeParse(valid).success).toBe(true)
+  })
+
+  it('applique "entreprise_sur_site" par défaut sans kind fourni', () => {
+    const result = presenceEntryDaySchema.safeParse(valid)
+    expect(result.success && result.data.kind).toBe('entreprise_sur_site')
+  })
+
+  it('accepte un kind explicite', () => {
+    const result = presenceEntryDaySchema.safeParse({ ...valid, kind: 'entreprise_conges' })
+    expect(result.success && result.data.kind).toBe('entreprise_conges')
+  })
+
+  it('refuse un kind inconnu', () => {
+    expect(presenceEntryDaySchema.safeParse({ ...valid, kind: 'teletravail' }).success).toBe(false)
   })
 
   it('refuse un départ antérieur à l\'arrivée', () => {

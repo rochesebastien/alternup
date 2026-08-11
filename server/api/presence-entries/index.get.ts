@@ -55,5 +55,5 @@ export default defineEventHandler(async (event): Promise<PresenceEntry[]> => {
     include: presenceEntryInclude
   })
 
-  return entries.map(toPresenceEntry)
+  return entries.map((entry) => toPresenceEntry(entry, user.id))
 })

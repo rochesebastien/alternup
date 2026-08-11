@@ -56,6 +56,7 @@ model User {
   attendancesRecorded    Attendance[]            @relation("AttendanceRecorder")
   presenceEntries        PresenceEntry[]         @relation("PresenceStudent")
   presenceEntriesRecorded PresenceEntry[]        @relation("PresenceRecorder")
+  presenceRevisions       PresenceEntryRevision[] @relation("PresenceRevisionAuthor")
   reportsAsStudent       ProgressReport[]        @relation("ReportStudent")
   reportsAsTutor         ProgressReport[]        @relation("ReportTutor")
   announcementsAuthored  Announcement[]          @relation("AnnouncementAuthor")
@@ -269,6 +270,18 @@ model Attendance {
   @@map("attendances")
 }
 
+enum PresenceKind {
+  entreprise_sur_site
+  entreprise_teletravail
+  entreprise_conges
+  ecole_formation
+}
+
+enum PresenceRevisionAction {
+  created
+  updated
+}
+
 // A bis. Pointage journalier — déclaré par l'alternant/stagiaire lui-même (ou
 // par son tuteur) : « je suis là aujourd'hui, arrivé à 9h00, reparti à 17h30 ».
 // Indépendant des sessions du calendrier (`Attendance`), qui restent pointées
@@ -278,22 +291,44 @@ model Attendance {
 // non en `Timestamptz` : une heure d'arrivée est une heure de pendule, elle ne
 // doit pas se décaler selon le fuseau du serveur ou du navigateur qui l'affiche.
 model PresenceEntry {
-  id           String   @id @default(uuid()) @db.Uuid
-  studentId    String   @map("student_id") @db.Uuid
-  date         DateTime @db.Date
-  startMinute  Int      @map("start_minute")
-  endMinute    Int      @map("end_minute")
-  note         String?
-  recordedById String   @map("recorded_by") @db.Uuid
-  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  id           String       @id @default(uuid()) @db.Uuid
+  studentId    String       @map("student_id") @db.Uuid
+  date         DateTime     @db.Date
+  startMinute  Int          @map("start_minute")
+  endMinute    Int          @map("end_minute")
+  kind         PresenceKind @default(entreprise_sur_site)
+  recordedById String       @map("recorded_by") @db.Uuid
+  createdAt    DateTime     @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt    DateTime     @updatedAt @map("updated_at") @db.Timestamptz
 
-  student    User @relation("PresenceStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  recordedBy User @relation("PresenceRecorder", fields: [recordedById], references: [id], onDelete: Cascade)
+  student    User                    @relation("PresenceStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  recordedBy User                    @relation("PresenceRecorder", fields: [recordedById], references: [id], onDelete: Cascade)
+  revisions  PresenceEntryRevision[]
 
   // Un seul pointage par personne et par jour : re-pointer met à jour la ligne.
   @@unique([studentId, date])
   @@map("presence_entries")
+}
+
+// Journal append-only des écritures sur un pointage (création + modifications).
+// Existe pour la lutte anti-triche : un apprenant ne peut plus retoucher son
+// propre pointage une fois enregistré, mais son tuteur le peut — ce journal
+// permet de repérer après coup une correction et de savoir qui l'a faite.
+model PresenceEntryRevision {
+  id           String                  @id @default(uuid()) @db.Uuid
+  entryId      String                  @map("entry_id") @db.Uuid
+  action       PresenceRevisionAction
+  startMinute  Int                     @map("start_minute")
+  endMinute    Int                     @map("end_minute")
+  kind         PresenceKind
+  changedById  String                  @map("changed_by") @db.Uuid
+  changedAt    DateTime                @default(now()) @map("changed_at") @db.Timestamptz
+
+  entry     PresenceEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  changedBy User          @relation("PresenceRevisionAuthor", fields: [changedById], references: [id], onDelete: Cascade)
+
+  @@index([entryId, changedAt])
+  @@map("presence_entry_revisions")
 }
 
 // B. Rapports d'étape — livret d'apprentissage. Machine à états côté serveur.

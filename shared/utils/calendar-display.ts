@@ -1,3 +1,5 @@
+import { minutesFromTime, presenceKindShortLabel, type PresenceEntry } from '~/shared/utils/presence-entries'
+
 export interface ApiCalendarEvent {
   id: string
   studentId: string | null
@@ -22,10 +24,17 @@ export interface ApiCalendarEvent {
 /**
  * Catégories d'affichage du calendrier. Chaque catégorie correspond à un
  * « calendar » Schedule-X, c'est-à-dire à un jeu de couleurs (clair / sombre).
+ * `presence` couvre les pointages journaliers (lecture seule dans le calendrier).
  */
-export type CalendarCategoryId = 'session' | 'visite' | 'autre'
+export type CalendarCategoryId = 'session' | 'visite' | 'autre' | 'presence'
 
-export interface CalendarDisplayEvent {
+/**
+ * `TRaw` par défaut à l'union des deux sources possibles pour les usages
+ * génériques (ex. le flux fusionné consommé par Schedule-X) ; `toDisplayEvent`
+ * et `presenceToDisplayEvent` le fixent chacun à leur propre type pour que
+ * `rawEvent` reste précisément typé côté appelant.
+ */
+export interface CalendarDisplayEvent<TRaw = ApiCalendarEvent | PresenceEntry> {
   id: string
   title: string
   /** Chaîne ISO 8601 telle que renvoyée par l'API (pas de conversion ici). */
@@ -33,7 +42,8 @@ export interface CalendarDisplayEvent {
   /** Chaîne ISO 8601 telle que renvoyée par l'API (pas de conversion ici). */
   end: string
   calendarId: CalendarCategoryId
-  rawEvent: ApiCalendarEvent
+  /** Événement de calendrier « libre », ou pointage journalier pour la catégorie `presence`. */
+  rawEvent: TRaw
 }
 
 /**
@@ -60,7 +70,7 @@ export function toDisplayTitle(event: ApiCalendarEvent): string {
  * `Temporal` (polyfill chargé côté navigateur uniquement). La conversion se
  * fait donc dans `pages/calendar.vue`, à partir des chaînes ISO ci-dessous.
  */
-export function toDisplayEvent(event: ApiCalendarEvent): CalendarDisplayEvent {
+export function toDisplayEvent(event: ApiCalendarEvent): CalendarDisplayEvent<ApiCalendarEvent> {
   return {
     id: event.id,
     title: toDisplayTitle(event),
@@ -71,6 +81,57 @@ export function toDisplayEvent(event: ApiCalendarEvent): CalendarDisplayEvent {
   }
 }
 
-export function toDisplayEvents(events: ApiCalendarEvent[]): CalendarDisplayEvent[] {
+export function toDisplayEvents(events: ApiCalendarEvent[]): CalendarDisplayEvent<ApiCalendarEvent>[] {
   return events.map(toDisplayEvent)
+}
+
+/**
+ * `date` ('AAAA-MM-JJ') + `time` ('HH:MM') → chaîne ISO en heure LOCALE.
+ * Volontairement construit à partir des composants (`new Date(an, mois, jour, h, min)`)
+ * et non par concaténation de chaînes : ni `date` ni `time` ne portent de fuseau, la
+ * seule lecture correcte est « heure de pendule locale », jamais UTC. Les chaînes sont
+ * déjà validées en amont (schémas Zod) : les composants sont donc toujours des nombres.
+ */
+function localIsoFromDateAndTime(date: string, time: string): string {
+  const parts = date.split('-').map(Number)
+  const year = parts[0] ?? 0
+  const month = parts[1] ?? 1
+  const day = parts[2] ?? 1
+  const minutes = minutesFromTime(time)
+  return new Date(year, month - 1, day, Math.floor(minutes / 60), minutes % 60).toISOString()
+}
+
+/**
+ * Préfixe le titre par le prénom de la personne quand le pointage n'est pas
+ * celui du visiteur courant (vue tuteur, qui voit les pointages de son réseau).
+ */
+function presenceTitle(entry: PresenceEntry, viewerId: string): string {
+  const shortLabel = presenceKindShortLabel(entry.kind)
+  if (entry.studentId === viewerId || !entry.student) return shortLabel
+  return `${entry.student.firstName} · ${shortLabel}`
+}
+
+/**
+ * Projette un pointage journalier vers le format d'affichage du calendrier.
+ * Fonction pure, au même titre que `toDisplayEvent` : la conversion vers les
+ * objets `Temporal` attendus par Schedule-X reste dans `pages/calendar.vue`.
+ * L'identifiant est préfixé pour ne jamais entrer en collision avec un
+ * `ApiCalendarEvent` et pour reconnaître la catégorie sans relire `calendarId`.
+ */
+export function presenceToDisplayEvent(entry: PresenceEntry, viewerId: string): CalendarDisplayEvent<PresenceEntry> {
+  return {
+    id: `presence-${entry.id}`,
+    title: presenceTitle(entry, viewerId),
+    start: localIsoFromDateAndTime(entry.date, entry.startTime),
+    end: localIsoFromDateAndTime(entry.date, entry.endTime),
+    calendarId: 'presence',
+    rawEvent: entry
+  }
+}
+
+export function presenceEntriesToDisplayEvents(
+  entries: PresenceEntry[],
+  viewerId: string
+): CalendarDisplayEvent<PresenceEntry>[] {
+  return entries.map((entry) => presenceToDisplayEvent(entry, viewerId))
 }

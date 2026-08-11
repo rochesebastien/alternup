@@ -14,6 +14,67 @@ export const MINUTES_IN_DAY = 24 * 60
 /** Durée proposée par défaut entre l'arrivée et le départ (journée type). */
 export const WORKDAY_MINUTES = 8 * 60
 
+/**
+ * Type de journée. Littéraux de chaîne uniquement — jamais l'enum Prisma
+ * `PresenceKind` (règle du dépôt : un import de valeur d'enum Prisma dans un
+ * module partagé casse l'hydratation côté client).
+ */
+export type PresenceKind =
+  | 'entreprise_sur_site'
+  | 'entreprise_teletravail'
+  | 'entreprise_conges'
+  | 'ecole_formation'
+
+const PRESENCE_KIND_VALUES = [
+  'entreprise_sur_site',
+  'entreprise_teletravail',
+  'entreprise_conges',
+  'ecole_formation'
+] as const satisfies readonly PresenceKind[]
+
+export const PRESENCE_KIND_OPTIONS: Array<{
+  value: PresenceKind
+  label: string
+  shortLabel: string
+  icon: string
+}> = [
+  { value: 'entreprise_sur_site', label: 'Entreprise : sur site', shortLabel: 'Sur site', icon: 'i-lucide-building-2' },
+  { value: 'entreprise_teletravail', label: 'Entreprise : en télétravail', shortLabel: 'Télétravail', icon: 'i-lucide-house' },
+  { value: 'entreprise_conges', label: 'Entreprise : congés', shortLabel: 'Congés', icon: 'i-lucide-palmtree' },
+  { value: 'ecole_formation', label: 'École : en formation', shortLabel: 'Formation', icon: 'i-lucide-graduation-cap' }
+]
+
+/** Valeur par défaut d'un nouveau pointage. */
+export const DEFAULT_PRESENCE_KIND: PresenceKind = 'entreprise_sur_site'
+
+function presenceKindOption(kind: PresenceKind) {
+  const option = PRESENCE_KIND_OPTIONS.find((o) => o.value === kind)
+  if (!option) throw new Error(`Type de journée inconnu : ${kind}`)
+  return option
+}
+
+export function presenceKindLabel(kind: PresenceKind): string {
+  return presenceKindOption(kind).label
+}
+
+export function presenceKindShortLabel(kind: PresenceKind): string {
+  return presenceKindOption(kind).shortLabel
+}
+
+export function presenceKindIcon(kind: PresenceKind): string {
+  return presenceKindOption(kind).icon
+}
+
+/** Une journée de congés ne compte pas dans les cumuls d'heures affichés. */
+export function countsAsWorked(kind: PresenceKind): boolean {
+  return kind !== 'entreprise_conges'
+}
+
+/** Somme des minutes pointées, congés exclus. */
+export function workedMinutes(entries: Array<{ minutes: number; kind: PresenceKind }>): number {
+  return entries.reduce((sum, entry) => (countsAsWorked(entry.kind) ? sum + entry.minutes : sum), 0)
+}
+
 const timeString = z
   .string({ error: 'Une heure est requise.' })
   .trim()
@@ -28,12 +89,14 @@ const dayFields = {
   date: dateString,
   startTime: timeString,
   endTime: timeString,
-  note: z.string().trim().max(500, '500 caractères maximum.').nullable().optional()
+  kind: z.enum(PRESENCE_KIND_VALUES, { error: 'Type de journée invalide.' }).default(DEFAULT_PRESENCE_KIND)
 }
 
 const END_AFTER_START = {
   message: "L'heure de départ doit être postérieure à l'heure d'arrivée.",
-  path: ['endTime'] as const
+  // Zod v4 attend un tableau mutable pour `path` : `as const` produisait un
+  // `readonly [...]` incompatible avec `PropertyKey[]`.
+  path: ['endTime'] as string[]
 }
 
 function endAfterStart(d: { startTime: string, endTime: string }): boolean {
@@ -77,10 +140,26 @@ export interface PresenceEntry {
   endTime: string
   /** Durée de la journée, en minutes. */
   minutes: number
-  note: string | null
+  kind: PresenceKind
   /** Renseigné quand le pointage a été saisi par quelqu'un d'autre (le tuteur). */
   recordedBy: { id: string; firstName: string; lastName: string } | null
   student?: { id: string; firstName: string; lastName: string }
+  /** Nombre d'écritures enregistrées : > 1 => le pointage a été retouché. */
+  revisionCount: number
+  /** Verrouillé pour l'utilisateur courant (apprenant : vrai dès qu'il existe). */
+  locked: boolean
+}
+
+/** Une ligne du journal de modification d'un pointage (qui, quand, quoi). */
+export interface PresenceEntryRevision {
+  id: string
+  action: 'created' | 'updated'
+  startTime: string
+  endTime: string
+  kind: PresenceKind
+  /** Horodatage de l'écriture, au format ISO. */
+  changedAt: string
+  changedBy: { id: string; firstName: string; lastName: string }
 }
 
 /** `"09:05"` → `545`. La chaîne est supposée déjà validée par le schéma. */

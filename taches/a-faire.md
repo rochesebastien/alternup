@@ -1048,3 +1048,41 @@ journal de tout son réseau. Contrôles vérifiés : upsert sur re-pointage du m
 Captures Playwright des deux vues (apprenant / tuteur), aucune erreur console.
 
 `npm run lint` ✅ · `npm test` (266) ✅ · `npm run build` ✅
+
+---
+
+# Plan — Pointage verrouillé, types de journée, calendrier (2026-08-11)
+
+> Branche : `claude/account-presences-invite-oa1wrv`
+> Réalisé via un workflow de sous-agents (spécification Opus, écriture Sonnet, relecture Opus).
+
+- [x] Type de journée fermé (`PresenceKind`) en remplacement du commentaire libre :
+      Entreprise sur site / télétravail / congés, École en formation — sélecteur segmenté
+- [x] Les congés ne comptent pas dans les cumuls d'heures (`workedMinutes`)
+- [x] Verrouillage : l'apprenant crée son pointage, ne peut plus le modifier ni le supprimer
+      (contrôle serveur : 403 sur re-POST et sur DELETE) ; le tuteur garde tous les droits
+- [x] Journal `PresenceEntryRevision` : chaque écriture tracée (qui, quand, heures, type),
+      consultable par le tuteur via une boîte de dialogue, badge « Modifié » au-delà d'une écriture
+- [x] Pointages affichés dans le calendrier (catégorie `presence`, lecture seule)
+- [x] Calendrier compacté : en-tête de jour, hauteur de grille (40 px/heure), cases du mois
+
+## Revue
+
+Relecture Opus après implémentation : conformité A/B/C confirmée par appels réels (un apprenant ne peut
+ni repointer, ni supprimer, ni lire l'historique ; un tuteur hors réseau reçoit 404), quatre défauts
+corrigés ensuite :
+
+1. **Fuseau horaire du calendrier** (cause racine, préexistante) : Schedule-X rendait sa grille en UTC,
+   faute d'option `timezone`. Un rendez-vous saisi à 14 h à Paris s'affichait à 12 h, et un pointage
+   « arrivé à 9 h » à 7 h. La grille est désormais rendue dans le fuseau du navigateur. Vérifié en
+   Europe/Paris et en UTC : le pointage 09:00–17:00 et l'événement stocké à 08:00Z s'affichent tous deux
+   à l'heure attendue dans les deux fuseaux.
+2. **Pointage orphelin** : un tuteur pouvait pointer pour lui-même une ligne ensuite invisible et
+   indestructible. Refusé à l'écriture (400), et la suppression accepte ce cas pour les lignes existantes.
+3. **Course entre deux POST simultanés** : la contrainte d'unicité remontait une 500 Prisma ; le second
+   arrivé reçoit maintenant le refus métier (403).
+4. **Sélecteur de type** : l'indicateur de `UTabs` débordait sur deux libellés quand les onglets
+   passaient à la ligne (modale du tuteur). Remplacé par `PresenceKindPicker`, un contrôle segmenté
+   qui se replie proprement en 2×2.
+
+`npm run lint` ✅ · `npm test` (283) ✅ · `npm run build` ✅
