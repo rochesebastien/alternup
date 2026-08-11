@@ -1048,31 +1048,3 @@ journal de tout son réseau. Contrôles vérifiés : upsert sur re-pointage du m
 Captures Playwright des deux vues (apprenant / tuteur), aucune erreur console.
 
 `npm run lint` ✅ · `npm test` (266) ✅ · `npm run build` ✅
-
----
-
-# Plan — Annonces ouvertes au réseau (2026-08-11)
-
-> Branche : `claude/account-presences-invite-oa1wrv`
-
-- [x] `networkIdsOf(user)` / `tutorIdsOf(studentId)` : la relation tuteur ↔ apprenant se lit
-      dans les deux sens
-- [x] `GET /api/network` : destinataires possibles de l'utilisateur connecté, quel que soit son rôle
-- [x] `POST /api/announcements` ouvert à tous les rôles (destinataires toujours bornés au réseau)
-- [x] `GET /api/announcements` unifié : annonces publiées **et** reçues dans une seule liste (`mine`)
-- [x] `/annonces` : même page pour tous — sections « Reçues » / « Publiées par moi », composition
-      accessible à tous, accusés de lecture pour tout destinataire
-- [x] Tests `tests/shared/announcements.test.ts` (schéma + `partitionAnnouncements` + `unreadAnnouncements`)
-
-## Revue
-
-Les annonces ne sont plus un canal descendant tuteur → apprenants : un alternant ou un
-stagiaire peut publier vers son ou ses tuteurs, et un tuteur peut être destinataire.
-Le garde-fou reste le réseau : `POST` refuse (400) tout destinataire hors `TutorStudent`,
-vérifié dans les deux sens. Aucune migration : seul le commentaire du modèle change —
-la colonne `announcement_recipients.student_id` désigne désormais n'importe quel membre
-du réseau de l'auteur. Vérifié bout en bout : publication apprenant → tuteur, notification
-`annonce` reçue par le tuteur, accusé de lecture posé par le destinataire quel que soit son
-rôle, compteur « x/y lus » côté auteur. Captures des deux vues, aucune erreur console.
-
-`npm run lint` ✅ · `npm test` (273) ✅ · `npm run build` ✅

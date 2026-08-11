@@ -322,10 +322,7 @@ model ProgressReport {
   @@map("progress_reports")
 }
 
-// C. Annonces — canal interne au réseau, avec accusé de lecture. Un tuteur
-// adresse ses apprenants, un alternant/stagiaire adresse ses tuteurs : la
-// colonne `student_id` des destinataires désigne donc n'importe quel membre du
-// réseau de l'auteur, pas seulement un apprenant.
+// C. Annonces — canal descendant tuteur -> ses étudiants, avec accusé de lecture.
 model Announcement {
   id        String   @id @default(uuid()) @db.Uuid
   authorId  String   @map("author_id") @db.Uuid
