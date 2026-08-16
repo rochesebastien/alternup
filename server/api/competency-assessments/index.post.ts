@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
 
   const learnerIds = await learnerIdsOf(user.id)
   if (!learnerIds.includes(studentId)) {
-    throw createError({ statusCode: 400, statusMessage: 'Étudiant hors de votre réseau' })
+    throw createError({ statusCode: 400, statusMessage: 'Cet étudiant n\'est pas sous votre responsabilité.' })
   }
 
   await loadCompetencyOwnedBy(competencyId, user)

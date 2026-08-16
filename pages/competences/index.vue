@@ -172,12 +172,20 @@ const learnerItems = computed<Array<{ label: string; value: string }>>(() =>
   }))
 )
 
-// Pré-sélection possible depuis la fiche 360° d'un alternant :
-// /competences?student=<id>.
+// Un seul choix d'apprenant dans l'application : le sélecteur de cette page et
+// celui de la barre de navigation pilotent la même valeur. Une pré-sélection
+// par l'URL (/competences?student=<id>, depuis la fiche 360°) l'emporte au
+// chargement et devient l'apprenant suivi.
 const route = useRoute()
-const selectedId = ref<string | undefined>(
-  typeof route.query.student === 'string' ? route.query.student : undefined
-)
+const { focusId, setFocus } = useLearnerFocus()
+
+const queryStudent = typeof route.query.student === 'string' ? route.query.student : undefined
+if (queryStudent) setFocus(queryStudent)
+
+const selectedId = computed<string | undefined>({
+  get: () => focusId.value ?? undefined,
+  set: (id) => setFocus(id ?? null)
+})
 
 const {
   data: evalMap,

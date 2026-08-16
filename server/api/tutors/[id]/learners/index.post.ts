@@ -47,7 +47,7 @@ export default defineEventHandler(async (event) => {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
       throw createError({
         statusCode: 409,
-        statusMessage: 'Cette personne est déjà rattachée à votre compte.'
+        statusMessage: 'Cette personne est déjà sous votre responsabilité.'
       })
     }
     throw err

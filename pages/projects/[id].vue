@@ -131,7 +131,7 @@
             />
             <template #help>
               <span v-if="learnerItems.length === 0" class="text-xs text-amber-600">
-                Aucun alternant dans votre réseau.
+                Aucun alternant sous votre responsabilité.
                 <NuxtLink to="/alternants" class="underline">Ajouter d'abord un alternant</NuxtLink>.
               </span>
             </template>

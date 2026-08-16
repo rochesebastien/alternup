@@ -987,3 +987,102 @@ l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invita
 - [x] Section « Invitations » sur /alternants : statut, date d'acceptation, copie du lien, révocation
 - [x] Notification `invitation_acceptee` au tuteur à l'acceptation (icône `user-check`)
 - [x] Tests : 224 tests OK (statuts d'invitation couverts), lint OK, build OK
+
+---
+
+# Plan — Compte modifiable, pointage journalier, correctif invitation (2026-08-11)
+
+> Branche : `claude/account-presences-invite-oa1wrv`
+
+## A. Correctif — lien d'invitation toujours « invalide »
+
+- [x] Diagnostic : collision de noms de paramètres Nitro (`[token].get.ts` et `[id].delete.ts`
+      dans le même dossier → le segment est nommé `id`, `getRouterParam(event, 'token')` est
+      `undefined` → 404 systématique)
+- [x] Déplacer la route publique vers `/api/invitations/token/[token]`
+- [x] Restreindre le préfixe public à `/api/invitations/token/`
+- [x] Mettre à jour `/register` + tests
+
+## B. `/account` — modification du profil et du mot de passe
+
+- [x] `shared/utils/account.ts` : schémas Zod (identité, changement de mot de passe)
+- [x] `PUT /api/account/profile` : prénom/nom + rafraîchissement de la session
+- [x] `PUT /api/account/password` : vérification du mot de passe actuel + confirmation
+- [x] Refonte de `pages/account.vue` (lecture + formulaires, thème de l'app)
+
+## C. `/presences` — pointage journalier (arrivée / départ)
+
+- [x] Modèle Prisma `PresenceEntry` (1 pointage par personne et par jour) + migration
+- [x] `shared/utils/presence-entries.ts` : schémas + helpers horaires
+- [x] `GET/POST /api/presence-entries`, `DELETE /api/presence-entries/[id]`
+- [x] UI alternant : carte « pointer aujourd'hui », historique, cumul d'heures
+- [x] UI tuteur : pointage pour un apprenant + journal de son réseau
+- [x] Tests unitaires + vérification bout en bout (Postgres local)
+
+## Revue
+
+**A. Invitation.** Cause racine trouvée en reproduisant le bug sur un Postgres local :
+`GET /api/invitations/<token>` répondait 404 pour *tous* les tokens. Les deux fichiers
+`[token].get.ts` et `[id].delete.ts` partageaient le même segment dynamique, dont Nitro
+ne retient qu'un seul nom (`id`) → `getRouterParam(event, 'token')` valait `undefined`.
+La route publique vit désormais sous `token/[token]`. Vérifié bout en bout : lecture
+publique du lien (200), inscription via le token (email et rôle imposés par l'invitation
+même quand le client en envoie d'autres), rattachement au réseau, invitation marquée
+acceptée, et les routes voisines (`GET`/`POST`/`DELETE /api/invitations`) toujours en 401
+pour un visiteur anonyme. Leçon consignée dans `taches/lecons.md`.
+
+**B. Compte.** `/account` passe en lecture + édition : prénom/nom (session réécrite dans
+la foulée, sinon la barre de navigation garde l'ancien nom) et mot de passe (mot de passe
+actuel exigé, confirmation, refus de réutiliser l'ancien). Email et rôle restent en
+lecture seule. Vérifié : mise à jour du profil, `GET /api/auth/me` à jour, 400 sur nom
+vide, 400 « Mot de passe actuel incorrect », 400 sur confirmation divergente, puis
+connexion refusée avec l'ancien mot de passe et acceptée avec le nouveau.
+
+**C. Présences.** Nouveau modèle `PresenceEntry` (un pointage par personne et par jour,
+horaires en minutes depuis minuit pour ne dépendre d'aucun fuseau). L'apprenant déclare
+sa journée depuis une carte « Pointage du jour » (arrivée pré-remplie à l'heure courante
+arrondie, départ +8 h, jamais un intervalle invalide à l'ouverture), la modifie ou
+l'annule ; le tuteur pointe pour un apprenant de son réseau via une modale et voit le
+journal de tout son réseau. Contrôles vérifiés : upsert sur re-pointage du même jour,
+400 si le départ précède l'arrivée, 404 si on pointe pour quelqu'un hors réseau.
+Captures Playwright des deux vues (apprenant / tuteur), aucune erreur console.
+
+`npm run lint` ✅ · `npm test` (266) ✅ · `npm run build` ✅
+
+---
+
+# Plan — Pointage verrouillé, types de journée, calendrier (2026-08-11)
+
+> Branche : `claude/account-presences-invite-oa1wrv`
+> Réalisé via un workflow de sous-agents (spécification Opus, écriture Sonnet, relecture Opus).
+
+- [x] Type de journée fermé (`PresenceKind`) en remplacement du commentaire libre :
+      Entreprise sur site / télétravail / congés, École en formation — sélecteur segmenté
+- [x] Les congés ne comptent pas dans les cumuls d'heures (`workedMinutes`)
+- [x] Verrouillage : l'apprenant crée son pointage, ne peut plus le modifier ni le supprimer
+      (contrôle serveur : 403 sur re-POST et sur DELETE) ; le tuteur garde tous les droits
+- [x] Journal `PresenceEntryRevision` : chaque écriture tracée (qui, quand, heures, type),
+      consultable par le tuteur via une boîte de dialogue, badge « Modifié » au-delà d'une écriture
+- [x] Pointages affichés dans le calendrier (catégorie `presence`, lecture seule)
+- [x] Calendrier compacté : en-tête de jour, hauteur de grille (40 px/heure), cases du mois
+
+## Revue
+
+Relecture Opus après implémentation : conformité A/B/C confirmée par appels réels (un apprenant ne peut
+ni repointer, ni supprimer, ni lire l'historique ; un tuteur hors réseau reçoit 404), quatre défauts
+corrigés ensuite :
+
+1. **Fuseau horaire du calendrier** (cause racine, préexistante) : Schedule-X rendait sa grille en UTC,
+   faute d'option `timezone`. Un rendez-vous saisi à 14 h à Paris s'affichait à 12 h, et un pointage
+   « arrivé à 9 h » à 7 h. La grille est désormais rendue dans le fuseau du navigateur. Vérifié en
+   Europe/Paris et en UTC : le pointage 09:00–17:00 et l'événement stocké à 08:00Z s'affichent tous deux
+   à l'heure attendue dans les deux fuseaux.
+2. **Pointage orphelin** : un tuteur pouvait pointer pour lui-même une ligne ensuite invisible et
+   indestructible. Refusé à l'écriture (400), et la suppression accepte ce cas pour les lignes existantes.
+3. **Course entre deux POST simultanés** : la contrainte d'unicité remontait une 500 Prisma ; le second
+   arrivé reçoit maintenant le refus métier (403).
+4. **Sélecteur de type** : l'indicateur de `UTabs` débordait sur deux libellés quand les onglets
+   passaient à la ligne (modale du tuteur). Remplacé par `PresenceKindPicker`, un contrôle segmenté
+   qui se replie proprement en 2×2.
+
+`npm run lint` ✅ · `npm test` (283) ✅ · `npm run build` ✅

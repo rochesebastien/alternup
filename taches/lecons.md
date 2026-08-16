@@ -88,3 +88,10 @@
 - Règle : pour une option « Aucun », utiliser une valeur sentinelle non vide (ex. `'none'`)
   et la convertir en `null` à la soumission.
 - Toujours tester l'ouverture réelle des menus après avoir modifié leurs items.
+
+### 2026-08-11 — Nitro : deux `[param]` différents dans un même dossier = un seul nom retenu
+
+**Contexte :** Tous les liens d'invitation (`/register?invite=<token>`) affichaient « Ce lien d'invitation n'est plus valide », alors que l'invitation existait bien en base, non expirée et non acceptée.
+**Erreur :** `server/api/invitations/[token].get.ts` et `server/api/invitations/[id].delete.ts` cohabitaient dans le même dossier. Le routeur de Nitro ne retient **qu'un seul nom** pour un segment dynamique donné (ici `id`, ajouté ensuite) : `getRouterParam(event, 'token')` renvoyait `undefined`, la validation Zod échouait et la route répondait 404 pour tous les tokens. Aucun avertissement au build, aucun test unitaire ne couvrait le routage — la régression a été introduite par l'ajout ultérieur de la route `DELETE`.
+**Correction :** Déplacer la consultation publique sous `server/api/invitations/token/[token].get.ts` (préfixe public restreint à `/api/invitations/token/`).
+**Règle à appliquer :** Sur ce projet, **ne jamais** mélanger deux noms de paramètres pour le même segment d'URL. Soit on garde le même nom (`[id]`) pour tous les verbes d'un dossier, soit on isole la route dans un sous-dossier explicite (`token/[token]`). Et quand une route dépend d'un paramètre d'URL, la vérifier par un appel réel (curl) après ajout d'une route voisine : le typage ne détecte rien.

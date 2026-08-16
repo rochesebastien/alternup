@@ -15,7 +15,7 @@
         variant="soft"
         icon="i-lucide-mail-check"
         :title="`Invitation de ${invitation.tutor.firstName} ${invitation.tutor.lastName}`"
-        :description="`Vous rejoindrez son réseau en tant ${invitation.role === 'Alternant' ? 'qu\'alternant' : 'que stagiaire'}.`"
+        :description="`Vous serez placé sous sa responsabilité en tant ${invitation.role === 'Alternant' ? 'qu\'alternant' : 'que stagiaire'}.`"
       />
 
       <UAlert
@@ -132,7 +132,7 @@ const inviteToken = computed(() =>
 // `PublicInvitation | null` explicitement : sans invitation dans l'URL, la
 // requête n'est jamais lancée et `data` reste sur le défaut `null`.
 const { data: invitation, error: inviteFetchError } = await useFetch<PublicInvitation | null>(
-  () => `/api/invitations/${inviteToken.value}`,
+  () => `/api/invitations/token/${inviteToken.value}`,
   { immediate: !!inviteToken.value, default: () => null }
 )
 

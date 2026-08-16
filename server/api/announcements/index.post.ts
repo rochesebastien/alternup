@@ -25,7 +25,7 @@ export default defineEventHandler(async (event) => {
   if (invalid) {
     throw createError({
       statusCode: 400,
-      statusMessage: 'Un ou plusieurs destinataires ne font pas partie de votre réseau.'
+      statusMessage: 'Un ou plusieurs destinataires ne sont pas sous votre responsabilité.'
     })
   }
 

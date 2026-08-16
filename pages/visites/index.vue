@@ -35,9 +35,17 @@ interface TutorVisit {
 }
 
 // --- Chargement -------------------------------------------------------------
-const { data: visits, refresh } = await useFetch<TutorVisit[]>(
+const { data: visitsData, refresh } = await useFetch<TutorVisit[]>(
   '/api/tutor-visits',
   { default: () => [] }
+)
+
+// Apprenant suivi (sélecteur de la barre de navigation) : la liste se restreint
+// à ses visites. Sans sélection, `filterByFocus` ne filtre rien.
+const { focus, focusName, filterByFocus } = useLearnerFocus()
+
+const visits = computed<TutorVisit[]>(() =>
+  filterByFocus(visitsData.value ?? [], (v) => v.studentId)
 )
 
 // --- Tuteur : alternants pour la planification ------------------------------
@@ -95,7 +103,7 @@ const createState = reactive<{
 })
 
 function resetCreate(): void {
-  createState.studentId = ''
+  createState.studentId = focus.value?.id ?? ''
   createState.scheduledAt = ''
   createState.mode = ''
   createState.location = ''
@@ -199,10 +207,10 @@ async function onEditSubmit(): Promise<void> {
       </PageHeader>
 
       <div
-        v-if="(visits ?? []).length === 0"
+        v-if="visits.length === 0"
         class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
       >
-        Aucune visite planifiée pour le moment.
+        {{ focusName ? `Aucune visite planifiée pour ${focusName}.` : 'Aucune visite planifiée pour le moment.' }}
       </div>
 
       <div v-else class="space-y-4">
@@ -385,7 +393,7 @@ async function onEditSubmit(): Promise<void> {
       <PageHeader title="Visites" />
 
       <div
-        v-if="(visits ?? []).length === 0"
+        v-if="visits.length === 0"
         class="rounded-lg border border-dashed border-[var(--ui-border)] text-[var(--ui-text-muted)] text-sm py-12 text-center"
       >
         Aucune visite planifiée pour le moment.
