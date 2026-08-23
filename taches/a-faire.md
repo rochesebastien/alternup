@@ -1086,3 +1086,24 @@ corrigés ensuite :
    qui se replie proprement en 2×2.
 
 `npm run lint` ✅ · `npm test` (283) ✅ · `npm run build` ✅
+
+# Dock « Suivi » en bas à droite + correctif scroll-lock
+
+Plan (exécuté via un workflow de sous-agents Opus) :
+
+- [ ] Déplacer le menu « Suivi » (Présences, Rapports, Bulletins, Compétences, Visites,
+      Annonces, Messages) et le sélecteur d'apprenant hors de la nav, dans un dock fixe
+      en bas à droite (desktop), conforme aux maquettes fournies :
+      - Pastille blanche arrondie « Prénom Nom » + avatar rond noir avec initiales
+      - Image de cible décorative en fond, calée dans le coin bas-droit (partiellement
+        rognée), derrière la pastille
+      - Menu Suivi qui s'ouvre au survol de la pastille (liste verticale, libellés à
+        droite alignés avec icônes à droite)
+      - Bouton « switch » (icône ⇆) à gauche de la pastille (tuteur) ouvrant le
+        sélecteur d'apprenant : liste nom + rôle, coche sur la sélection, recherche,
+        entrée « Tous les apprenants »
+- [ ] Nav desktop : retirer l'entrée « Suivi » et le LearnerFocusSwitcher ; menu mobile
+      inchangé
+- [ ] Corriger le décalage/flickering de la scrollbar quand un dropdown/dialog s'ouvre
+      (scroll-lock Reka UI) — cause racine, pas de rustine
+- [ ] Vérifier : lint, tests, build, absence de fuite `@prisma/client` côté client
