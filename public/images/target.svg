@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 300" width="300" height="300" fill="none" role="presentation">
+  <!-- Cible décorative du « dock apprenant » : cercles concentriques rouge et
+       blanc, fléchette bleue plantée au centre en provenance du haut-droit.
+       Purement ornemental (aria-hidden côté template), aucune information. -->
+
+  <!-- Cercles concentriques, du plus grand au centre -->
+  <circle cx="150" cy="150" r="120" fill="#E5352B" />
+  <circle cx="150" cy="150" r="96" fill="#FFFFFF" />
+  <circle cx="150" cy="150" r="72" fill="#E5352B" />
+  <circle cx="150" cy="150" r="48" fill="#FFFFFF" />
+  <circle cx="150" cy="150" r="22" fill="#E5352B" />
+  <circle cx="150" cy="150" r="120" fill="none" stroke="#1F1F1E" stroke-opacity="0.08" stroke-width="2" />
+
+  <!-- Ombre portée de la fléchette : triangle gris translucide, décalé sous l'axe -->
+  <path d="M150 150 L285 71 L296 96 Z" fill="#1F1F1E" opacity="0.13" />
+
+  <!-- Fléchette : dessinée sur l'axe X local (pointe à l'origine), puis pivotée
+       de -45° pour arriver du coin haut-droit. -->
+  <g transform="translate(150 150) rotate(-45)">
+    <path d="M0 0 L32 -5.5 L32 5.5 Z" fill="#C3C9D2" />
+    <rect x="30" y="-6.5" width="34" height="13" rx="3.5" fill="#8A93A0" />
+    <rect x="63" y="-4" width="48" height="8" rx="4" fill="#2F5FD8" />
+    <path d="M109 -4.5 L152 -24 L152 24 L109 4.5 Z" fill="#2F5FD8" />
+    <path d="M109 0 L152 -24 L152 0 Z" fill="#1E44A8" />
+  </g>
+</svg>

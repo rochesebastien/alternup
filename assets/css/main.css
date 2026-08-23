@@ -104,6 +104,38 @@ summary {
   cursor: pointer;
 }
 
+/* ═════ Compensation du verrou de scroll (Reka UI) pour les éléments `fixed` ═════
+   À l'ouverture d'un overlay modal (UModal, UDropdownMenu…), Reka masque la
+   scrollbar (`body { overflow: hidden }`) et compense la largeur ainsi libérée
+   par un `padding-right` posé sur `<body>`. Cette compensation ne couvre QUE le
+   flux normal : un élément `position: fixed` est calé sur le bloc conteneur
+   initial (le viewport), qui s'élargit lui de la largeur de la scrollbar. Un tel
+   élément saute donc horizontalement à chaque ouverture puis fermeture.
+
+   Reka publie la mesure sur `<html>` (`--scrollbar-width`) et ne la pose QUE
+   pendant le verrou (cf. node_modules/reka-ui/dist/shared/useBodyScrollLock.js).
+   Le fallback `0px` de `var()` fait donc office de détecteur d'état : hors
+   verrou, scrollbars en surimpression (mobile, macOS) ou si Reka renommait un
+   jour la variable, la règle est un no-op et l'on retombe exactement sur le
+   comportement actuel — jamais de casse.
+
+   Ne pas chercher un sélecteur `[data-scroll-locked]` : cet attribut appartient
+   à Radix (React), il n'existe nulle part dans reka-ui — une telle règle serait
+   morte. La variable CSS est le seul signal observable depuis une feuille de style.
+
+   `-pad`   : barres/panneaux collés au bord droit (`left-0 right-0`, `right-0`).
+              On creuse l'intérieur pour que le fond, la bordure et le
+              `backdrop-blur` continuent d'aller jusqu'au bord du viewport.
+   `-shift` : boîtes détachées du bord (`right-4`…). On déplace la boîte entière. */
+
+.scroll-lock-pad {
+  padding-right: var(--scrollbar-width, 0px);
+}
+
+.scroll-lock-shift {
+  margin-right: var(--scrollbar-width, 0px);
+}
+
 /* Page transitions */
 .page-enter-active,
 .page-leave-active {

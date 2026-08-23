@@ -4,6 +4,17 @@ export default defineAppConfig({
       primary: 'brand',
       neutral: 'neutral'
     },
+    // Le viewport des toasts est `fixed` et ancré à droite (`right-4`) : comme la
+    // nav, il échappe à la compensation que Reka applique au body pendant un
+    // verrou de scroll et glisse de la largeur de la scrollbar dès qu'une modale
+    // est ouverte. `scroll-lock-shift` (margin-right) et non `-pad` : la boîte est
+    // détachée du bord, on la déplace entière au lieu de creuser son intérieur.
+    // La classe est un no-op hors verrou. Voir assets/css/main.css.
+    toaster: {
+      slots: {
+        viewport: 'scroll-lock-shift'
+      }
+    },
     button: {
       slots: {
         // Style minimaliste (ShadcnUI) : coins doux, poids medium.

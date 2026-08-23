@@ -3,8 +3,12 @@
   <UApp :tooltip="{ delayDuration: 200, skipDelayDuration: 300 }">
     <div class="min-h-screen flex flex-col bg-[var(--ui-bg)] text-[var(--ui-text)]">
       <!-- ============== NAV (Linear-style) ============== -->
+      <!-- `scroll-lock-pad` : la nav est `fixed`, donc calée sur le viewport et non
+           sur `<body>`. Elle échappe au `padding-right` que Reka pose sur le body
+           quand une modale/un menu verrouille le scroll, et sauterait de la largeur
+           de la scrollbar à chaque ouverture. Voir assets/css/main.css. -->
       <nav
-        class="fixed top-0 left-0 right-0 z-50 h-14 border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/85 backdrop-blur print:hidden"
+        class="scroll-lock-pad fixed top-0 left-0 right-0 z-50 h-14 border-b border-[var(--ui-border)] bg-[var(--ui-bg)]/85 backdrop-blur print:hidden"
         aria-label="Principal"
       >
         <div class="w-full h-full px-6 flex items-center justify-between gap-6">
@@ -53,18 +57,8 @@
                 <NuxtLink to="/calendar" :class="navLinkClass('/calendar')">
                   Calendrier
                 </NuxtLink>
-                <UDropdownMenu :items="suiviItems" :content="{ align: 'start' }">
-                  <button
-                    type="button"
-                    class="flex items-center gap-1"
-                    :class="navLinkClass(...SUIVI_PATHS)"
-                  >
-                    Suivi
-                    <UIcon name="i-lucide-chevron-down" class="size-4" />
-                  </button>
-                </UDropdownMenu>
-                <!-- Apprenant suivi : filtre transverse aux pages de Suivi. -->
-                <LearnerFocusSwitcher class="hidden md:block ml-1" />
+                <!-- Les pages de Suivi et le choix de l'apprenant vivent
+                     désormais dans le dock apprenant (coin bas-droit). -->
               </template>
             </div>
           </div>
@@ -85,7 +79,14 @@
 
             <template v-if="loggedIn && user">
               <NotificationBell />
-              <UDropdownMenu :items="accountItems" :content="{ align: 'end' }">
+              <!-- `:modal="false"` : un menu de navigation n'a aucune raison de
+                   verrouiller la page. Par défaut UDropdownMenu est modal, ce qui
+                   masque la scrollbar et pose `pointer-events: none` sur le body —
+                   d'où un reflow au moment même où Floating UI positionne le
+                   panneau (première frame mal calée). En non-modal, aucun verrou,
+                   et l'on s'aligne sur <NotificationBell> (UPopover) qui n'en pose
+                   déjà pas. Contrepartie assumée : pas de piège de focus. -->
+              <UDropdownMenu :items="accountItems" :modal="false" :content="{ align: 'end' }">
                 <UButton
                   color="neutral"
                   variant="ghost"
@@ -191,6 +192,11 @@
         </div>
       </main>
 
+      <!-- Dock apprenant : navigation de Suivi et choix de l'apprenant suivi.
+           Desktop uniquement (le menu burger garde ses liens), hors pages
+           marketing et d'authentification. -->
+      <LearnerDock v-if="loggedIn && !isFullBleed" />
+
       <!-- ============== FOOTER ============== -->
       <!-- Footer marketing complet uniquement sur les pages publiques -->
       <footer v-if="isMarketing" class="mt-auto bg-[#1F1F1E] text-[#cfcfcb] py-16 print:hidden">
@@ -235,9 +241,7 @@ const isLearner = computed(
 
 // Liens de la nav desktop : hover en carré jaune de marque, page active en
 // fond inversé (noir en clair / blanc en sombre). `paths` accepte plusieurs
-// racines pour les entrées regroupées (menu « Suivi »).
-const SUIVI_PATHS = ['/presences', '/rapports', '/bulletins', '/competences', '/visites', '/annonces', '/messages']
-
+// racines pour une entrée qui couvrirait plusieurs sections.
 function navLinkClass(...paths: string[]) {
   const active = paths.some(
     (p) => route.path === p || route.path.startsWith(`${p}/`)
@@ -249,17 +253,6 @@ function navLinkClass(...paths: string[]) {
       : 'text-[var(--ui-text-muted)] hover:bg-[#F1DE02] hover:text-[#1F1F1E]'
   ]
 }
-
-// Modules de suivi regroupés dans un menu déroulant (nav desktop).
-const suiviItems = [[
-  { label: 'Présences', icon: 'i-lucide-clipboard-check', to: '/presences' },
-  { label: 'Rapports', icon: 'i-lucide-file-text', to: '/rapports' },
-  { label: 'Bulletins', icon: 'i-lucide-graduation-cap', to: '/bulletins' },
-  { label: 'Compétences', icon: 'i-lucide-target', to: '/competences' },
-  { label: 'Visites', icon: 'i-lucide-map-pin', to: '/visites' },
-  { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
-  { label: 'Messages', icon: 'i-lucide-mail', to: '/messages' }
-]]
 
 // Menu du compte (nav) : lien vers le profil, puis déconnexion en rouge.
 const accountItems = computed(() => [

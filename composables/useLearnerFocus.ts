@@ -50,6 +50,15 @@ export function useLearnerFocus() {
     focusId.value ? learners.value.find((l) => l.id === focusId.value) ?? null : null
   )
 
+  // Nettoyage du cookie quand la sélection devient caduque (apprenant retiré du
+  // suivi). Placé ici et non dans un composant : le sélecteur mobile n'est monté
+  // que lorsque le menu burger est ouvert, il ne verrait presque jamais le cas.
+  watch(learners, (list) => {
+    if (focusId.value && list.length && !list.some((l) => l.id === focusId.value)) {
+      setFocus(null)
+    }
+  })
+
   const focusName = computed<string | null>(() =>
     focus.value ? `${focus.value.firstName} ${focus.value.lastName}` : null
   )

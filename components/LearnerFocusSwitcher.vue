@@ -8,7 +8,7 @@ import { Role } from '~/shared/utils/enums'
  */
 const props = withDefaults(defineProps<{ block?: boolean }>(), { block: false })
 
-const { isTutor, learners, focusId, focus, setFocus } = useLearnerFocus()
+const { isTutor, learners, focus, setFocus } = useLearnerFocus()
 
 const ROLE_LABELS: Record<string, string> = {
   [Role.Alternant]: 'Alternant',
@@ -42,13 +42,7 @@ const initials = computed<string>(() =>
 // Un tuteur sans aucun apprenant n'a rien à filtrer : on n'affiche rien plutôt
 // qu'un sélecteur vide.
 const visible = computed<boolean>(() => isTutor.value && learners.value.length > 0)
-
-// Une sélection devenue caduque (apprenant retiré) est nettoyée.
-watch(learners, (list) => {
-  if (focusId.value && list.length && !list.some((l) => l.id === focusId.value)) {
-    setFocus(null)
-  }
-})
+// Le nettoyage d'une sélection caduque vit dans `useLearnerFocus()`.
 </script>
 
 <template>
