@@ -72,6 +72,11 @@ const searchInput = ref<HTMLInputElement | null>(null)
 
 const menuOpen = ref(false) // panneau « Suivi » (survol ou focus clavier)
 const switcherOpen = ref(false) // panneau « apprenants » (clic)
+
+// Le dock est « ouvert » dès qu'un de ses deux panneaux l'est : c'est cet état
+// (et non le seul :hover CSS) qui pilote le fond de la pastille, pour qu'elle
+// reste claire tant qu'on navigue dans un panneau, souris ou clavier.
+const dockOpen = computed<boolean>(() => menuOpen.value || switcherOpen.value)
 const hovered = ref(false)
 const query = ref('') // recherche du panneau des apprenants
 
@@ -164,19 +169,7 @@ function isCurrent(to: string): boolean {
   >
     <!-- `scroll-lock-shift` (sur la racine) : le dock est calé sur le viewport ;
          sans cette marge il sauterait de la largeur de la scrollbar quand une
-         modale Reka verrouille le scroll (voir assets/css/main.css).
-
-         Décor : la cible déborde volontairement du coin, le viewport la rogne.
-         Un élément `fixed` ne crée pas de zone scrollable, donc pas de barre
-         de défilement horizontale. -->
-    <img
-      src="/images/target.svg"
-      alt=""
-      width="300"
-      height="300"
-      aria-hidden="true"
-      class="pointer-events-none absolute -bottom-16 -right-14 size-[300px] select-none opacity-95 dark:opacity-70"
-    >
+         modale Reka verrouille le scroll (voir assets/css/main.css). -->
 
     <!-- Zone interactive : un seul groupe de survol pour le bouton de
          changement, la pastille et leurs panneaux. -->
@@ -282,16 +275,22 @@ function isCurrent(to: string): boolean {
       <!-- Pastille + menu Suivi. La pastille précède son panneau dans le DOM
            pour que la tabulation y entre naturellement. -->
       <div class="relative">
+        <!-- Au repos, la pastille reprend le jaune de marque (comme le hover de
+             la nav) ; dès que le dock est ouvert — donc dès le survol, qui ouvre
+             le menu — elle repasse sur le fond clair des panneaux. -->
         <button
           ref="pill"
           type="button"
-          class="flex items-center gap-3 rounded-full border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] py-1.5 pl-4 pr-1.5 shadow-lg transition-colors hover:bg-[var(--ui-bg-muted)]"
+          class="flex items-center gap-3 rounded-full border py-1.5 pl-4 pr-1.5 shadow-lg transition-colors"
+          :class="dockOpen
+            ? 'border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text)]'
+            : 'border-transparent bg-[var(--color-brand-500)] text-[#1F1F1E]'"
           aria-haspopup="menu"
           :aria-expanded="menuOpen"
           :aria-label="pillLabel"
           @click="menuOpen = !menuOpen"
         >
-          <span class="whitespace-nowrap text-sm font-semibold text-[var(--ui-text)]">
+          <span class="whitespace-nowrap text-sm font-semibold">
             {{ label }}
           </span>
           <span
