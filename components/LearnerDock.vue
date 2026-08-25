@@ -77,7 +77,6 @@ const switcherOpen = ref(false) // panneau « apprenants » (clic)
 // (et non le seul :hover CSS) qui pilote le fond de la pastille, pour qu'elle
 // reste claire tant qu'on navigue dans un panneau, souris ou clavier.
 const dockOpen = computed<boolean>(() => menuOpen.value || switcherOpen.value)
-const hovered = ref(false)
 const query = ref('') // recherche du panneau des apprenants
 
 let closeTimer: ReturnType<typeof setTimeout> | undefined
@@ -92,24 +91,21 @@ function openMenu(): void {
  * pastille et le panneau sans que celui-ci disparaisse. On ne ferme que si le
  * pointeur est vraiment sorti, que le focus n'est plus dans le dock et que le
  * panneau des apprenants (piloté au clic) n'est pas ouvert.
+ *
+ * Le survol est relu sur le DOM (`:hover`) plutôt que mémorisé dans un booléen :
+ * quand un panneau se referme sous le curseur (choix d'un apprenant), le
+ * navigateur ne dispatche aucun `mouseleave` — le pointeur n'a pas bougé, c'est
+ * l'élément qui a disparu. Un drapeau resterait bloqué à « survolé » et le menu
+ * ne se refermerait plus jamais ; `:hover`, lui, est toujours à jour.
  */
 function scheduleClose(): void {
   clearTimeout(closeTimer)
   closeTimer = setTimeout(() => {
-    if (hovered.value || switcherOpen.value) return
+    if (switcherOpen.value) return
+    if (root.value?.matches(':hover')) return
     if (root.value?.contains(document.activeElement)) return
     menuOpen.value = false
   }, 220)
-}
-
-function onEnter(): void {
-  hovered.value = true
-  openMenu()
-}
-
-function onLeave(): void {
-  hovered.value = false
-  scheduleClose()
 }
 
 function closeAll(): void {
@@ -175,8 +171,8 @@ function isCurrent(to: string): boolean {
          changement, la pastille et leurs panneaux. -->
     <div
       class="relative flex items-end justify-end gap-2 p-5"
-      @mouseenter="onEnter"
-      @mouseleave="onLeave"
+      @mouseenter="openMenu"
+      @mouseleave="scheduleClose"
       @focusin="openMenu"
       @focusout="scheduleClose"
     >
@@ -277,14 +273,15 @@ function isCurrent(to: string): boolean {
       <div class="relative">
         <!-- Au repos, la pastille reprend le jaune de marque (comme le hover de
              la nav) ; dès que le dock est ouvert — donc dès le survol, qui ouvre
-             le menu — elle repasse sur le fond clair des panneaux. -->
+             le menu — elle bascule en inversé : fond sombre, texte et icône
+             clairs, comme le lien actif de la nav. -->
         <button
           ref="pill"
           type="button"
-          class="flex items-center gap-3 rounded-full border py-1.5 pl-4 pr-1.5 shadow-lg transition-colors"
+          class="flex items-center gap-3 rounded-full border border-transparent py-1.5 pl-4 pr-1.5 shadow-lg transition-colors"
           :class="dockOpen
-            ? 'border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text)]'
-            : 'border-transparent bg-[var(--color-brand-500)] text-[#1F1F1E]'"
+            ? 'bg-[var(--ui-bg-inverted)] text-[var(--ui-text-inverted)]'
+            : 'bg-[var(--color-brand-500)] text-[#1F1F1E]'"
           aria-haspopup="menu"
           :aria-expanded="menuOpen"
           :aria-label="pillLabel"
@@ -293,8 +290,13 @@ function isCurrent(to: string): boolean {
           <span class="whitespace-nowrap text-sm font-semibold">
             {{ label }}
           </span>
+          <!-- L'avatar s'inverse à son tour, sinon il disparaîtrait dans le
+               fond sombre de la pastille ouverte. -->
           <span
-            class="size-8 shrink-0 grid place-items-center rounded-full bg-[var(--ui-bg-inverted)] text-xs font-semibold text-[var(--ui-text-inverted)]"
+            class="size-8 shrink-0 grid place-items-center rounded-full text-xs font-semibold transition-colors"
+            :class="dockOpen
+              ? 'bg-[var(--ui-bg)] text-[var(--ui-text)]'
+              : 'bg-[var(--ui-bg-inverted)] text-[var(--ui-text-inverted)]'"
             aria-hidden="true"
           >
             <template v-if="initials">{{ initials }}</template>

@@ -1120,8 +1120,15 @@ implémentations → 1 vérification adversariale), relue ensuite dans le contex
   et au changement de route), bouton ⇆ (tuteur) ouvrant le panneau apprenants (liste
   nom + rôle + coche, recherche insensible aux accents, « Tous les apprenants »).
 - ~~`public/images/target.svg`~~ : cible décorative retirée sur retour utilisateur ;
-  à la place, la pastille est jaune de marque (`--color-brand-500`) au repos et repasse
-  sur fond clair dès que le dock s'ouvre (survol/focus/clic).
+  à la place, la pastille est jaune de marque (`--color-brand-500`) au repos et bascule en
+  inversé (fond sombre, texte/icône clairs, avatar inversé à son tour) dès que le dock
+  s'ouvre — survol, focus clavier ou clic.
+- **Fermeture du dock** : le survol est relu sur le DOM (`root.matches(':hover')`) au lieu
+  d'un booléen mémorisé. Quand un panneau se referme sous le curseur (choix d'un
+  apprenant), le navigateur n'émet aucun `mouseleave` — le pointeur n'a pas bougé, c'est
+  l'élément qui disparaît — et le drapeau restait bloqué à « survolé » : le menu ne se
+  refermait plus jamais. Vérifié au navigateur sur les six états (repos, survol, sortie,
+  sélection puis sortie, parcours du menu, Escape).
 - **`app.vue`** : entrée « Suivi » et `LearnerFocusSwitcher` retirés de la nav desktop
   (menu mobile strictement inchangé), `<LearnerDock v-if="loggedIn && !isFullBleed" />`.
 - **Scroll-lock (cause racine)** : la compensation `padding-right` de Reka ne couvre que le
