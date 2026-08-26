@@ -136,6 +136,30 @@ summary {
   margin-right: var(--scrollbar-width, 0px);
 }
 
+/* ═════════════════ Élévation des surfaces flottantes (dock apprenant) ═════════════════
+   L'interface est plate partout ailleurs : cartes et panneaux se détachent par
+   une bordure fine, jamais par une ombre. Les surfaces du dock flottent
+   réellement au-dessus du contenu et ont donc besoin d'un léger relief — mais
+   d'un seul, partagé, plutôt que d'une échelle `shadow-md/lg/xl` qui ferait
+   cohabiter trois élévations dans un composant lu comme un tout.
+
+   Deux couches : un contact très serré qui pose l'objet, puis une diffusion
+   large à décalage vertical faible. Une ombre franchement portée (le
+   `0 20px 25px` de `shadow-xl`) déborderait des 12 px qui séparent le panneau
+   de la pastille et viendrait s'écraser dessus en bande grise. */
+
+.dock-elevation {
+  box-shadow:
+    0 1px 2px rgb(31 31 30 / 0.05),
+    0 8px 24px -12px rgb(31 31 30 / 0.2);
+}
+
+.dark .dock-elevation {
+  box-shadow:
+    0 1px 2px rgb(0 0 0 / 0.35),
+    0 8px 24px -12px rgb(0 0 0 / 0.8);
+}
+
 /* Page transitions */
 .page-enter-active,
 .page-leave-active {

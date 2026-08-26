@@ -1123,6 +1123,12 @@ implémentations → 1 vérification adversariale), relue ensuite dans le contex
   à la place, la pastille est jaune de marque (`--color-brand-500`) au repos et bascule en
   inversé (fond sombre, texte/icône clairs, avatar inversé à son tour) dès que le dock
   s'ouvre — survol, focus clavier ou clic.
+- **Ombres** : l'interface est plate partout ailleurs (bordures, aucune ombre dans le
+  reste du code). Le dock cumulait `shadow-md`/`lg`/`xl` : mesurée au pixel, l'ombre du
+  panneau (`0 20px 25px`) débordait des 12 px le séparant de la pastille et s'y écrasait
+  en bande grise (255 → 214). Remplacées par une élévation unique `.dock-elevation`
+  (`main.css`, variante `.dark`) : contact serré + diffusion large à faible décalage,
+  partagée par les quatre surfaces. Jonction remontée de 214 à 228, dégradé qui va au bout.
 - **Fermeture du dock** : le survol est relu sur le DOM (`root.matches(':hover')`) au lieu
   d'un booléen mémorisé. Quand un panneau se referme sous le curseur (choix d'un
   apprenant), le navigateur n'émet aucun `mouseleave` — le pointeur n'a pas bougé, c'est

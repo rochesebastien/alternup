@@ -188,7 +188,7 @@ function isCurrent(to: string): boolean {
         <div v-if="canSwitch && (menuOpen || switcherOpen)" class="relative">
           <button
             type="button"
-            class="size-9 grid place-items-center rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text-muted)] shadow-md transition-colors hover:bg-[var(--ui-bg-muted)] hover:text-[var(--ui-text)]"
+            class="size-9 grid place-items-center rounded-xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] text-[var(--ui-text-muted)] dock-elevation transition-colors hover:bg-[var(--ui-bg-muted)] hover:text-[var(--ui-text)]"
             aria-haspopup="dialog"
             :aria-expanded="switcherOpen"
             aria-label="Changer d'apprenant"
@@ -208,7 +208,7 @@ function isCurrent(to: string): boolean {
           >
             <div
               v-if="switcherOpen"
-              class="absolute bottom-full right-0 mb-2 w-72 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-1.5 shadow-xl"
+              class="absolute bottom-full right-0 mb-2 w-72 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-1.5 dock-elevation"
               role="dialog"
               aria-label="Choisir un apprenant"
             >
@@ -278,7 +278,7 @@ function isCurrent(to: string): boolean {
         <button
           ref="pill"
           type="button"
-          class="flex items-center gap-3 rounded-full border border-transparent py-1.5 pl-4 pr-1.5 shadow-lg transition-colors"
+          class="flex items-center gap-3 rounded-full border border-transparent py-1.5 pl-4 pr-1.5 dock-elevation transition-colors"
           :class="dockOpen
             ? 'bg-[var(--ui-bg-inverted)] text-[var(--ui-text-inverted)]'
             : 'bg-[var(--color-brand-500)] text-[#1F1F1E]'"
@@ -316,7 +316,7 @@ function isCurrent(to: string): boolean {
                chevaucheraient au-dessus de la pastille. -->
           <div
             v-if="menuOpen && !switcherOpen"
-            class="absolute bottom-full right-0 mb-3 w-56 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-1.5 shadow-xl"
+            class="absolute bottom-full right-0 mb-3 w-56 rounded-2xl border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-1.5 dock-elevation"
           >
             <NuxtLink
               v-for="item in SUIVI_ITEMS"
