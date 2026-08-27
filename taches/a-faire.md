@@ -1086,3 +1086,70 @@ corrigés ensuite :
    qui se replie proprement en 2×2.
 
 `npm run lint` ✅ · `npm test` (283) ✅ · `npm run build` ✅
+
+# Dock « Suivi » en bas à droite + correctif scroll-lock
+
+Plan (exécuté via un workflow de sous-agents Opus) :
+
+- [x] Déplacer le menu « Suivi » (Présences, Rapports, Bulletins, Compétences, Visites,
+      Annonces, Messages) et le sélecteur d'apprenant hors de la nav, dans un dock fixe
+      en bas à droite (desktop), conforme aux maquettes fournies :
+      - Pastille blanche arrondie « Prénom Nom » + avatar rond noir avec initiales
+      - Image de cible décorative en fond, calée dans le coin bas-droit (partiellement
+        rognée), derrière la pastille
+      - Menu Suivi qui s'ouvre au survol de la pastille (liste verticale, libellés à
+        droite alignés avec icônes à droite)
+      - Bouton « switch » (icône ⇆) à gauche de la pastille (tuteur) ouvrant le
+        sélecteur d'apprenant : liste nom + rôle, coche sur la sélection, recherche,
+        entrée « Tous les apprenants »
+- [x] Nav desktop : retirer l'entrée « Suivi » et le LearnerFocusSwitcher ; menu mobile
+      inchangé
+- [x] Corriger le décalage/flickering de la scrollbar quand un dropdown/dialog s'ouvre
+      (scroll-lock Reka UI) — cause racine, pas de rustine
+- [x] Vérifier : lint, tests, build, absence de fuite `@prisma/client` côté client
+
+## Revue
+
+Implémentation par workflow de sous-agents Opus (2 explorations parallèles → 2
+implémentations → 1 vérification adversariale), relue ensuite dans le contexte principal.
+
+- **`components/LearnerDock.vue`** (nouveau) : dock fixe bas-droit (desktop, `z-40` sous la
+  nav), implémentation custom sans popup Reka — donc sans verrou de scroll. Pastille
+  (nom du focus / « Tous les apprenants » / nom de l'utilisateur non-tuteur), menu Suivi
+  au survol et au focus clavier (délai de grâce 220 ms, Escape, fermeture au clic dehors
+  et au changement de route), bouton ⇆ (tuteur) ouvrant le panneau apprenants (liste
+  nom + rôle + coche, recherche insensible aux accents, « Tous les apprenants »).
+- ~~`public/images/target.svg`~~ : cible décorative retirée sur retour utilisateur ;
+  à la place, la pastille est jaune de marque (`--color-brand-500`) au repos et bascule en
+  inversé (fond sombre, texte/icône clairs, avatar inversé à son tour) dès que le dock
+  s'ouvre — survol, focus clavier ou clic.
+- **Ombres** : l'interface est plate partout ailleurs (bordures, aucune ombre dans le
+  reste du code). Le dock cumulait `shadow-md`/`lg`/`xl` : mesurée au pixel, l'ombre du
+  panneau (`0 20px 25px`) débordait des 12 px le séparant de la pastille et s'y écrasait
+  en bande grise (255 → 214). Remplacées par une élévation unique `.dock-elevation`
+  (`main.css`, variante `.dark`) : contact serré + diffusion large à faible décalage,
+  partagée par les quatre surfaces. Jonction remontée de 214 à 228, dégradé qui va au bout.
+- **Fermeture du dock** : le survol est relu sur le DOM (`root.matches(':hover')`) au lieu
+  d'un booléen mémorisé. Quand un panneau se referme sous le curseur (choix d'un
+  apprenant), le navigateur n'émet aucun `mouseleave` — le pointeur n'a pas bougé, c'est
+  l'élément qui disparaît — et le drapeau restait bloqué à « survolé » : le menu ne se
+  refermait plus jamais. Vérifié au navigateur sur les six états (repos, survol, sortie,
+  sélection puis sortie, parcours du menu, Escape).
+- **`app.vue`** : entrée « Suivi » et `LearnerFocusSwitcher` retirés de la nav desktop
+  (menu mobile strictement inchangé), `<LearnerDock v-if="loggedIn && !isFullBleed" />`.
+- **Scroll-lock (cause racine)** : la compensation `padding-right` de Reka ne couvre que le
+  flux normal du `<body>` ; tout élément `position: fixed` (nav, toasts, dock) sautait de
+  la largeur de la scrollbar. Ajout dans `main.css` de `.scroll-lock-pad` / `.scroll-lock-shift`
+  basés sur `var(--scrollbar-width, 0px)` (posée par Reka uniquement pendant le verrou →
+  no-op sinon), appliqués à la nav, au viewport des toasts (`app.config.ts`) et au dock ;
+  et `:modal="false"` sur le menu du compte (un menu de navigation n'a pas à verrouiller
+  la page).
+- **`useLearnerFocus.ts`** : le nettoyage d'un focus caduc migre du composant vers le
+  composable (le sélecteur mobile n'est monté que menu ouvert).
+
+`npm run lint` ✅ · `npm test` (283) ✅ · `npm run build` ✅ ·
+`grep ".prisma/client/index-browser" .output/public/_nuxt/` → rien ✅
+
+Points signalés à l'utilisateur : sur `/` et `/features`, un utilisateur connecté n'a plus
+d'accès desktop au Suivi (dock masqué sur les pages plein écran) ; la cible décorative
+recouvre visuellement le coin bas-droit des pages applicatives (clics non bloqués).
