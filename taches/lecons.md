@@ -1,7 +1,11 @@
 # Leçons apprises
 
-> Format : pour chaque correction faite par l'utilisateur, ajouter une entrée datée.
+> Format : pour chaque correction faite par l'utilisateur, ajouter une entrée datée
+> en respectant le modèle ci-dessous, à la fin du fichier (ordre chronologique).
 > Objectif : ne plus refaire la même erreur.
+>
+> Les règles les plus structurantes sont résumées dans `CLAUDE.md` § « Règles de code
+> non négociables » — y reporter toute nouvelle règle transverse.
 
 ## Modèle d'entrée
 
@@ -81,13 +85,12 @@
 **Correction :** `PUBLIC_API_PREFIXES = ['/api/_']` dans `shared/utils/public-routes.ts`, pris en compte par `isPublicApiRoute()` + tests dédiés.
 **Règle à appliquer :** Un garde global sur `/api/` doit toujours laisser passer le préfixe `/api/_` (endpoints des modules). Vérifier une page publique déconnecté, pas seulement connecté.
 
-## USelect (Nuxt UI / Reka) — item à valeur vide interdit (2026-08-10)
-- Un item de `USelect` avec `value: ''` fait planter le montage du popup Reka
-  (`A <SelectItem /> must have a value prop that is not an empty string`) : le menu
-  semble s'ouvrir (`aria-expanded=true`) mais aucune option ne se rend, sans erreur visible.
-- Règle : pour une option « Aucun », utiliser une valeur sentinelle non vide (ex. `'none'`)
-  et la convertir en `null` à la soumission.
-- Toujours tester l'ouverture réelle des menus après avoir modifié leurs items.
+### 2026-08-10 — `USelect` (Nuxt UI / Reka) : item à valeur vide interdit
+
+**Contexte :** Un `USelect` proposait une option « Aucun » avec `value: ''`.
+**Erreur :** Reka refuse un `SelectItem` de valeur vide (`A <SelectItem /> must have a value prop that is not an empty string`) et le montage du popup échoue : le menu semble s'ouvrir (`aria-expanded=true`) mais aucune option ne se rend, sans erreur visible à l'écran.
+**Correction :** Valeur sentinelle non vide (ex. `'none'`), convertie en `null` à la soumission.
+**Règle à appliquer :** Sur ce projet, jamais de `value: ''` dans les items d'un `USelect`. Et après toute modification des items d'un menu, en tester l'ouverture réelle — le typecheck et le build ne voient rien.
 
 ### 2026-08-11 — Nitro : deux `[param]` différents dans un même dossier = un seul nom retenu
 

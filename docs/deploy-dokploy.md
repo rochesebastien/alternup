@@ -8,9 +8,10 @@ Ce guide décrit le déploiement **recommandé** sur Dokploy : la base Postgres 
 
 Le conteneur applicatif :
 
+- est construit en **multi-stage** depuis `node:22-alpine` (build Nuxt + Nitro, puis runtime avec les seules deps de production) ;
 - tourne sous un utilisateur non-root (uid 10001) ;
 - applique automatiquement `prisma migrate deploy` au démarrage (CMD du Dockerfile) — aucune commande à lancer à la main ;
-- expose un healthcheck Docker sur `GET /api/health`, utilisé par Dokploy pour redémarrer un conteneur qui ne répond plus.
+- écoute sur le port **3000** et expose un healthcheck Docker sur `GET /api/health`, utilisé par Dokploy pour redémarrer un conteneur qui ne répond plus.
 
 ## CI
 
@@ -66,6 +67,13 @@ Dans le **même** projet Dokploy : **Create Service → Application**.
 | `NUXT_SESSION_PASSWORD` | `<32+ chars>` via `openssl rand -base64 48` | Sans ça, `nuxt-auth-utils` refuse de signer les cookies de session |
 | `NODE_ENV` | `production` | |
 | `APP_VERSION` | `1.0.0` (ou commit SHA) | Surface via `/api/health`, utile pour vérifier la version déployée |
+
+### Variables optionnelles
+
+| Variable | Quand la poser |
+|---|---|
+| `NUXT_SESSION_COOKIE_SECURE` | À `false` **uniquement** si le service est exposé en HTTP simple (test derrière une IP, pas encore de domaine ni de certificat). Sinon le navigateur jette le cookie de session et la connexion semble « ne rien faire ». À retirer dès que HTTPS est en place. |
+| `TEMP_LOGIN` / `TEMP_PASS` / `TEMP_ROLE` | Staging seulement. Crée — ou réaligne à chaque démarrage — un compte de test (`server/plugins/temp-account.ts`). `TEMP_LOGIN` doit être une adresse e-mail ; `TEMP_ROLE` vaut `Tutor` (défaut), `Alternant` ou `Stagiaire`. Changer `TEMP_PASS` puis redéployer suffit à changer le mot de passe. **Ne jamais renseigner en production.** |
 
 **Pas besoin** de :
 

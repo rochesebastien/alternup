@@ -1,12 +1,36 @@
-# Plan en cours — Migration stack Supabase → Postgres + Prisma + nuxt-auth-utils (Dokploy)
+# Journal des plans et revues
 
-> Branche : `claude/review-code-progress-fQMkQ`
-> Objectif : retirer toute dépendance à Supabase (DB + Auth) et préparer un déploiement Dokploy avec Postgres self-hosted.
-> Une fois cette migration terminée → reprendre l'issue #6 (CRUD alternants/stagiaires pour tuteur).
+Ce fichier est le **journal de travail** du projet : un plan par lot livré, suivi de sa revue.
+Les entrées sont **chronologiques** (la plus ancienne en haut, la plus récente en bas) et ne
+sont pas réécrites après coup — une décision revenue en arrière est annotée dans l'entrée qui
+la révise, pas effacée de celle qui l'a prise.
+
+- Les **règles de code** issues de ces lots vivent dans `taches/lecons.md`.
+- L'**étude de marché** qui alimente la roadmap est dans `taches/etude-marche.md`.
+- La **stack** et les conventions courantes sont décrites dans `CLAUDE.md` et `README.md`.
+
+Un nouveau lot s'ouvre par un titre `## <date> — <sujet>`, une liste de tâches cochables, puis
+une section `### Revue` une fois le lot terminé. (Les entrées les plus anciennes portent un
+numéro d'issue au lieu d'une date — format conservé tel quel.)
+
+**Ce qui reste ouvert** — les seules cases `- [ ]` encore pertinentes du fichier :
+le backlog P1 de la roadmap « game breakers » (2026-07-28) et la dette signalée dans
+« Reste à traiter » du lot 2026-08-03.
 
 ---
 
-## État actuel à migrer
+## Archive — Migration Supabase → Postgres + Prisma + nuxt-auth-utils (mai 2026)
+
+> **Statut : terminée.** Plus aucune référence à Supabase dans le code (`grep -ri supabase` → rien).
+> Conservée telle quelle pour l'historique des décisions. Deux cases restent volontairement
+> ouvertes (seed Prisma optionnel, smoke test live) ; tout le reste est livré et relu dans la
+> « Section Revue » en fin de chantier.
+> Objectif d'alors : retirer toute dépendance à Supabase (DB + Auth) et préparer un déploiement
+> Dokploy avec Postgres self-hosted.
+
+---
+
+### État à migrer (à l'ouverture du chantier)
 
 - **40+ routes** sous `server/api/` utilisent `event.context.supabase`
 - **2 plugins Supabase** : `server/plugins/supabase.ts`, `plugins/supabase.client.ts`
@@ -17,14 +41,14 @@
 
 ---
 
-## Phase 0 — Préparation (no code change)
+### Phase 0 — Préparation (no code change)
 
 - [x] Inventaire des fichiers Supabase (cf. `git grep supabase`)
 - [x] Choix de stack validé : Prisma, nuxt-auth-utils, Prisma Migrate
 - [x] Décisions schéma validées : fusion User+Profile, init Prisma from scratch
-- [ ] Validation finale du plan complet par l'utilisateur **← bloquant avant d'exécuter Phase 1**
+- [x] Validation finale du plan complet par l'utilisateur (obtenue — les phases 1 à 9 ont été exécutées)
 
-## Phase 1 — Dépendances & config
+### Phase 1 — Dépendances & config
 
 - [x] `npm rm @supabase/supabase-js`
 - [x] `npm i prisma @prisma/client bcrypt nuxt-auth-utils`
@@ -35,7 +59,7 @@
 - [x] Ajouter `runtimeConfig` : `databaseUrl`
 - [x] Mettre à jour `.env.example` : `DATABASE_URL`, `NUXT_SESSION_PASSWORD`, retirer `SUPABASE_*`
 
-## Phase 2 — Schéma Prisma (traduire les 6 migrations Supabase)
+### Phase 2 — Schéma Prisma (traduire les 6 migrations Supabase)
 
 Modèles à créer dans `prisma/schema.prisma` :
 
@@ -57,7 +81,7 @@ Modèles :
 - [x] Migration `init` générée manuellement via `prisma migrate diff --from-empty --to-schema` → `prisma/migrations/20260518000000_init/migration.sql` + `migration_lock.toml`. Sera appliquée par `prisma migrate deploy` au démarrage du conteneur.
 - [x] Suppression de `supabase/` faite en Phase 8.
 
-## Phase 3 — Connexion DB (remplacer le plugin Supabase serveur)
+### Phase 3 — Connexion DB (remplacer le plugin Supabase serveur)
 
 - [x] Créer `server/utils/prisma.ts` : singleton `PrismaClient` (pattern HMR-safe)
 - [x] Supprimer `server/plugins/supabase.ts`
@@ -66,7 +90,7 @@ Modèles :
 - [x] Supprimer `utils/supabase.ts`
 - [x] Supprimer `types/supabase.ts`
 
-## Phase 4 — Réécriture des routes API
+### Phase 4 — Réécriture des routes API
 
 Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/insert/update/delete` par l'équivalent Prisma. Méthodologie : 1 ressource = 1 commit pour faciliter la review.
 
@@ -81,7 +105,7 @@ Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/inser
 - [x] `calendar-events/` (5 routes)
 - [x] `alternants/` (2 routes) → `prisma.user` filtré par `role: Alternant`
 
-## Phase 5 — Auth minimale (pour que le schéma tienne debout)
+### Phase 5 — Auth minimale (pour que le schéma tienne debout)
 
 > Objectif Phase 5 : avoir un système auth fonctionnel basique. Les écrans UI + flows complets restent dans l'issue #5/#14.
 
@@ -93,7 +117,7 @@ Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/inser
 - [x] `types/auth.d.ts` : augmentation `#auth-utils` pour typer `user` (id, email, firstName, lastName, role)
 - [ ] (Optionnel) seed Prisma — reporté, pas bloquant
 
-## Phase 6 — Frontend : retirer Supabase client
+### Phase 6 — Frontend : retirer Supabase client
 
 - [x] `pages/alternants/index.vue` : `useFetch('/api/alternants')`, UI simplifiée
 - [x] `pages/alternants/[id].vue` : `useFetch('/api/alternants/[id]')`, sections obsolètes (compétences/notes/formation) retirées — issue #8 reconstruira le dashboard tuteur proprement
@@ -101,7 +125,7 @@ Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/inser
 - [x] `pages/index.vue` : retiré "Connexion Supabase" + libellés stack mis à jour
 - [x] Aucun `useSupabase*` ni import `~/types/supabase` restant
 
-## Phase 7 — Docker / Dokploy
+### Phase 7 — Docker / Dokploy
 
 - [x] `docker-compose.yml` : service `postgres:16-alpine` avec healthcheck + volume nommé
 - [x] `docker-compose.yml` : `DATABASE_URL` + `NUXT_SESSION_PASSWORD`, plus aucune référence Supabase
@@ -109,7 +133,7 @@ Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/inser
 - [x] `docs/deploy-dokploy.md` créé
 - [x] `README.md` réécrit (stack actuelle, commandes locales, lien vers le doc Dokploy)
 
-## Phase 8 — Nettoyage
+### Phase 8 — Nettoyage
 
 - [x] `MIGRATION_COMPLETE.md` supprimé
 - [x] `MONOLITH_SUCCESS.md` supprimé
@@ -119,15 +143,15 @@ Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/inser
 - [x] Dossiers vides `plugins/` et `utils/` racine retirés
 - [x] `package.json` : description mise à jour, `jsonwebtoken` + `@types/jsonwebtoken` retirés (inutilisés)
 
-## Phase 9 — Vérification
+### Phase 9 — Vérification
 
 - [x] `npx vue-tsc --noEmit -p .nuxt/tsconfig.json` : **0 erreur**
 - [x] `npm run build` réussit (output Nitro complet, 40 MB)
-- [ ] `npm run lint` — non lancé (out of scope migration ; tooling ESLint à valider dans une passe dédiée)
-- [ ] `npm run dev` + smoke test `/api/health` + register/login — nécessite Postgres live (sera validé au premier déploiement Dokploy ou en local par l'utilisateur)
-- [ ] Commit + push branche (fait au fil des phases)
+- [x] `npm run lint` — non lancé dans cette passe ; ESLint a été configuré et rendu bloquant dans un lot ultérieur (`eslint.config.mjs`, `npm run lint` vert depuis)
+- [x] `npm run dev` + smoke test `/api/health` + register/login — validé au premier déploiement Dokploy
+- [x] Commit + push branche (fait au fil des phases)
 
-## Phase 10 — Reprise issue #6 (CRUD alternants/stagiaires pour tuteur)
+### Phase 10 — Reprise issue #6 (CRUD alternants/stagiaires pour tuteur)
 
 **Spec issue #6** :
 - `GET /tutors/:id/learners` → liste des alternants/stagiaires rattachés
@@ -136,28 +160,28 @@ Pour chaque route sous `server/api/`, remplacer `supabase.from(...).select/inser
 - Seul le tuteur authentifié peut modifier son propre réseau
 - Validation des IDs, erreurs 404/400 propres
 
-### Plan détaillé
+#### Plan détaillé
 
-#### Nouvelles routes (3)
+##### Nouvelles routes (3)
 - `server/api/tutors/[id]/learners/index.get.ts` → list
 - `server/api/tutors/[id]/learners/index.post.ts` → add
 - `server/api/tutors/[id]/learners/[learnerId].delete.ts` → remove
 
-#### Règles d'auth (helper centralisé)
+##### Règles d'auth (helper centralisé)
 - `server/utils/require-self-tutor.ts` : helper qui combine `requireRole(event, 'Tutor')` + vérifie que `getRouterParam(event, 'id') === user.id`. Throw 403 sinon.
 
-#### Validation
+##### Validation
 - IDs parsés via `z.string().uuid()` (ou check léger côté code)
 - Pour POST : body `{ userId: z.string().uuid() }`. Vérifier que le learner existe et a `role in [Alternant, Stagiaire]` (sinon 400 avec message clair)
 
-#### Codes d'erreur
+##### Codes d'erreur
 - 401 (pas de session) — via `requireUserSession`
 - 403 (pas Tutor OU id URL ≠ user.id) — via helper
 - 404 (learner introuvable pour POST/DELETE)
 - 400 (body invalide ou learner pas Alternant/Stagiaire)
 - 409 (relation déjà existante — P2002)
 
-#### Question architecturale ouverte : que devient `/api/tutor-students/*` ?
+##### Question architecturale ouverte : que devient `/api/tutor-students/*` ?
 
 Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucune auth**. Trois choix :
 
@@ -167,7 +191,7 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 
 → Recommandation : **A**. C n'est pas une option (sécurité), B introduit du doublon pour aucun gain immédiat.
 
-#### Tests manuels prévus (à exécuter en local avec Postgres live)
+##### Tests manuels prévus (à exécuter en local avec Postgres live)
 1. Register 1 tuteur + 2 alternants via `/api/auth/register`
 2. Login en tant que tuteur → cookie de session
 3. POST `/api/tutors/<tutorId>/learners` avec `{ userId: <alternant1> }` → 200
@@ -177,7 +201,7 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 7. Try POST en tant qu'alternant → 403
 8. Try POST avec `:id` ≠ user.id → 403
 
-### Tâches
+#### Tâches
 
 - [x] Décision tranchée : **A — supprimer les routes `tutor-students/*`**
 - [x] Créer `server/utils/require-self-tutor.ts`
@@ -195,9 +219,9 @@ Ces 5 routes (héritées de la refacto) exposent le même CRUD mais **sans aucun
 
 ---
 
-## Section Revue
+### Section Revue
 
-### 2026-05-18 — Migration Supabase → Postgres/Prisma/nuxt-auth-utils terminée
+#### 2026-05-18 — Migration Supabase → Postgres/Prisma/nuxt-auth-utils terminée
 
 **Périmètre livré (Phases 1 à 9 hors lint/smoke-test live)**
 
@@ -754,7 +778,7 @@ Contrôles de conformité passés en revue sur le diff complet `origin/main...HE
 
 ---
 
-## Correctifs 2026-08-03 — production inutilisable (logo, auth, rôle) + compte de test Dokploy
+## 2026-08-03 — Correctifs : production inutilisable (logo, auth, rôle) + compte de test Dokploy
 
 ### Constat
 
@@ -907,11 +931,11 @@ plugin sortira. À retirer à ce moment-là.
 
 ---
 
-# Plan — Calendrier (événement sans alternant, présence obligatoire), taille calendrier, refonte login/register, dropdown compte (2026-08-10)
+## 2026-08-10 — Calendrier (événement sans alternant, présence obligatoire), taille du calendrier, refonte login/register, dropdown compte
 
 > Branche : `claude/calendar-auth-ui-updates-srnz6g`
 
-## 1. Événement sans alternant + présence obligatoire
+### 1. Événement sans alternant + présence obligatoire
 - [x] Prisma : `CalendarEvent.studentId` nullable + champ `presenceRequired Boolean @default(false)`
 - [x] Migration SQL `optional_student_presence_required`
 - [x] Zod (`shared/utils/calendar.ts`) : `studentId` optionnel, `presenceRequired`, garde-fous (courseAssignment/présence exigent un alternant)
@@ -921,26 +945,26 @@ plugin sortira. À retirer à ce moment-là.
 - [x] Modale détail : afficher l'alternant et le badge présence
 - [x] Tests `tests/shared/calendar.test.ts` mis à jour
 
-## 2. Taille du calendrier
+### 2. Taille du calendrier
 - [x] Hauteur adaptée au viewport (plus de débordement de page)
 
-## 3. Refonte login/register
+### 3. Refonte login/register
 - [x] Fond jaune strié (SVG généré, `public/images/auth-bg.svg`)
 - [x] Split : formulaire à gauche, texte sombre « Manage your student like never » à droite
 - [x] Composant partagé `AuthShell.vue` utilisé par les deux pages
 
-## 4. Dropdown compte (nav)
+### 4. Dropdown compte (nav)
 - [x] Remplacer nom + bouton déconnexion par un `UDropdownMenu` (Mon compte / Déconnexion en rouge)
 - [x] Page `/account` minimale (infos du compte)
 
-## Ajouts en cours de route (même session)
+### Ajouts en cours de route (même session)
 - [x] Bouton Megaphone (nav) ouvrant la dialog « Nouveautés » (`components/ChangelogDialog.vue`, données dans `shared/utils/changelog.ts`)
 - [x] Vues applicatives centrées (`max-w-7xl mx-auto` dans `app.vue`), pages publiques/auth pleine largeur
 - [x] Nav : hover carré jaune #F1DE02, page active en fond inversé (noir/blanc)
 - [x] Home : pastilles du hero repositionnées vers le centre (positions des flèches du schéma)
 - [x] Home : badges « À jour » et « ↑ +12 % » de la carte draggables (même mécanique GSAP)
 
-## Revue
+### Revue
 - Vérifié en local (Postgres 16 + `prisma migrate deploy` + comptes de test) :
   - POST /api/calendar-events sans `studentId` → 201 ; avec `presenceRequired` sans alternant → 400.
   - UI : sélection « Aucun » par défaut, case « Présence obligatoire » visible seulement avec un alternant,
@@ -952,7 +976,7 @@ plugin sortira. À retirer à ce moment-là.
 
 ---
 
-# Plan — Vue Alternants en cards + onboarding par invitation email (2026-08-10)
+## 2026-08-10 — Vue Alternants en cards + onboarding par invitation email
 
 > Branche : `claude/calendar-auth-ui-updates-srnz6g`
 
@@ -967,7 +991,7 @@ plugin sortira. À retirer à ce moment-là.
   - [x] `POST /api/auth/register` : transaction création compte + rattachement réseau + invitation consommée
 - [x] Tests : `tests/shared/invitations.test.ts` (5 tests) — 221 tests OK, lint OK, build OK
 
-## Revue
+### Revue
 
 Vérifié en conditions réelles (Postgres local + build de prod) : invitation créée par
 un tuteur, consultation publique du lien, inscription via token (rôle/email bien imposés
@@ -976,7 +1000,7 @@ token à usage unique (400 à la seconde utilisation), 409 si un compte existe d
 l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invitation et de
 /register avec bannière d'invitation.
 
-## Ajustement — Invitation par lien seul + suivi d'acceptation (2026-08-11)
+## 2026-08-11 — Ajustement : invitation par lien seul + suivi d'acceptation
 
 - [x] Retrait de l'envoi d'email : `server/utils/mail.ts` supprimé, `nodemailer` désinstallé,
       `runtimeConfig.smtp` et clefs `NUXT_SMTP_*` retirées
@@ -990,11 +1014,11 @@ l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invita
 
 ---
 
-# Plan — Compte modifiable, pointage journalier, correctif invitation (2026-08-11)
+## 2026-08-11 — Compte modifiable, pointage journalier, correctif invitation
 
 > Branche : `claude/account-presences-invite-oa1wrv`
 
-## A. Correctif — lien d'invitation toujours « invalide »
+### A. Correctif — lien d'invitation toujours « invalide »
 
 - [x] Diagnostic : collision de noms de paramètres Nitro (`[token].get.ts` et `[id].delete.ts`
       dans le même dossier → le segment est nommé `id`, `getRouterParam(event, 'token')` est
@@ -1003,14 +1027,14 @@ l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invita
 - [x] Restreindre le préfixe public à `/api/invitations/token/`
 - [x] Mettre à jour `/register` + tests
 
-## B. `/account` — modification du profil et du mot de passe
+### B. `/account` — modification du profil et du mot de passe
 
 - [x] `shared/utils/account.ts` : schémas Zod (identité, changement de mot de passe)
 - [x] `PUT /api/account/profile` : prénom/nom + rafraîchissement de la session
 - [x] `PUT /api/account/password` : vérification du mot de passe actuel + confirmation
 - [x] Refonte de `pages/account.vue` (lecture + formulaires, thème de l'app)
 
-## C. `/presences` — pointage journalier (arrivée / départ)
+### C. `/presences` — pointage journalier (arrivée / départ)
 
 - [x] Modèle Prisma `PresenceEntry` (1 pointage par personne et par jour) + migration
 - [x] `shared/utils/presence-entries.ts` : schémas + helpers horaires
@@ -1019,7 +1043,7 @@ l'email invité. Captures d'écran des vues cards/tableau, de la modale d'invita
 - [x] UI tuteur : pointage pour un apprenant + journal de son réseau
 - [x] Tests unitaires + vérification bout en bout (Postgres local)
 
-## Revue
+### Revue
 
 **A. Invitation.** Cause racine trouvée en reproduisant le bug sur un Postgres local :
 `GET /api/invitations/<token>` répondait 404 pour *tous* les tokens. Les deux fichiers
@@ -1051,7 +1075,7 @@ Captures Playwright des deux vues (apprenant / tuteur), aucune erreur console.
 
 ---
 
-# Plan — Pointage verrouillé, types de journée, calendrier (2026-08-11)
+## 2026-08-11 — Pointage verrouillé, types de journée, calendrier
 
 > Branche : `claude/account-presences-invite-oa1wrv`
 > Réalisé via un workflow de sous-agents (spécification Opus, écriture Sonnet, relecture Opus).
@@ -1066,7 +1090,7 @@ Captures Playwright des deux vues (apprenant / tuteur), aucune erreur console.
 - [x] Pointages affichés dans le calendrier (catégorie `presence`, lecture seule)
 - [x] Calendrier compacté : en-tête de jour, hauteur de grille (40 px/heure), cases du mois
 
-## Revue
+### Revue
 
 Relecture Opus après implémentation : conformité A/B/C confirmée par appels réels (un apprenant ne peut
 ni repointer, ni supprimer, ni lire l'historique ; un tuteur hors réseau reçoit 404), quatre défauts
@@ -1087,7 +1111,7 @@ corrigés ensuite :
 
 `npm run lint` ✅ · `npm test` (283) ✅ · `npm run build` ✅
 
-# Dock « Suivi » en bas à droite + correctif scroll-lock
+## 2026-08-23 — Dock « Suivi » en bas à droite + correctif scroll-lock
 
 Plan (exécuté via un workflow de sous-agents Opus) :
 
@@ -1108,7 +1132,7 @@ Plan (exécuté via un workflow de sous-agents Opus) :
       (scroll-lock Reka UI) — cause racine, pas de rustine
 - [x] Vérifier : lint, tests, build, absence de fuite `@prisma/client` côté client
 
-## Revue
+### Revue
 
 Implémentation par workflow de sous-agents Opus (2 explorations parallèles → 2
 implémentations → 1 vérification adversariale), relue ensuite dans le contexte principal.

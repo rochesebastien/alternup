@@ -4,10 +4,55 @@ Ce fichier guide Claude Code (claude.ai/code) quand il travaille sur ce dépôt.
 
 ## Contexte projet
 
-- **Alternup** : application Nuxt 3 monolithique pour le suivi d'alternants/stagiaires par leurs tuteurs.
-- Stack cible : **Nuxt 3 + TypeScript + Tailwind + Prisma + PostgreSQL + nuxt-auth-utils**.
-- Déploiement cible : **Dokploy** (Docker Compose, Postgres self-hosted).
-- L'ancienne intégration Supabase est en cours de retrait — voir `taches/a-faire.md`.
+**Alternup** : application **Nuxt 4** monolithique (SSR) pour le suivi d'alternants et de
+stagiaires par leurs tuteurs. Une seule base de code sert le front et l'API.
+
+La migration hors Supabase est **terminée** (mai 2026) : plus aucune référence dans le code.
+L'historique de cette migration est archivé dans `taches/a-faire.md`.
+
+## Stack technique
+
+| Domaine | Choix |
+|---|---|
+| Framework | **Nuxt 4.4** (SSR) + **Vue 3.5** + `vue-router` 5 |
+| Langage | **TypeScript 6**, `strict: true` (typecheck via `vue-tsc`, pas au build Nuxt) |
+| Runtime | **Node ≥ 22** |
+| UI | **Nuxt UI 4** + **Tailwind CSS 4** (config CSS-first dans `assets/css/main.css`) |
+| Icônes | `@nuxt/icon` + collection locale `@iconify-json/lucide` (aucun fetch runtime) |
+| Police | **Mona Sans** self-hostée via `@fontsource-variable` (`ui: { fonts: false }`) |
+| Images | `@nuxt/image`, provider `ipx` |
+| État | **Pinia** (`@pinia/nuxt`), **VueUse** |
+| Calendrier | **Schedule-X 4** (thème shadcn, drag & drop, resize) + `temporal-polyfill` |
+| Animation | **GSAP** (plugin client uniquement) |
+| API | **Nitro** — routes sous `server/api/` |
+| ORM / DB | **Prisma 7** (`@prisma/adapter-pg`) sur **PostgreSQL 16** |
+| Auth | **nuxt-auth-utils** (cookie de session signé) + **bcrypt** |
+| Validation | **Zod 4** (locale FR via plugin Nuxt *et* plugin Nitro) |
+| Qualité | **ESLint 10**, **Vitest 4**, Husky + lint-staged |
+| Déploiement | **Docker** multi-stage → **Dokploy** (voir `docs/deploy-dokploy.md`) |
+
+Le projet **n'a pas de dossier `app/`** : Nuxt 4 conserve donc la structure v3, tous les
+dossiers (`pages/`, `components/`, `composables/`, `middleware/`, `plugins/`, `assets/`)
+restent à la racine, à côté de `server/` et `shared/`.
+
+## Règles de code non négociables
+
+Ces règles viennent d'incidents réels — le détail et la cause racine sont dans `taches/lecons.md`.
+
+- **Jamais d'import de `@prisma/client`** dans du code rendu côté navigateur (`app.vue`,
+  `pages/`, `components/`, `composables/`, `middleware/`, `plugins/`, `shared/`), même en
+  `import type`. Les énumérations viennent de `shared/utils/enums.ts`. Une règle ESLint
+  `no-restricted-imports` bloque la régression.
+- **Jamais de `$fetch` nu** dans un appel qui peut s'exécuter au SSR (setup, `watch`
+  immediate) : utiliser `useFetch` ou `useRequestFetch()`, sinon les cookies ne sont pas
+  transmis et la route protégée répond 401.
+- **Pas de `UAuthForm`** : `UForm` + `UFormField` + `UInput` avec `v-model` explicite.
+- **`z.guid()`** pour valider un ID en entrée d'API, pas `z.uuid()` (strict RFC 9562).
+- **Un seul nom de paramètre par segment d'URL Nitro** dans un même dossier
+  (`[id]` partout, ou sous-dossier explicite type `token/[token]`).
+- **Polices et icônes toujours self-hébergées** — le réseau de production peut être filtré.
+- **Un build vert ne prouve rien** : vérifier le rendu réel dans un navigateur, et après
+  build `grep -rl "\.prisma/client/index-browser" .output/public/_nuxt/` doit ne rien renvoyer.
 
 ## Workflow de développement
 
@@ -74,10 +119,27 @@ Ce fichier guide Claude Code (claude.ai/code) quand il travaille sur ce dépôt.
 ## Commandes utiles
 
 ```bash
-npm run dev          # Démarrer le serveur Nuxt (port 3000)
-npm run build        # Build production
+npm run dev          # Serveur Nuxt avec HMR (port 3000)
+npm run build        # Build production (Nuxt + Nitro)
+npm run preview      # Prévisualiser le build
 npm run start        # Démarrer le build
 npm run lint         # ESLint
 npm run lint:fix     # ESLint --fix
-npm test             # Vitest
+npm test             # Vitest (run unique)
+npm run test:watch   # Vitest en watch
+
+npx vue-tsc --noEmit                   # Typecheck (identique à la CI)
+npx prisma migrate dev --name <slug>   # Nouvelle migration
+npx prisma studio                      # GUI sur la base
 ```
+
+Avant de considérer un lot terminé, la CI exécute — dans cet ordre — `prisma generate`,
+`nuxt prepare`, `vue-tsc --noEmit`, `npm test`, `nuxt build`. Reproduire la même séquence
+en local plutôt que de découvrir un échec sur la PR.
+
+## Tests
+
+- **Vitest**, suite unique sous `tests/shared/` (~18 fichiers) qui couvre la logique pure
+  de `shared/utils/`.
+- Les ~108 routes de `server/api/` **ne sont pas testées** : toute modification côté API se
+  vérifie par un appel réel (curl / navigateur), pas par le typecheck.
