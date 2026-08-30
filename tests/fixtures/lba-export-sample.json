@@ -1,0 +1,442 @@
+[
+  {
+    "identifier": {
+      "id": "68a1f09b2c41d75e01b40901",
+      "partner_label": "offres_emploi_lba",
+      "partner_job_id": "68a1f09b2c41d75e01b40901"
+    },
+    "workplace": {
+      "name": "Alternup Studio",
+      "legal_name": "ALTERNUP STUDIO SAS",
+      "brand": null,
+      "siret": "90123456700018",
+      "website": "https://alternup-studio.example",
+      "size": "10-19",
+      "description": "Studio de développement web parisien.",
+      "location": {
+        "address": "12 rue de la Roquette, 75011 Paris",
+        "geopoint": { "type": "Point", "coordinates": [2.3721, 48.8553] }
+      },
+      "domain": { "naf": { "code": "62.01Z", "label": "Programmation informatique" }, "opco": "ATLAS", "idcc": 1486 }
+    },
+    "apply": {
+      "url": "https://labonnealternance.apprentissage.beta.gouv.fr/emploi/offres_emploi_lba/68a1f09b2c41d75e01b40901/developpeur-web-full-stack",
+      "phone": null,
+      "recipient_id": "recruiter_68a1f09b"
+    },
+    "contract": { "type": ["Apprentissage"], "start": "2026-09-15", "duration": 24, "remote": "hybrid" },
+    "offer": {
+      "title": "Développeur web full-stack en alternance (H/F)",
+      "description": "Participez au développement d'applications Nuxt/TypeScript.",
+      "rome_codes": ["M1805"],
+      "target_diploma": { "level": "6", "label": "Licence, Bac+3" },
+      "publication": { "creation": "2026-08-20T08:00:00.000Z", "expiration": "2026-11-30T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": ["TypeScript", "Vue.js"],
+      "to_be_acquired_skills": ["Nuxt", "PostgreSQL"],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": null,
+      "partner_label": "Hellowork",
+      "partner_job_id": "HW-88421"
+    },
+    "workplace": {
+      "name": "Alternup  Studio",
+      "legal_name": "ALTERNUP STUDIO SAS",
+      "brand": null,
+      "siret": "90123456700018",
+      "website": null,
+      "size": "10-19",
+      "description": null,
+      "location": {
+        "address": "12 rue de la Roquette,  75011 PARIS",
+        "geopoint": { "type": "Point", "coordinates": [2.3721, 48.8553] }
+      },
+      "domain": { "naf": null, "opco": "ATLAS", "idcc": null }
+    },
+    "apply": {
+      "url": "https://www.hellowork.example/fr-fr/emplois/88421.html",
+      "phone": null,
+      "recipient_id": null
+    },
+    "contract": { "type": ["Apprentissage"], "start": "2026-09-15", "duration": 24, "remote": "hybrid" },
+    "offer": {
+      "title": "développeur web full-stack en alternance (h/f)",
+      "description": "Même poste relayé par un multidiffuseur : le triplet (titre, entreprise, lieu) normalisé doit produire le même dedup_hash que l'offre LBA d'origine.",
+      "rome_codes": ["M1805"],
+      "target_diploma": { "level": "6", "label": "Licence, Bac+3" },
+      "publication": { "creation": "2026-08-21T06:30:00.000Z", "expiration": "2026-11-30T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": null,
+      "partner_label": "France Travail",
+      "partner_job_id": "195XKPV"
+    },
+    "workplace": {
+      "name": "Carrefour",
+      "legal_name": "CARREFOUR HYPERMARCHES SAS",
+      "brand": "Carrefour",
+      "siret": "45132030400024",
+      "website": null,
+      "size": "5000+",
+      "description": null,
+      "location": {
+        "address": "45 avenue Jean Jaurès, 69007 Lyon",
+        "geopoint": { "type": "Point", "coordinates": [4.8419, 45.7333] }
+      },
+      "domain": { "naf": { "code": "47.11F", "label": "Hypermarchés" }, "opco": "L'Opcommerce", "idcc": 2216 }
+    },
+    "apply": {
+      "url": "https://candidat.francetravail.example/offres/recherche/detail/195XKPV",
+      "phone": "0472000000",
+      "recipient_id": null
+    },
+    "contract": { "type": ["Professionnalisation"], "start": "2026-10-01", "duration": 12, "remote": "onsite" },
+    "offer": {
+      "title": "Assistant ressources humaines en alternance (H/F)",
+      "description": "Contrat de professionnalisation au sein de la DRH régionale.",
+      "rome_codes": ["M1501", "M1502"],
+      "target_diploma": { "level": "5", "label": "BTS, DEUST, Bac+2" },
+      "publication": { "creation": "2026-08-18T09:12:00.000Z", "expiration": "2026-10-18T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 2
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": "68a2b17c9e55f21a03c77abc",
+      "partner_label": "offres_emploi_lba",
+      "partner_job_id": "68a2b17c9e55f21a03c77abc"
+    },
+    "workplace": {
+      "name": "Pixel & Co",
+      "legal_name": "PIXEL ET CO SARL",
+      "brand": null,
+      "siret": "83456789100011",
+      "website": null,
+      "size": "20-49",
+      "description": null,
+      "location": {
+        "address": "8 place de la Bourse, 33000 Bordeaux",
+        "geopoint": { "type": "Point", "coordinates": [-0.5704, 44.8412] }
+      },
+      "domain": { "naf": { "code": "73.11Z", "label": "Activités des agences de publicité" }, "opco": "AFDAS", "idcc": 86 }
+    },
+    "apply": {
+      "url": "https://labonnealternance.apprentissage.beta.gouv.fr/emploi/offres_emploi_lba/68a2b17c9e55f21a03c77abc/charge-de-marketing-digital",
+      "phone": null,
+      "recipient_id": "recruiter_68a2b17c"
+    },
+    "contract": { "type": ["Apprentissage"], "start": "2026-09-01", "duration": 12, "remote": "onsite" },
+    "offer": {
+      "title": "Chargé de marketing digital en apprentissage",
+      "description": "Poste déjà pourvu : le statut Filled doit faire passer l'offre expiree après un run réussi.",
+      "rome_codes": ["E1103"],
+      "target_diploma": { "level": "6", "label": "Licence, Bac+3" },
+      "publication": { "creation": "2026-07-01T10:00:00.000Z", "expiration": "2026-12-31T23:59:59.000Z" },
+      "status": "Filled",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": "689f44d1aa02c93b05e11def",
+      "partner_label": "offres_emploi_lba",
+      "partner_job_id": "689f44d1aa02c93b05e11def"
+    },
+    "workplace": {
+      "name": "Transports Bernard",
+      "legal_name": "TRANSPORTS BERNARD ET FILS",
+      "brand": null,
+      "siret": "77612345600033",
+      "website": null,
+      "size": "50-99",
+      "description": null,
+      "location": {
+        "address": "Zone industrielle des Chanoux, 93330 Neuilly-sur-Marne",
+        "geopoint": { "type": "Point", "coordinates": [2.5468, 48.8533] }
+      },
+      "domain": { "naf": { "code": "49.41A", "label": "Transports routiers de fret interurbains" }, "opco": "Opco Mobilités", "idcc": 16 }
+    },
+    "apply": {
+      "url": "https://labonnealternance.apprentissage.beta.gouv.fr/emploi/offres_emploi_lba/689f44d1aa02c93b05e11def/exploitant-transport",
+      "phone": null,
+      "recipient_id": "recruiter_689f44d1"
+    },
+    "contract": { "type": ["Apprentissage"], "start": "2026-06-15", "duration": 24, "remote": "onsite" },
+    "offer": {
+      "title": "Exploitant transport en alternance",
+      "description": "Date d'expiration dépassée : l'offre doit passer expiree après un run réussi malgré un statut Active.",
+      "rome_codes": ["N4203"],
+      "target_diploma": { "level": "5", "label": "BTS, DEUST, Bac+2" },
+      "publication": { "creation": "2026-04-01T08:00:00.000Z", "expiration": "2026-06-01T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": null,
+      "partner_label": "Kelio",
+      "partner_job_id": "KL-2210"
+    },
+    "workplace": {
+      "name": "Bureau d'études Soler",
+      "legal_name": "SOLER INGENIERIE",
+      "brand": null,
+      "siret": "51234567800056",
+      "website": null,
+      "size": "10-19",
+      "description": null,
+      "location": {
+        "address": "3 rue des Frères Lumière, 68200 Mulhouse",
+        "geopoint": { "type": "Point", "coordinates": [7.3081, 47.7411] }
+      },
+      "domain": { "naf": null, "opco": "ATLAS", "idcc": 1486 }
+    },
+    "apply": {
+      "url": "https://jobs.kelio.example/soler/2210",
+      "phone": null,
+      "recipient_id": null
+    },
+    "contract": { "type": ["CDI"], "start": "2026-09-01", "duration": null, "remote": "onsite" },
+    "offer": {
+      "title": "Projeteur CVC (CDI hors périmètre : doit être filtré par le garde-fou contract.type)",
+      "description": "Entrée volontairement hors alternance pour vérifier le filtrage.",
+      "rome_codes": ["F1106"],
+      "target_diploma": null,
+      "publication": { "creation": "2026-08-10T08:00:00.000Z", "expiration": "2026-10-10T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": "68a3c55e1f88ab2c07d99012",
+      "partner_label": "offres_emploi_lba",
+      "partner_job_id": "68a3c55e1f88ab2c07d99012"
+    },
+    "workplace": {
+      "name": null,
+      "legal_name": "BOULANGERIE MARTIN SAS",
+      "brand": null,
+      "siret": "82234567800021",
+      "website": null,
+      "size": "3-5",
+      "description": null,
+      "location": {
+        "address": "27 rue Nationale, 59800 Lille",
+        "geopoint": { "type": "Point", "coordinates": [3.0573, 50.6365] }
+      },
+      "domain": { "naf": { "code": "10.71C", "label": "Boulangerie et boulangerie-pâtisserie" }, "opco": "Opco entreprises de proximité", "idcc": 843 }
+    },
+    "apply": {
+      "url": "https://labonnealternance.apprentissage.beta.gouv.fr/emploi/offres_emploi_lba/68a3c55e1f88ab2c07d99012/apprenti-boulanger",
+      "phone": "0320000000",
+      "recipient_id": "recruiter_68a3c55e"
+    },
+    "contract": { "type": ["Apprentissage"], "start": "2026-09-01", "duration": 24, "remote": "onsite" },
+    "offer": {
+      "title": "Apprenti boulanger (H/F)",
+      "description": "workplace.name absent : le fallback workplace.legal_name doit alimenter la colonne entreprise.",
+      "rome_codes": ["D1102"],
+      "target_diploma": { "level": "3", "label": "CAP, BEP" },
+      "publication": { "creation": "2026-08-25T07:00:00.000Z", "expiration": "2026-12-01T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": null,
+      "partner_label": "RH Alternance",
+      "partner_job_id": "RHA-73001"
+    },
+    "workplace": {
+      "name": "Clinique du Parc",
+      "legal_name": "CLINIQUE DU PARC SA",
+      "brand": null,
+      "siret": "30567891200044",
+      "website": null,
+      "size": "200-499",
+      "description": null,
+      "location": {
+        "address": "155 boulevard Stalingrad, 69006 Lyon",
+        "geopoint": { "type": "Point", "coordinates": [4.8601, 45.7772] }
+      },
+      "domain": { "naf": { "code": "86.10Z", "label": "Activités hospitalières" }, "opco": "Opco Santé", "idcc": 2264 }
+    },
+    "apply": {
+      "url": "https://www.rhalternance.example/offre/73001-secretaire-medicale",
+      "phone": null,
+      "recipient_id": null
+    },
+    "contract": { "type": ["Professionnalisation"], "start": "2026-09-07", "duration": 18, "remote": "onsite" },
+    "offer": {
+      "title": "Secrétaire médicale en contrat de professionnalisation",
+      "description": "Accueil des patients et gestion administrative des dossiers.",
+      "rome_codes": ["M1609"],
+      "target_diploma": { "level": "4", "label": "Baccalauréat" },
+      "publication": { "creation": "2026-08-22T14:00:00.000Z", "expiration": "2026-11-22T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": "68a4d88f3b12cd4e09f22345",
+      "partner_label": "offres_emploi_lba",
+      "partner_job_id": "68a4d88f3b12cd4e09f22345"
+    },
+    "workplace": {
+      "name": "CFA BTP Occitanie",
+      "legal_name": "CFA BTP OCCITANIE",
+      "brand": null,
+      "siret": "77890123400067",
+      "website": "https://cfabtp-occitanie.example",
+      "size": "100-199",
+      "description": "Offre gérée par le CFA pour le compte d'une entreprise adhérente (is_delegated).",
+      "location": {
+        "address": "Chemin de la Salade Ponsan, 31400 Toulouse",
+        "geopoint": { "type": "Point", "coordinates": [1.4592, 43.5793] }
+      },
+      "domain": { "naf": { "code": "85.32Z", "label": "Enseignement secondaire technique ou professionnel" }, "opco": "Constructys", "idcc": 1596 }
+    },
+    "apply": {
+      "url": "https://labonnealternance.apprentissage.beta.gouv.fr/emploi/offres_emploi_lba/68a4d88f3b12cd4e09f22345/macon-apprenti",
+      "phone": null,
+      "recipient_id": "recruiter_68a4d88f"
+    },
+    "contract": { "type": ["Apprentissage"], "start": "2026-09-01", "duration": 24, "remote": "onsite" },
+    "offer": {
+      "title": "Maçon en apprentissage — entreprise partenaire du CFA",
+      "description": "Chantiers de gros œuvre, encadrement par un maître d'apprentissage.",
+      "rome_codes": ["F1703"],
+      "target_diploma": { "level": "3", "label": "CAP, BEP" },
+      "publication": { "creation": "2026-08-19T08:45:00.000Z", "expiration": "2026-11-19T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 3
+    },
+    "is_delegated": true
+  },
+  {
+    "identifier": {
+      "id": null,
+      "partner_label": "Meteojob",
+      "partner_job_id": "MJ-990012"
+    },
+    "workplace": {
+      "name": "Fromagerie des Alpes",
+      "legal_name": "FROMAGERIE DES ALPES SARL",
+      "brand": null,
+      "siret": "43219876500012",
+      "website": null,
+      "size": "6-9",
+      "description": null,
+      "location": {
+        "address": "74230 Thônes",
+        "geopoint": { "type": "Point", "coordinates": [6.3258, 45.8811] }
+      },
+      "domain": { "naf": { "code": "10.51C", "label": "Fabrication de fromage" }, "opco": "OCAPIAT", "idcc": 7008 }
+    },
+    "apply": {
+      "url": "https://www.meteojob.example/candidat/offres/990012",
+      "phone": null,
+      "recipient_id": null
+    },
+    "contract": { "type": ["Apprentissage"], "start": "2026-09-01", "duration": 12, "remote": "onsite" },
+    "offer": {
+      "title": "Vendeur-affineur en alternance (H/F)",
+      "description": "target_diploma absent : la colonne niveau_diplome doit rester NULL.",
+      "rome_codes": ["D1106"],
+      "target_diploma": null,
+      "publication": { "creation": "2026-08-24T11:00:00.000Z", "expiration": "2026-10-24T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  },
+  {
+    "identifier": {
+      "id": "68a5e99a4c23de5f0b033456",
+      "partner_label": "offres_emploi_lba",
+      "partner_job_id": "68a5e99a4c23de5f0b033456"
+    },
+    "workplace": {
+      "name": "Mairie de Rennes",
+      "legal_name": "COMMUNE DE RENNES",
+      "brand": null,
+      "siret": "21350238800019",
+      "website": "https://metropole.rennes.example",
+      "size": "1000-1999",
+      "description": null,
+      "location": {
+        "address": "Place de la Mairie, 35000 Rennes",
+        "geopoint": { "type": "Point", "coordinates": [-1.6794, 48.1113] }
+      },
+      "domain": { "naf": { "code": "84.11Z", "label": "Administration publique générale" }, "opco": "Uniformation", "idcc": null }
+    },
+    "apply": {
+      "url": "https://labonnealternance.apprentissage.beta.gouv.fr/emploi/offres_emploi_lba/68a5e99a4c23de5f0b033456/community-manager",
+      "phone": null,
+      "recipient_id": "recruiter_68a5e99a"
+    },
+    "contract": { "type": ["Apprentissage", "Professionnalisation"], "start": "2026-10-01", "duration": 12, "remote": "hybrid" },
+    "offer": {
+      "title": "Community manager en alternance — collectivité territoriale",
+      "description": "contract.type multiple : le premier type mappable (Apprentissage) alimente type_contrat.",
+      "rome_codes": ["E1101"],
+      "target_diploma": { "level": "6", "label": "Licence, Bac+3" },
+      "publication": { "creation": "2026-08-26T09:30:00.000Z", "expiration": "2026-12-26T23:59:59.000Z" },
+      "status": "Active",
+      "desired_skills": [],
+      "to_be_acquired_skills": [],
+      "access_conditions": [],
+      "opening_count": 1
+    },
+    "is_delegated": false
+  }
+]

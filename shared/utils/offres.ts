@@ -10,7 +10,12 @@
 // `@prisma/client`, voir l'en-tête de `shared/utils/enums.ts`).
 
 import { z } from 'zod'
-import { CandidatureStatut, OffreContratType } from '~/shared/utils/enums'
+// Import relatif AVEC extension `.ts` (et non l'alias `~/shared/utils/enums`) :
+// ce module est importé par le script d'ingestion exécuté via le type stripping
+// natif de Node ≥ 22 (`node scripts/ingest-offres.ts`, ADR-0003), qui ne connaît
+// ni les alias Nuxt ni la résolution sans extension. Vite/Nitro et vue-tsc
+// (`allowImportingTsExtensions` dans tsconfig.json) résolvent aussi cette forme.
+import { CandidatureStatut, OffreContratType } from './enums.ts'
 
 // ─────────────────────────── Constantes métier ───────────────────────────
 

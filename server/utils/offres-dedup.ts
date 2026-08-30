@@ -8,7 +8,10 @@
 // Le script d'ingestion (ADR-0003) l'importera aussi, hors contexte Nitro.
 
 import { createHash } from 'node:crypto'
-import { normalizeForDedup } from '~/shared/utils/offres'
+// Import relatif AVEC extension `.ts` (et non l'alias `~`) : le script
+// d'ingestion (ADR-0003) importe ce module via le type stripping natif de
+// Node ≥ 22, qui ne connaît pas les alias Nuxt. Nitro résout la même forme.
+import { normalizeForDedup } from '../../shared/utils/offres.ts'
 
 /**
  * Clé `Offre.dedupHash` : sha256 hexadécimal du triplet (titre, entreprise,
