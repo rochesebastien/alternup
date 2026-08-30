@@ -14,8 +14,137 @@ une section `### Revue` une fois le lot terminé. (Les entrées les plus ancienn
 numéro d'issue au lieu d'une date — format conservé tel quel.)
 
 **Ce qui reste ouvert** — les seules cases `- [ ]` encore pertinentes du fichier :
-le backlog P1 de la roadmap « game breakers » (2026-07-28) et la dette signalée dans
-« Reste à traiter » du lot 2026-08-03.
+le backlog P1 de la roadmap « game breakers » (2026-07-28), la dette signalée dans
+« Reste à traiter » du lot 2026-08-03, et le « Reste à faire » de la mission
+split + veille ci-dessous.
+
+---
+
+## 2026-08-30 — Mission split + veille (entrée épinglée en tête, dérogation à l'ordre chronologique)
+
+> Branche : `claude/alternup-split-veille-omul5x`. Mission en 7 phases : split de l'app en
+> deux espaces par rôle (`/tuteur`, `/alternant`) + module de veille d'offres d'alternance.
+> Décisions de gate : **v1 alternance seule** (pas de stages), **ingestion LBA seule**
+> (les offres France Travail arrivent via l'export LBA), déclenchement par **Schedule Job
+> Dokploy** (`docker exec`, cron `30 3 * * *` UTC).
+
+### Phases
+
+- [x] **Phase 0 — Discovery + gate** : 5 rapports (`docs/plans/discovery/`) + synthèse ;
+      décisions actées (alternance seule, LBA seule, pas de Nitro tasks).
+- [x] **Phase 1 — ADRs** : `docs/adr/0001` (espaces par rôle) à `0004` (page offres v1).
+- [x] **Phase 2 — Split espaces** : `layouts/` (public / tuteur / alternant / default),
+      pages éclatées sous `pages/tuteur/` et `pages/alternant/`, garde par préfixe
+      (`middleware/space.global.ts`), redirections legacy
+      (`middleware/legacy-redirect.global.ts`), liens en base migrés.
+- [x] **Phase 3 — Modèle de données veille** : `Offre`, `OffreSource`, `OffreUserStatut`,
+      `ScrapeRun` + enums (miroir `shared/utils/enums.ts`), migrations `veille_offres`
+      et `offres_trgm_indexes`.
+- [x] **Phase 4 — Ingestion + exposition** : `scripts/ingest-offres.ts` (source LBA via
+      export quotidien, dédup url/hash, expiration douce, verrou, ScrapeRuns — exécuté et
+      validé avec données réelles sandbox), endpoints `/api/offres*`, page
+      `/alternant/offres`.
+- [x] ~~**Phase 5 — Sources Firecrawl (stages)**~~ **ANNULÉE** : aucun site cible retenu,
+      LBA suffit pour la v1 — les stages restent hors périmètre (décision de gate confirmée).
+- [x] **Phase 6 — Finalisation** : alerte webhook d'échec de run (`ALERTE_WEBHOOK_URL`),
+      `.env.example`, section « Veille d'offres » de `docs/deploy-dokploy.md`,
+      `docs/veille.md`, mises à jour `README.md` / `AGENTS.md`, cette entrée de journal.
+
+### Revue
+
+**Livré** : deux espaces par rôle complets (layouts, nav dédiées, garde et layout résolus
+par préfixe de route, redirections des anciennes URLs) ; module veille de bout en bout —
+4 modèles Prisma + 3 migrations, script d'ingestion idempotent journalisé en base
+(`scrape_runs`) avec alerte webhook optionnelle, API filtrée/paginée server-side, page
+offres avec suivi de candidature ; documentation d'exploitation (`docs/veille.md`) et de
+déploiement (section dédiée de `docs/deploy-dokploy.md`).
+
+**Décisions clés** : v1 alternance seule ; une seule source (LBA, qui relaie déjà France
+Travail) derrière une interface `SourceIngestion` extensible ; script isolé hors Nitro
+déclenché par Dokploy plutôt que Nitro tasks (expérimentales) ; expiration douce (3 jours,
+garde anti-expiration massive à 50 %) plutôt que suppression ; l'alerte d'échec est
+best-effort et ne peut jamais faire échouer le run.
+
+**Reste à faire (côté utilisateur, en prod)** :
+
+- [ ] Créer la clé **LBA de production** sur api.apprentissage.beta.gouv.fr et renseigner
+      `LBA_API_KEY` sur le service Dokploy.
+- [ ] Créer le **Schedule Job** dans l'UI Dokploy (type Application,
+      `node scripts/ingest-offres.ts`, cron `30 3 * * *` — cf. `docs/deploy-dokploy.md` §4).
+- [ ] Définir `ALERTE_WEBHOOK_URL` (optionnel mais recommandé) pour être prévenu des runs
+      en échec.
+
+## Fonctionnalités retirées de la landing, à construire
+
+Retirées de `pages/index.vue` et `pages/features.vue` le 2026-08-30 : la landing
+les promettait, le code ne les implémente pas. Toute réintroduction dans le
+marketing suppose la fonctionnalité livrée d'abord.
+
+### Audience « École » (bloc entier)
+- [ ] Rôle École dans `Role` — `shared/utils/enums.ts` ne connaît que
+      `Tutor` / `Alternant` / `Stagiaire`. Retiré : onglet « Écoles », audience
+      `school` sur toutes les fiches, mention « et les écoles » du sous-titre.
+- [ ] **Pilotage par promotion** — « une vue agrégée par promo : taux de rendus,
+      alertes ouvertes, visites en retard ». Aucune notion de promotion dans le
+      schéma, aucune route d'agrégation.
+- [ ] **Comparaison inter-promotions** — aucune API correspondante.
+- [ ] **Export Excel/CSV pour les jurys** — aucune route d'export dans `server/api/`.
+- [ ] **Conformité & traçabilité** (carte entière), dont :
+  - [ ] **Conventions signées électroniquement** — aucun modèle « convention »
+        (seul `docs/plans/discovery/b-conventions.md`, exploratoire, en parle).
+  - [ ] **Audit log complet** — aucun module d'audit générique.
+  - [ ] **Conservation RGPD configurable** — aucun réglage de rétention.
+
+### Notifications et invitations par e-mail
+- [ ] **Notifications par e-mail** — aucun envoi de mail dans `server/` (ni
+      nodemailer, ni SMTP, ni service tiers). `notifyUser` écrit en base : le fil
+      est in-app uniquement. Landing corrigée en « rappels dans l'application ».
+- [ ] **Invitation par e-mail** — `server/api/invitations/index.post.ts` :
+      « Pas d'envoi d'email pour l'instant : le tuteur transmet lui-même le lien. »
+      Landing corrigée en « lien d'invitation à transmettre ».
+- [ ] **Seuils d'alerte configurables par promo** — le scoring de
+      `server/utils/risk.ts` n'expose aucun réglage.
+
+### Fiche apprenant : promo, entreprise, année, statut
+- [ ] **Filtres par promo / entreprise / année / statut** sur le roster tuteur —
+      `pages/tuteur/alternants/index.vue` n'offre que la bascule cartes/tableau ;
+      le modèle `User` ne porte ni promo, ni entreprise, ni année, ni type de
+      contrat. La carte du hero et le mockup dashboard affichaient ces données.
+- [ ] Champs de profil correspondants (promo, entreprise, année, contrat) — à
+      modéliser avant toute réintroduction du filtrage.
+
+### Quiz et suivi de formation
+- [ ] **Quiz auto-corrigés**, **statistiques par module**, **reprise à l'endroit
+      où tu t'es arrêté** — aucune notion de quiz dans le code ; le module Cours
+      se limite aux sessions (`courses`) et aux notes personnelles (`course-notes`).
+- [ ] **Remontée automatique de la progression à l'école** — pas de destinataire
+      « école » ni de flux sortant.
+
+### Signatures
+- [ ] **Signature électronique multi-parties sur les visites tuteur** —
+      `server/api/tutor-visits/` n'a pas de route `sign.post.ts`. La signature
+      n'existe que sur `progress-reports` et `report-cards`.
+
+### Compétences
+- [ ] **Grilles par référentiel (RNCP, école, libre)** — les domaines et
+      compétences sont créés à la main par le tuteur, sans import de référentiel.
+- [ ] **Triple évaluation alternant / tuteur / entreprise**, **évaluations
+      partagées avec l'entreprise**, **validation tuteur + maître d'apprentissage**,
+      et le bénéfice **« un point unique pour l'alternant, le tuteur et
+      l'entreprise »** — l'entreprise n'est pas un utilisateur du produit.
+
+### Gabarits et exports
+- [ ] **Modèles de compte-rendu de visite personnalisables** — aucun système de
+      gabarit.
+- [ ] **Modèles de rapport imposés par la formation / structure imposée par
+      l'école** — idem.
+- [ ] **Export automatique des missions vers le rapport d'étape** — aucune reprise
+      automatique entre `project-assignments` et `progress-reports`.
+
+### Annonces
+- [ ] **Diffusion « à toute la promo »** — les destinataires sont sélectionnés un
+      par un (`recipientIds`), il n'existe pas d'objet promotion. Landing corrigée
+      en « aux alternants que tu choisis ».
 
 ---
 

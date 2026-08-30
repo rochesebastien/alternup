@@ -10,6 +10,28 @@ stagiaires par leurs tuteurs. Une seule base de code sert le front et l'API.
 La migration hors Supabase est **terminée** (mai 2026) : plus aucune référence dans le code.
 L'historique de cette migration est archivé dans `taches/a-faire.md`.
 
+L'app est découpée en **deux espaces par rôle** (ADR-0001, `docs/adr/`) : `pages/tuteur/`
+(→ `/tuteur/...`, rôle Tutor) et `pages/alternant/` (→ `/alternant/...`, rôles Alternant
+**et** Stagiaire), chacun avec son layout (`layouts/tuteur.vue`, `layouts/alternant.vue`) ;
+le layout et la garde de rôle sont résolus **par préfixe de route**
+(`middleware/space.global.ts`), pas par `definePageMeta` page par page. Les anciennes URLs
+sont redirigées par `middleware/legacy-redirect.global.ts`.
+
+### Module veille d'offres
+
+Veille d'offres d'alternance pour les apprenants (ADR-0002 à 0004, `docs/veille.md`) :
+`scripts/ingest-offres.ts` ingère chaque nuit le dump La Bonne Alternance (Schedule Job
+Dokploy) vers les modèles `Offre` / `OffreSource` / `OffreUserStatut` / `ScrapeRun`,
+exposés par `/api/offres*` et la page `/alternant/offres`. Conventions à respecter :
+
+- une source d'ingestion = une implémentation de `SourceIngestion`
+  (`scripts/ingest/types.ts`) + une valeur d'enum `OffreSourceType` + une migration —
+  jamais de logique de source dans l'orchestrateur ;
+- **jamais de scraping de profils** ni de données personnelles : uniquement des offres
+  publiées ;
+- le script vit hors contexte Nuxt : imports **relatifs** vers `shared/utils/`, Prisma
+  instancié en direct (pas le singleton Nitro).
+
 ## Stack technique
 
 | Domaine | Choix |
@@ -32,8 +54,9 @@ L'historique de cette migration est archivé dans `taches/a-faire.md`.
 | Déploiement | **Docker** multi-stage → **Dokploy** (voir `docs/deploy-dokploy.md`) |
 
 Le projet **n'a pas de dossier `app/`** : Nuxt 4 conserve donc la structure v3, tous les
-dossiers (`pages/`, `components/`, `composables/`, `middleware/`, `plugins/`, `assets/`)
-restent à la racine, à côté de `server/` et `shared/`.
+dossiers (`pages/`, `components/`, `composables/`, `layouts/`, `middleware/`, `plugins/`,
+`assets/`) restent à la racine, à côté de `server/`, `shared/` et `scripts/` (script
+d'ingestion des offres, exécuté hors Nuxt).
 
 ## Règles de code non négociables
 
@@ -139,7 +162,10 @@ en local plutôt que de découvrir un échec sur la PR.
 
 ## Tests
 
-- **Vitest**, suite unique sous `tests/shared/` (~18 fichiers) qui couvre la logique pure
+- **Vitest**, suite unique sous `tests/shared/` (~21 fichiers) qui couvre la logique pure
   de `shared/utils/`.
-- Les ~108 routes de `server/api/` **ne sont pas testées** : toute modification côté API se
+- Les ~113 routes de `server/api/` **ne sont pas testées** : toute modification côté API se
   vérifie par un appel réel (curl / navigateur), pas par le typecheck.
+- Le script `scripts/ingest-offres.ts` se vérifie par **exécution réelle** (fixture
+  `LBA_EXPORT_URL_OVERRIDE=tests/fixtures/lba-export-sample.json` + Postgres local) ;
+  seul son mapping pur est couvert par Vitest (`tests/shared/ingest-lba.test.ts`).

@@ -52,7 +52,8 @@ export default defineEventHandler(async (event) => {
     type: 'annonce',
     title: `Nouvelle annonce : ${title}`,
     body: excerpt(body),
-    link: '/annonces'
+    // Les destinataires d'une annonce sont toujours des apprenants.
+    link: '/alternant/annonces'
   })
 
   return announcement

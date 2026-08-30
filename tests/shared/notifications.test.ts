@@ -119,7 +119,7 @@ describe('learnerReminders', () => {
     expect(items).toHaveLength(1)
     expect(items[0]!.type).toBe('relance_rapport')
     expect(items[0]!.reminder).toBe(true)
-    expect(items[0]!.link).toBe('/rapports')
+    expect(items[0]!.link).toBe('/alternant/rapports')
     expect(items[0]!.body).toContain('aucun rapport')
   })
 

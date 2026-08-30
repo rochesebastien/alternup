@@ -36,12 +36,14 @@ export default defineEventHandler(async (event) => {
 
   const recipientId
     = conversation.tutorId === user.id ? conversation.studentId : conversation.tutorId
+  // Lien préfixé selon l'espace du destinataire (ADR-0001 §7).
+  const space = recipientId === conversation.tutorId ? '/tuteur' : '/alternant'
 
   await notifyUser(recipientId, {
     type: 'message',
     title: `Message de ${user.firstName} ${user.lastName}`,
     body: excerpt(body),
-    link: `/messages/${id}`
+    link: `${space}/messages/${id}`
   })
 
   return msg

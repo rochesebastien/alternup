@@ -44,7 +44,8 @@ export default defineEventHandler(async (event) => {
     body: `${user.firstName} ${user.lastName} a planifié une visite${
       location ? ` · ${location}` : ''
     }.`,
-    link: '/visites'
+    // Le destinataire est l'étudiant visité : espace alternant.
+    link: '/alternant/visites'
   })
 
   return visit

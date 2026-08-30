@@ -26,7 +26,11 @@ export interface SignableDocument {
   parties: SignatureParties
   /** Intitulé lisible du document (notifications, messages d'erreur). */
   title: string
-  /** Chemin interne de l'écran du document. */
+  /**
+   * Chemin de l'écran du document, SANS préfixe d'espace : le préfixe
+   * (`/tuteur` ou `/alternant`) est ajouté au moment de notifier, selon le
+   * rôle du destinataire (ADR-0001 §7).
+   */
   link: string
 }
 
@@ -227,11 +231,14 @@ export async function signDocument(
   // que le document devienne opposable (tableau de bord des statuts façon SIRH).
   const other = block.parties.find((candidate) => candidate.userId !== user.id)
   if (other && other.signedAt === null) {
+    // Lien préfixé selon l'espace du destinataire : le tuteur et l'étudiant
+    // consultent le même document sous /tuteur/... ou /alternant/...
+    const space = other.userId === document.parties.tutor.id ? '/tuteur' : '/alternant'
     await notifyUser(other.userId, {
       type: 'document_signe',
       title: `${signatureDocumentLabel(document.documentType)} signé : ${document.title}`,
       body: `${user.firstName} ${user.lastName} a signé. Votre signature est attendue.`,
-      link: document.link
+      link: `${space}${document.link}`
     })
   }
 

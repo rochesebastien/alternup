@@ -45,15 +45,15 @@
                 <span class="absolute inline-flex h-full w-full rounded-full bg-brand-500 opacity-75 animate-ping" />
                 <span class="relative inline-flex rounded-full w-2 h-2 bg-brand-500" />
               </span>
-              Fait par un alternant pour les alternants
+              Fait par un alternant, pour les alternants et leurs tuteurs
             </div>
 
             <h1
               data-reveal
               style="--d:.05s"
-              class="text-[44px] leading-[1.02] sm:text-6xl xl:text-[80px] font-extrabold tracking-[-0.04em] mb-7 text-balance"
+              class="text-[44px] leading-[1.02] sm:text-6xl xl:text-[76px] font-extrabold tracking-[-0.04em] mb-7 text-balance"
             >
-              Les alternants méritent
+              Le suivi d'alternance mérite
               <span class="hl">mieux</span>
               qu'<span class="strike">un&nbsp;Excel
                 <svg class="strike-svg" viewBox="0 0 140 28" preserveAspectRatio="none" aria-hidden="true">
@@ -65,25 +65,26 @@
             <p
               data-reveal
               style="--d:.1s"
-              class="text-lg leading-[1.6] text-[var(--ui-text-muted)] max-w-[560px] mx-auto lg:mx-0 mb-10"
+              class="text-lg leading-[1.6] text-[var(--ui-text-muted)] max-w-[560px] mx-auto lg:mx-0 mb-6"
             >
-              Alternup centralise le suivi de tes alternants et stagiaires.
-              Visites, livrables, rapports, et compétences... tu sais qui en est où,
-              et quand intervenir, et quand l'alternant a besoin de toi.
+              Alternup réunit le tuteur et son apprenant au même endroit. D'un côté le
+              suivi : visites, rapports, bulletins, compétences, présences. De l'autre
+              la progression, les missions, et une veille d'offres d'alternance
+              actualisée chaque nuit.
             </p>
 
             <div
               data-reveal
               style="--d:.15s"
-              class="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
+              class="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start mb-4"
             >
               <UButton
-                :to="loggedIn ? '/alternants' : '/register'"
+                :to="ctaTarget"
                 color="primary"
                 size="xl"
                 class="rounded-full font-semibold px-8 shadow-[0_8px_24px_rgba(241,222,2,0.35)] hover:shadow-[0_10px_28px_rgba(241,222,2,0.45)] transition-shadow"
               >
-                Suivre mes alternants
+                Créer mon compte
               </UButton>
               <UButton
                 color="neutral"
@@ -92,12 +93,21 @@
                 to="/features"
                 class="rounded-full font-semibold px-8"
               >
-                Comment ça marche ?
+                Voir ce que fait Alternup
               </UButton>
             </div>
+
+            <p
+              data-reveal
+              style="--d:.18s"
+              class="text-[13px] text-[var(--ui-text-muted)]"
+            >
+              Gratuit. Tuteur, alternant ou stagiaire : tu choisis ton rôle à
+              l'inscription, sans attendre d'invitation.
+            </p>
           </div>
 
-          <!-- Colonne visuelle : collage de cartes -->
+          <!-- Colonne visuelle : carte du roster tuteur -->
           <div class="lg:col-span-5" data-reveal style="--d:.2s">
             <div class="relative max-w-[400px] mx-auto lg:ml-auto lg:mr-0 px-4 py-8">
               <!-- Aplat jaune décalé derrière la carte -->
@@ -106,35 +116,36 @@
                 aria-hidden="true"
               />
 
-              <!-- Carte étudiant -->
+              <!-- Carte apprenant, calquée sur pages/tuteur/alternants/index.vue -->
               <div
                 class="relative bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-[24px] p-6 -rotate-2 shadow-[0_12px_32px_rgba(31,31,30,.10),0_32px_64px_rgba(31,31,30,.10)]"
               >
                 <div class="flex items-center gap-4">
                   <div
-                    class="rounded-full flex items-center justify-center text-2xl shrink-0"
-                    style="width:56px;height:56px;background:linear-gradient(135deg,#F1DE02 0%,#FFF9B0 100%);"
+                    class="rounded-full flex items-center justify-center text-[17px] font-bold shrink-0"
+                    style="width:56px;height:56px;background:linear-gradient(135deg,#F1DE02 0%,#FFF9B0 100%);color:#1F1F1E;"
                   >
-                    🎓
+                    LM
                   </div>
                   <div class="min-w-0">
                     <strong class="block text-[16px] font-bold">Léa Martin</strong>
-                    <div class="text-[13px] text-[var(--ui-text-muted)]">
-                      Master 2 Software Engineering · Macron Corporation
+                    <div class="text-[13px] text-[var(--ui-text-muted)] truncate">
+                      lea.martin@exemple.fr
                     </div>
                   </div>
                 </div>
                 <div class="h-px bg-[var(--ui-border)] my-4" />
                 <div class="flex flex-wrap gap-1.5">
-                  <span class="inline-block bg-brand-500 text-black text-xs font-semibold px-2.5 py-1 rounded-full">
-                    Alternance
-                  </span>
                   <span class="inline-block bg-[var(--ui-bg-muted)] text-[var(--ui-text-toned)] text-xs font-medium px-2.5 py-1 rounded-full">
-                    I2
+                    Alternant
                   </span>
-                  <span class="inline-block bg-[var(--ui-bg-muted)] text-[var(--ui-text-toned)] text-xs font-medium px-2.5 py-1 rounded-full">
-                    2ᵉ année
+                  <span class="inline-flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-medium px-2.5 py-1 rounded-full">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
+                    Suivi régulier
                   </span>
+                </div>
+                <div class="mt-4 text-[12px] text-[var(--ui-text-dimmed)]">
+                  Ajoutée le 12/09
                 </div>
               </div>
 
@@ -153,10 +164,11 @@
               </div>
               <div class="float-chip-drag absolute -bottom-2 -left-1">
                 <div
-                  class="float-chip float-chip--slow bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full px-3.5 py-1.5 text-[13px] font-bold shadow-lg text-emerald-600"
+                  class="float-chip float-chip--slow bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-full pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold shadow-lg flex items-center gap-2 text-[var(--ui-text-toned)]"
                   style="rotate: -3deg"
                 >
-                  ↑ +12 %
+                  <UIcon name="i-lucide-calendar" class="size-3.5 shrink-0" />
+                  Visite le 14/03
                 </div>
               </div>
             </div>
@@ -177,7 +189,7 @@
               style="--d:.05s"
               class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance"
             >
-              Marre de courir après tes alternants ?
+              Le suivi tient sur trois outils, et aucun ne se parle
             </h2>
           </div>
           <p
@@ -185,8 +197,8 @@
             style="--d:.1s"
             class="lg:col-span-5 text-[17px] leading-[1.6] text-[var(--ui-text-muted)] lg:pb-2"
           >
-            Le suivi par mail, Excel et Teams, ça tient plus.
-            Centralise tes alternants au même endroit, et reprends le contrôle.
+            Mail, Excel, Teams : tant qu'un alternant va bien, ça passe. Le jour où ça
+            coince, personne ne l'a vu venir.
           </p>
         </div>
 
@@ -198,7 +210,7 @@
           >
             <h3 class="flex items-center gap-3 text-lg font-bold mb-8">
               <span class="w-2.5 h-2.5 rounded-full bg-red-500" aria-hidden="true" />
-              Sans <span class="font-extrabold -ml-1">alternup</span>
+              Sans <span class="font-extrabold -ml-1">Alternup</span>
             </h3>
             <ul class="space-y-4">
               <li
@@ -225,7 +237,7 @@
             <div class="dark-panel-glow" aria-hidden="true" />
             <h3 class="relative flex items-center gap-3 text-lg font-bold mb-8 text-white">
               <span class="w-2.5 h-2.5 rounded-full bg-brand-500" aria-hidden="true" />
-              Avec <span class="font-extrabold -ml-1">alternup</span>
+              Avec <span class="font-extrabold -ml-1">Alternup</span>
             </h3>
             <ul class="relative space-y-4">
               <li
@@ -240,7 +252,91 @@
                 </span>
                 <span class="text-[#A8A8A6]">
                   <strong class="text-white font-bold mr-1">{{ item.title }}</strong>
-                  : {{ item.text }}
+                  — {{ item.text }}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============== DEUX ESPACES, UN MÊME DOSSIER ============== -->
+    <section class="py-20 sm:py-28">
+      <div class="max-w-[1200px] mx-auto px-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10 items-end mb-12 sm:mb-16">
+          <div class="lg:col-span-7">
+            <span data-reveal class="eyebrow">Pour qui</span>
+            <h2
+              data-reveal
+              style="--d:.05s"
+              class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance"
+            >
+              Deux espaces, un même dossier
+            </h2>
+          </div>
+          <p
+            data-reveal
+            style="--d:.1s"
+            class="lg:col-span-5 text-[17px] leading-[1.6] text-[var(--ui-text-muted)] lg:pb-2"
+          >
+            Chacun entre par sa porte : le tuteur pilote, l'apprenant avance. Les deux
+            lisent les mêmes visites, les mêmes rapports, les mêmes compétences.
+            Personne ne réclame un export à l'autre.
+          </p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <!-- Colonne tuteur -->
+          <div
+            data-reveal
+            class="rounded-[24px] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-8 sm:p-10"
+          >
+            <h3 class="flex items-center gap-3 text-lg font-bold mb-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-500" aria-hidden="true" />
+              Pour les tuteurs
+            </h3>
+            <p class="text-[15px] leading-[1.5] text-[var(--ui-text-muted)] mb-7">
+              Tout ce qu'un tuteur ouvre dans une semaine normale, sans changer d'outil.
+            </p>
+            <ul class="space-y-3.5">
+              <li
+                v-for="(item, i) in tutorFeatures"
+                :key="i"
+                class="flex items-start gap-3 text-[14.5px] leading-[1.5]"
+              >
+                <span class="mt-[7px] w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />
+                <span class="text-[var(--ui-text-muted)]">
+                  <strong class="text-[var(--ui-text)] font-bold">{{ item.title }}</strong>
+                  — {{ item.text }}
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          <!-- Colonne alternants et stagiaires -->
+          <div
+            data-reveal
+            style="--d:.1s"
+            class="rounded-[24px] border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-8 sm:p-10"
+          >
+            <h3 class="flex items-center gap-3 text-lg font-bold mb-2">
+              <span class="w-2.5 h-2.5 rounded-full bg-brand-500" aria-hidden="true" />
+              Pour les alternants et les stagiaires
+            </h3>
+            <p class="text-[15px] leading-[1.5] text-[var(--ui-text-muted)] mb-7">
+              L'espace de celui qui vit l'alternance, pas seulement de celui qui la suit.
+            </p>
+            <ul class="space-y-3.5">
+              <li
+                v-for="(item, i) in learnerFeatures"
+                :key="i"
+                class="flex items-start gap-3 text-[14.5px] leading-[1.5]"
+              >
+                <span class="mt-[7px] w-1.5 h-1.5 rounded-full bg-brand-500 shrink-0" aria-hidden="true" />
+                <span class="text-[var(--ui-text-muted)]">
+                  <strong class="text-[var(--ui-text)] font-bold">{{ item.title }}</strong>
+                  — {{ item.text }}
                 </span>
               </li>
             </ul>
@@ -260,7 +356,7 @@
               style="--d:.05s"
               class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance"
             >
-              Un suivi clair, pour des alternants sereins
+              Ce que ça change, des deux côtés
             </h2>
           </div>
           <p
@@ -268,20 +364,21 @@
             style="--d:.1s"
             class="lg:col-span-5 text-[17px] leading-[1.6] text-[var(--ui-text-muted)] lg:pb-2"
           >
-            Du tableau de bord à l'évaluation finale, alternup t'accompagne à chaque étape du parcours de tes alternants.
+            Deux cartes pour le tuteur, deux pour l'apprenant. Le même dossier derrière.
           </p>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-          <!-- Carte 1 : Search (large) -->
+          <!-- Carte 1 : Search (large) — tuteur -->
           <article data-reveal class="bento lg:col-span-7">
             <div class="bento-head">
               <span class="bento-index">01</span>
               <h3 class="bento-title">Tous tes alternants en un coup d'œil</h3>
             </div>
             <p class="bento-text">
-              Filtre par promo, entreprise, année ou statut.
-              Tu vois en quelques secondes qui est à jour et qui a besoin de toi.
+              Alternants et stagiaires dans la même vue, en cartes ou en tableau. Un
+              badge de risque sur chaque fiche : tu vois en quelques secondes qui est
+              à jour, et pour qui la visite reste à programmer.
             </p>
             <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
               <div class="w-full max-w-[440px]">
@@ -322,46 +419,45 @@
             </div>
           </article>
 
-          <!-- Carte 2 : Alert -->
+          <!-- Carte 2 : Alertes de décrochage — tuteur -->
           <article data-reveal style="--d:.05s" class="bento lg:col-span-5">
             <div class="bento-head">
               <span class="bento-index">02</span>
-              <h3 class="bento-title">Sois alerté avant que ça dérape</h3>
+              <h3 class="bento-title">Les signaux de décrochage, avant le bilan</h3>
             </div>
             <p class="bento-text">
-              Rapport en retard, visite à programmer, échéance qui approche : alternup t'alerte au bon moment, pas une semaine après.
+              Assiduité en baisse, notes en recul, rapport en retard, compte silencieux
+              depuis trois semaines : Alternup calcule un score par alternant et
+              remonte ceux à voir en priorité, pendant qu'il est encore temps.
             </p>
             <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
-              <div class="w-full max-w-[380px] relative">
-                <!-- Pile de notifications suggérée -->
-                <div class="absolute inset-x-4 -top-3 h-full rounded-2xl bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] opacity-40" aria-hidden="true" />
-                <div class="absolute inset-x-2 -top-1.5 h-full rounded-2xl bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] opacity-70" aria-hidden="true" />
-                <div class="relative bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-4 sm:p-5 flex gap-3.5 items-start shadow-md">
-                  <div class="w-11 h-11 bg-brand-500 rounded-[10px] shrink-0 flex items-center justify-center">
-                    <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-                      <path d="M3 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9l-4 4v-4H5a2 2 0 0 1-2-2V5z" stroke="#1F1F1E" stroke-width="2" stroke-linejoin="round" fill="none" />
-                    </svg>
+              <div class="w-full max-w-[380px] space-y-2.5">
+                <div
+                  v-for="reason in riskReasons"
+                  :key="reason"
+                  class="bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-3.5 flex gap-3 items-start shadow-sm"
+                >
+                  <div class="w-8 h-8 bg-brand-500 rounded-[8px] shrink-0 flex items-center justify-center">
+                    <UIcon name="i-lucide-triangle-alert" class="size-4 text-[#1F1F1E]" />
                   </div>
-                  <div class="flex-1 min-w-0">
-                    <span class="float-right text-xs text-[var(--ui-text-muted)] ml-2">il y a 15 min</span>
-                    <strong class="block text-[14.5px] font-bold mb-1">Votre alternant veut faire un point avec vous</strong>
-                    <p class="text-[var(--ui-text-muted)] text-[13.5px] leading-[1.4] m-0">
-                      Léa Martin a demandé un échange, propose-lui un créneau.
-                    </p>
-                  </div>
+                  <p class="text-[13px] leading-[1.45] text-[var(--ui-text-toned)] m-0">
+                    {{ reason }}
+                  </p>
                 </div>
               </div>
             </div>
           </article>
 
-          <!-- Carte 3 : Network -->
+          <!-- Carte 3 : Network — apprenant -->
           <article data-reveal class="bento lg:col-span-5">
             <div class="bento-head">
               <span class="bento-index">03</span>
-              <h3 class="bento-title">Tes alternants, tous reliés à toi</h3>
+              <h3 class="bento-title">Ton tuteur est à un message</h3>
             </div>
             <p class="bento-text">
-              Visualise toute ta promo en un graphe. Tuteur au centre, alternants autour. Un clic sur un nœud, tu ouvres son dossier complet.
+              Ton tuteur au centre, ton suivi autour. Une messagerie directe, des
+              annonces qui ne se perdent pas dans les mails, un calendrier partagé
+              pour caler le prochain point.
             </p>
             <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
               <div class="w-full h-[260px] relative">
@@ -417,52 +513,49 @@
             </div>
           </article>
 
-          <!-- Carte 4 : Compétences (large) -->
+          <!-- Carte 4 : Mon évolution — apprenant (large) -->
           <article data-reveal style="--d:.05s" class="bento lg:col-span-7">
             <div class="bento-head">
               <span class="bento-index">04</span>
-              <h3 class="bento-title">Une lecture des compétences qui parle</h3>
+              <h3 class="bento-title">Ta progression, en chiffres et pas en ressenti</h3>
             </div>
             <p class="bento-text">
-              alternup compile les évaluations, les visites et les retours de l'entreprise pour te montrer la progression réelle, pas juste une moyenne.
+              Moyenne générale, taux de présence, missions terminées, compétences
+              acquises, rapports validés : ton évolution se lit sur une page, à tout
+              moment du semestre.
             </p>
             <div class="mt-auto flex-1 flex items-center justify-center min-h-[220px] pt-8">
               <div class="w-full max-w-[420px] bg-[var(--ui-bg-elevated)] border border-[var(--ui-border)] rounded-2xl p-5 shadow-md">
-                <div class="flex items-center justify-between mb-4">
-                  <div class="flex items-center gap-2.5 min-w-0">
-                    <span
-                      class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm"
-                      style="background:linear-gradient(135deg,#F1DE02 0%,#FFF9B0 100%);"
-                    >
-                      🎓
-                    </span>
-                    <div class="min-w-0">
-                      <div class="text-[13px] font-bold leading-tight truncate">Léa Martin</div>
-                      <div class="text-[11px] text-[var(--ui-text-muted)] leading-tight">Compétences · S2</div>
-                    </div>
-                  </div>
-                  <span class="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full whitespace-nowrap">
-                    ↑ +12 %
+                <div class="flex items-center gap-2.5 min-w-0 mb-4">
+                  <span
+                    class="w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-sm"
+                    style="background:linear-gradient(135deg,#F1DE02 0%,#FFF9B0 100%);"
+                  >
+                    🎓
                   </span>
+                  <div class="min-w-0">
+                    <div class="text-[13px] font-bold leading-tight truncate">Léa Martin</div>
+                    <div class="text-[11px] text-[var(--ui-text-muted)] leading-tight">Mon évolution · S2</div>
+                  </div>
                 </div>
 
                 <div
-                  v-for="skill in skills"
-                  :key="skill.label"
+                  v-for="metric in evolutionMetrics"
+                  :key="metric.label"
                   class="mb-3 last:mb-0"
                 >
                   <div class="flex items-center justify-between mb-1">
                     <span class="text-[12.5px] font-medium text-[var(--ui-text-toned)]">
-                      {{ skill.label }}
+                      {{ metric.label }}
                     </span>
                     <span class="text-[11px] font-semibold text-[var(--ui-text-muted)]">
-                      {{ skill.value }} %
+                      {{ metric.value }} %
                     </span>
                   </div>
                   <div class="h-1.5 rounded-full bg-[var(--ui-bg-muted)] overflow-hidden">
                     <div
                       class="h-full bg-brand-500 rounded-full"
-                      :style="{ width: skill.value + '%' }"
+                      :style="{ width: metric.value + '%' }"
                     />
                   </div>
                 </div>
@@ -473,8 +566,61 @@
       </div>
     </section>
 
+    <!-- ============== FOCUS VEILLE D'OFFRES ============== -->
+    <section class="pb-4 sm:pb-8">
+      <div class="max-w-[1200px] mx-auto px-6">
+        <div
+          data-reveal
+          class="dark-panel rounded-[32px] p-8 sm:p-14 relative overflow-hidden"
+        >
+          <div class="dark-panel-glow" aria-hidden="true" />
+          <div class="relative grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+            <div class="lg:col-span-6">
+              <span class="inline-flex items-center gap-2.5 text-[12px] font-bold tracking-[0.18em] uppercase text-[#D8D8D5] mb-5">
+                <span class="w-[22px] h-1 rounded-full bg-brand-500" aria-hidden="true" />
+                Nouveau · Espace alternant
+              </span>
+              <h2 class="text-3xl sm:text-4xl lg:text-[44px] leading-[1.08] font-extrabold tracking-[-0.03em] mb-5 text-white text-balance">
+                Les offres d'alternance arrivent pendant que tu dors
+              </h2>
+              <p class="text-[16px] leading-[1.6] text-[#A8A8A6] mb-6">
+                Chaque nuit, Alternup récupère les offres d'alternance publiées sur La
+                Bonne Alternance et les range dans ton espace. Le matin, tu ouvres la
+                page « Offres » : c'est déjà trié, cherchable, filtrable. Tu marques
+                celles où tu as postulé, et tu vois où tu en es.
+              </p>
+              <p class="text-[13px] leading-[1.5] text-[#8F8F8C]">
+                Alternup n'aspire aucun profil ni aucune donnée personnelle : uniquement
+                des offres publiées.
+              </p>
+            </div>
+
+            <div class="lg:col-span-6">
+              <ul class="space-y-4">
+                <li
+                  v-for="point in offresPoints"
+                  :key="point.title"
+                  class="flex items-start gap-3.5 text-[15.5px] leading-[1.5]"
+                >
+                  <span class="rounded-full bg-brand-500 text-black shrink-0 flex items-center justify-center mt-0.5" style="width:22px;height:22px;">
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path d="M2 5L4 7L8 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                  </span>
+                  <span class="text-[#A8A8A6]">
+                    <strong class="text-white font-bold mr-1">{{ point.title }}</strong>
+                    — {{ point.text }}
+                  </span>
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ============== CTA ============== -->
-    <section class="pb-20 sm:pb-28 pt-4">
+    <section class="pb-20 sm:pb-28 pt-16 sm:pt-20">
       <div class="max-w-[1200px] mx-auto px-6">
         <div
           data-reveal
@@ -483,13 +629,19 @@
           <div class="dark-panel-glow dark-panel-glow--center" aria-hidden="true" />
           <div class="relative max-w-[720px] mx-auto">
             <h2 class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.05] font-extrabold tracking-[-0.03em] mb-5 text-white text-balance">
-              Prêt à reprendre le <span class="hl">contrôle</span> ?
+              Un compte, <span class="hl">deux espaces</span>, zéro <span class="strike">Excel
+                <svg class="strike-svg" viewBox="0 0 140 28" preserveAspectRatio="none" aria-hidden="true">
+                  <path d="M4 17 Q 40 9, 72 14 T 136 11" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" />
+                </svg>
+              </span>
             </h2>
             <p class="text-[17px] text-[#A8A8A6] mb-9">
-              Crée ton compte gratuit et commence à suivre tes alternants en moins de 5 minutes.
+              Compte gratuit, en moins de 5 minutes. Tuteur, tu invites tes alternants
+              dans la foulée. Alternant ou stagiaire, tu accèdes tout de suite à ton
+              espace et aux offres du jour.
             </p>
             <UButton
-              :to="loggedIn ? '/alternants' : '/register'"
+              :to="ctaTarget"
               color="primary"
               size="xl"
               class="rounded-full font-semibold px-8 shadow-[0_8px_24px_rgba(241,222,2,0.25)]"
@@ -504,12 +656,21 @@
 </template>
 
 <script setup lang="ts">
+import { landingPageFor } from '~/shared/utils/auth-redirect'
+
 definePageMeta({ auth: false })
 
-const { loggedIn } = useUserSession()
+const { loggedIn, user } = useUserSession()
+
+// CTA principal : un visiteur connecté rejoint le landing de son espace, un
+// visiteur anonyme est invité à créer un compte.
+const ctaTarget = computed<string>(() =>
+  loggedIn.value && user.value ? landingPageFor(user.value.role) : '/register'
+)
 
 // Pastilles décoratives du hero : même langage visuel que les badges « À jour » et
-// « ↑ +12 % » de la carte (pilule élevée, arrondie, ombre portée, texte court).
+// « Visite le 14/03 » de la carte (pilule élevée, arrondie, ombre portée, texte
+// court). Chaque pastille cite un module réel de l'application.
 // Tailles et rotations légèrement variables pour un effet naturel ; ancrées vers les
 // bords et réservées aux écrans larges pour ne jamais gêner le titre ni les CTA.
 type HeroPastille = {
@@ -536,14 +697,6 @@ const pastilles: HeroPastille[] = [
     show: 'hidden lg:block'
   },
   {
-    label: 'Livrables',
-    dot: true,
-    rot: 4,
-    style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
-    pos: { bottom: '26%', left: '7%' },
-    show: 'hidden xl:block'
-  },
-  {
     label: 'Rapports',
     icon: 'i-lucide-file-text',
     rot: 6,
@@ -552,19 +705,20 @@ const pastilles: HeroPastille[] = [
     show: 'hidden lg:block'
   },
   {
-    label: 'Alertes',
-    dot: true,
+    label: 'Présences',
+    icon: 'i-lucide-clipboard-check',
     rot: -4,
     style: 'pl-2.5 pr-3 py-1 text-[12.5px] font-semibold text-[var(--ui-text-toned)]',
     pos: { bottom: '21%', right: '20%' },
     show: 'hidden lg:block'
   },
   {
-    label: '↑ +12 %',
-    rot: -6,
-    style: 'px-3.5 py-1.5 text-[13px] font-bold text-emerald-600',
-    pos: { top: '48%', left: '6.5%' },
-    show: 'hidden xl:block'
+    label: 'Bulletins',
+    icon: 'i-lucide-file-check',
+    rot: 4,
+    style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { bottom: '26%', left: '7%' },
+    show: 'hidden lg:block'
   },
   {
     label: 'Compétences',
@@ -573,51 +727,203 @@ const pastilles: HeroPastille[] = [
     style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
     pos: { top: '42%', right: '5%' },
     show: 'hidden xl:block'
+  },
+  {
+    label: 'Offres',
+    icon: 'i-lucide-search',
+    rot: -6,
+    style: 'pl-2.5 pr-3.5 py-1.5 text-[13px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { top: '48%', left: '6.5%' },
+    show: 'hidden xl:block'
+  },
+  {
+    label: 'Messages',
+    icon: 'i-lucide-message-circle',
+    rot: 5,
+    style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { top: '68%', right: '9%' },
+    show: 'hidden xl:block'
+  },
+  {
+    label: 'Calendrier',
+    icon: 'i-lucide-calendar',
+    rot: -3,
+    style: 'pl-2.5 pr-3 py-1 text-[12px] font-semibold text-[var(--ui-text-toned)]',
+    pos: { top: '72%', left: '11%' },
+    show: 'hidden xl:block'
   }
 ]
 
 const pastillesLayer = ref<HTMLElement | null>(null)
 
 const problems = [
-  "Un Excel par promo, qui n'est jamais à jour",
-  "Des rapports d'étape oubliés ou rendus en retard",
-  'Des visites tuteur qui tombent à la dernière minute',
-  'Aucune visibilité sur les alternants en difficulté',
-  'Relancer 10 fois par mail pour récupérer une signature',
-  "Échanger avec le maître d'apprentissage sur 3 canaux différents",
-  "Pas d'historique : on oublie ce qui s'est dit à la visite précédente",
-  'Évaluer des compétences sans grille structurée',
-  "Zéro vue d'ensemble en fin de semestre"
+  "Un fichier de suivi qui n'est jamais à jour au bon moment",
+  "Des rapports d'étape rendus en retard, ou pas rendus",
+  'Des visites calées la veille, et aucune trace le lendemain',
+  "Aucun signal quand un alternant commence à décrocher : tu l'apprends au bilan",
+  'Des relances par mail pour obtenir une signature',
+  'Des échanges éclatés entre mail, Teams et SMS',
+  'Des présences notées sur une feuille qui se perd',
+  'Des compétences évaluées de mémoire, en fin de semestre',
+  'Et côté apprenant : chercher son alternance seul, sur dix sites, sans savoir où il a déjà postulé'
 ]
 
 const benefitsList = [
   {
-    title: 'Tous tes alternants dans un seul tableau de bord',
-    text: "fini les Excel éclatés. Vue d'ensemble, filtres par promo, par entreprise, par statut."
+    title: 'Un dossier par apprenant',
+    text: 'visites, rapports, bulletins, compétences, présences et missions au même endroit.'
   },
   {
-    title: 'Alertes intelligentes',
-    text: 'rapports en retard, visite à programmer, livrable manquant. Tu es prévenu avant que ça dérape.'
+    title: 'Des signaux avant le bilan',
+    text: "un score de décrochage calculé sur l'assiduité des 30 derniers jours, les notes récentes comparées à la période précédente, les rapports en retard et la dernière activité."
   },
   {
-    title: 'Visites tuteur planifiées et tracées',
-    text: 'un compte-rendu structuré par visite, un historique consultable, des signatures électroniques.'
+    title: 'Des visites qui laissent une trace',
+    text: 'planifiées dans le calendrier, compte rendu conservé, historique complet par alternant.'
   },
   {
-    title: 'Suivi des compétences en continu',
-    text: "grilles personnalisables, évaluations partagées avec l'entreprise, progression visible dans le temps."
+    title: 'Rapports et bulletins signés en ligne',
+    text: 'brouillon, soumission, revue du tuteur, signature électronique. Plus de pièce jointe en version 3 finale bis.'
   },
   {
-    title: "Un point unique pour l'alternant, le tuteur et l'entreprise",
-    text: 'chacun voit ce qui le concerne. Tout est partagé, rien ne se perd.'
+    title: 'Un seul canal',
+    text: 'messagerie, annonces et calendrier partagés entre le tuteur et son apprenant.'
+  },
+  {
+    title: 'Côté apprenant',
+    text: "sa progression chiffrée, et des offres d'alternance mises à jour chaque nuit."
   }
 ]
 
-const skills = [
-  { label: 'Conception logicielle', value: 85 },
-  { label: 'Communication client', value: 62 },
-  { label: 'Tests automatisés', value: 74 },
-  { label: 'Gestion de projet', value: 48 }
+const tutorFeatures = [
+  {
+    title: 'Tableau de bord des alternants',
+    text: 'alternants et stagiaires dans la même vue, en cartes ou en tableau, avec le niveau de risque affiché sur chaque fiche.'
+  },
+  {
+    title: 'Alertes de décrochage',
+    text: 'assiduité, notes récentes, rapports en retard : le score remonte qui appeler cette semaine.'
+  },
+  {
+    title: "Livret de l'alternant",
+    text: "le dossier complet d'un apprenant, sur une page, à ouvrir avant un entretien."
+  },
+  {
+    title: 'Visites tuteur',
+    text: 'planification, compte rendu, historique par alternant.'
+  },
+  {
+    title: "Rapports d'étape",
+    text: 'relecture, retours, validation et signature.'
+  },
+  {
+    title: 'Bulletins',
+    text: 'périodes de bulletin, notes, signature en ligne.'
+  },
+  {
+    title: 'Compétences',
+    text: 'tes propres domaines et grilles, évalués au fil du parcours.'
+  },
+  {
+    title: 'Présences',
+    text: 'saisie, corrections tracées, vue par période.'
+  },
+  {
+    title: 'Projets et missions',
+    text: 'tu crées, tu affectes, tu suis les avancées.'
+  },
+  {
+    title: 'Annonces',
+    text: 'un message à tes alternants, épinglé si besoin, avec le suivi des lectures.'
+  },
+  {
+    title: 'Cours',
+    text: 'les sessions de formation posées au calendrier.'
+  },
+  {
+    title: 'Calendrier et messagerie',
+    text: 'les créneaux et les échanges au même endroit que le dossier.'
+  }
+]
+
+const learnerFeatures = [
+  {
+    title: "Veille d'offres d'alternance",
+    text: 'les offres publiées, récupérées chaque nuit, avec recherche, filtres et suivi de tes candidatures.'
+  },
+  {
+    title: 'Mon évolution',
+    text: 'moyenne générale, taux de présence, missions, compétences acquises, rapports validés.'
+  },
+  {
+    title: 'Mon tuteur',
+    text: 'qui te suit, depuis quand, et comment le joindre, en une page.'
+  },
+  {
+    title: "Mes rapports d'étape",
+    text: 'rédigés en ligne, brouillon sauvegardé, soumis quand tu es prêt.'
+  },
+  {
+    title: 'Mes bulletins',
+    text: 'consultés et signés depuis ton espace.'
+  },
+  {
+    title: 'Mes missions',
+    text: 'ce que tu as à faire, où tu en es, ce que tu en retiens.'
+  },
+  {
+    title: 'Mes compétences',
+    text: 'la grille de ton tuteur, et ta progression dessus.'
+  },
+  {
+    title: 'Mes visites',
+    text: 'les points programmés avec ton tuteur, et ceux déjà passés.'
+  },
+  {
+    title: 'Cours et notes personnelles',
+    text: 'les sessions de ta formation, avec tes notes rattachées à la bonne séance.'
+  },
+  {
+    title: 'Présences',
+    text: 'ton assiduité, sans avoir à la demander.'
+  },
+  {
+    title: 'Annonces',
+    text: 'ce que ton tuteur publie, hors de ta boîte mail.'
+  },
+  {
+    title: 'Calendrier et messagerie',
+    text: 'tes créneaux, et un fil direct avec ton tuteur.'
+  }
+]
+
+// Libellés repris mot pour mot de shared/utils/risk.ts (raisons du score de risque).
+const riskReasons = [
+  '3 absences non excusées sur les 30 derniers jours (12 % des sessions).',
+  "Dernier rapport d'étape soumis il y a 41 jours.",
+  'Notes en baisse : 11,5/20 sur 30 jours contre 14,2/20 sur la période précédente.'
+]
+
+const evolutionMetrics = [
+  { label: 'Compétences acquises', value: 78 },
+  { label: 'Assiduité', value: 91 },
+  { label: 'Missions terminées', value: 60 },
+  { label: 'Rapports validés', value: 83 }
+]
+
+const offresPoints = [
+  {
+    title: 'Actualisé chaque nuit',
+    text: "l'ingestion tourne toute seule, personne n'a à cliquer."
+  },
+  {
+    title: 'Recherche et filtres',
+    text: 'par intitulé ou entreprise, par lieu, par type de contrat. Les offres expirées sont écartées par défaut.'
+  },
+  {
+    title: 'Tes candidatures suivies',
+    text: 'trois statuts par offre : vue, candidature envoyée, sans suite. Plus de tableur à côté.'
+  }
 ]
 
 // Apparition au scroll : ajoute .is-visible quand l'élément entre dans le viewport.
@@ -692,7 +998,7 @@ onMounted(async () => {
     makeDraggable(el)
   })
 
-  // Badges de la carte étudiant (« À jour », « ↑ +12 % ») : leur flottement
+  // Badges de la carte étudiant (« À jour », « Visite le 14/03 ») : leur flottement
   // reste en CSS (propriété `translate`), le drag s'y compose sans conflit.
   document
     .querySelectorAll<HTMLElement>('.float-chip-drag')
@@ -814,7 +1120,7 @@ onUnmounted(() => {
   will-change: transform;
 }
 /* L'apparence (fond élevé, bordure, rounded-full, ombre, tailles) est portée par les
-   utilitaires Tailwind du template, calqués sur les badges « À jour » / « ↑ +12 % ». */
+   utilitaires Tailwind du template, calqués sur les badges « À jour » / « Visite le 14/03 ». */
 .pastille-inner {
   pointer-events: auto;
   cursor: grab;
@@ -845,7 +1151,7 @@ onUnmounted(() => {
   background: #F1DE02;
 }
 
-/* ─── Panneau sombre (Avec alternup + CTA) ─── */
+/* ─── Panneau sombre (Avec Alternup + focus offres + CTA) ─── */
 .dark-panel {
   background: #1F1F1E;
   border: 1px solid #1F1F1E;

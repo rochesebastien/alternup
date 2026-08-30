@@ -33,6 +33,14 @@ RUN npx prisma generate
 
 COPY --from=builder /app/.output ./.output
 
+# Script d'ingestion des offres (ADR-0003) : exécuté par le Schedule Job Dokploy
+# via `docker exec <conteneur> node scripts/ingest-offres.ts` (type stripping
+# natif de Node 22). Ses imports relatifs exigent, en plus de scripts/, le code
+# partagé pur (shared/) et le hash de dédup (server/utils/offres-dedup.ts).
+COPY scripts ./scripts
+COPY shared ./shared
+COPY server/utils/offres-dedup.ts ./server/utils/offres-dedup.ts
+
 RUN chown -R alternup:alternup /app
 
 USER alternup

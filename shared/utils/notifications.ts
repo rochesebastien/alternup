@@ -211,7 +211,11 @@ export interface TutorReminderSource {
 }
 
 /** Rappels de visites imminentes, communs au tuteur et à l'étudiant. */
-function visitReminders(visits: VisitReminderSource[], now: Date): ReminderItem[] {
+function visitReminders(
+  visits: VisitReminderSource[],
+  now: Date,
+  space: '/tuteur' | '/alternant'
+): ReminderItem[] {
   const items: ReminderItem[] = []
   for (const visit of visits) {
     const scheduledAt = toDate(visit.scheduledAt)
@@ -221,7 +225,7 @@ function visitReminders(visits: VisitReminderSource[], now: Date): ReminderItem[
       type: 'relance_visite',
       title: 'Visite à venir',
       body: `Visite avec ${visit.personName} ${relativeTimeFr(scheduledAt, now)}.`,
-      link: '/visites',
+      link: `${space}/visites`,
       createdAt: now.toISOString(),
       reminder: true
     })
@@ -250,13 +254,13 @@ export function learnerReminders(source: LearnerReminderSource, now: Date): Remi
         lastSubmittedAt === null
           ? "Vous n'avez encore soumis aucun rapport d'étape."
           : `Votre dernier rapport d'étape a été soumis ${relativeTimeFr(lastSubmittedAt, now)}.`,
-      link: '/rapports',
+      link: '/alternant/rapports',
       createdAt: now.toISOString(),
       reminder: true
     })
   }
 
-  return [...items, ...visitReminders(source.visits, now)]
+  return [...items, ...visitReminders(source.visits, now, '/alternant')]
 }
 
 /** Relances d'un tuteur : rapports en attente de relecture, visite imminente. */
@@ -279,13 +283,13 @@ export function tutorReminders(source: TutorReminderSource, now: Date): Reminder
       body: `Soumis depuis plus de ${REVIEW_PENDING_AFTER_DAYS} jours : ${nameList(
         overdue.map((review) => review.studentName)
       )}.`,
-      link: '/rapports',
+      link: '/tuteur/rapports',
       createdAt: now.toISOString(),
       reminder: true
     })
   }
 
-  return [...items, ...visitReminders(source.visits, now)]
+  return [...items, ...visitReminders(source.visits, now, '/tuteur')]
 }
 
 // ─────────────────────────── Schémas d'entrée ───────────────────────────

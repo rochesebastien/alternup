@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Role } from '~/shared/utils/enums'
+import { spacePrefixFor } from '~/shared/utils/auth-redirect'
 
 /**
  * « Dock apprenant » : pastille flottante en bas à droite de l'écran (desktop),
@@ -18,16 +19,23 @@ const route = useRoute()
 const { user } = useUserSession()
 const { isTutor, learners, focus, setFocus } = useLearnerFocus()
 
+// Les liens de Suivi vivent dans l'espace du rôle connecté (/tuteur ou
+// /alternant) : le dock est partagé par les deux layouts, le préfixe vient du
+// rôle de session.
+const space = computed<string>(() =>
+  user.value ? spacePrefixFor(user.value.role) : '/alternant'
+)
+
 // Les sept modules de Suivi, dans l'ordre de la maquette.
-const SUIVI_ITEMS = [
-  { label: 'Présences', icon: 'i-lucide-clipboard-check', to: '/presences' },
-  { label: 'Rapports', icon: 'i-lucide-file-text', to: '/rapports' },
-  { label: 'Bulletins', icon: 'i-lucide-graduation-cap', to: '/bulletins' },
-  { label: 'Compétences', icon: 'i-lucide-target', to: '/competences' },
-  { label: 'Visites', icon: 'i-lucide-map-pin', to: '/visites' },
-  { label: 'Annonces', icon: 'i-lucide-megaphone', to: '/annonces' },
-  { label: 'Messages', icon: 'i-lucide-mail', to: '/messages' }
-] as const
+const SUIVI_ITEMS = computed(() => [
+  { label: 'Présences', icon: 'i-lucide-clipboard-check', to: `${space.value}/presences` },
+  { label: 'Rapports', icon: 'i-lucide-file-text', to: `${space.value}/rapports` },
+  { label: 'Bulletins', icon: 'i-lucide-graduation-cap', to: `${space.value}/bulletins` },
+  { label: 'Compétences', icon: 'i-lucide-target', to: `${space.value}/competences` },
+  { label: 'Visites', icon: 'i-lucide-map-pin', to: `${space.value}/visites` },
+  { label: 'Annonces', icon: 'i-lucide-megaphone', to: `${space.value}/annonces` },
+  { label: 'Messages', icon: 'i-lucide-mail', to: `${space.value}/messages` }
+])
 
 const ROLE_LABELS: Record<string, string> = {
   [Role.Alternant]: 'Alternant',
