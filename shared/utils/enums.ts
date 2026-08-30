@@ -66,3 +66,34 @@ export const SignatureDocumentType = {
   rapport: 'rapport'
 } as const
 export type SignatureDocumentType = (typeof SignatureDocumentType)[keyof typeof SignatureDocumentType]
+
+export const OffreSourceType = {
+  la_bonne_alternance: 'la_bonne_alternance'
+} as const
+export type OffreSourceType = (typeof OffreSourceType)[keyof typeof OffreSourceType]
+
+export const OffreContratType = {
+  apprentissage: 'apprentissage',
+  professionnalisation: 'professionnalisation'
+} as const
+export type OffreContratType = (typeof OffreContratType)[keyof typeof OffreContratType]
+
+export const OffreStatut = {
+  active: 'active',
+  expiree: 'expiree'
+} as const
+export type OffreStatut = (typeof OffreStatut)[keyof typeof OffreStatut]
+
+export const CandidatureStatut = {
+  vue: 'vue',
+  candidate: 'candidate',
+  rejetee: 'rejetee'
+} as const
+export type CandidatureStatut = (typeof CandidatureStatut)[keyof typeof CandidatureStatut]
+
+export const ScrapeRunStatut = {
+  en_cours: 'en_cours',
+  succes: 'succes',
+  erreur: 'erreur'
+} as const
+export type ScrapeRunStatut = (typeof ScrapeRunStatut)[keyof typeof ScrapeRunStatut]

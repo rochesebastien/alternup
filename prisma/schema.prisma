@@ -82,6 +82,9 @@ model User {
   // Relations: signatures de documents (bulletins, rapports)
   documentSignatures DocumentSignature[] @relation("UserSignatures")
 
+  // Relations: veille d'offres (statuts de candidature de l'apprenant)
+  offreStatuts OffreUserStatut[] @relation("UserOffreStatuts")
+
   @@index([role])
   @@map("users")
 }
@@ -591,4 +594,134 @@ model DocumentSignature {
   @@unique([documentType, documentId, userId])
   @@index([documentType, documentId])
   @@map("document_signatures")
+}
+
+// ─────────────────────── Veille d'offres ───────────────────────
+// Modèle de données défini par docs/adr/0002-modele-donnees-veille.md.
+
+enum OffreSourceType {
+  la_bonne_alternance
+  // futur : france_travail, firecrawl — ajout par simple migration d'enum
+}
+
+enum OffreContratType {
+  apprentissage
+  professionnalisation
+  // v1 = alternance seule ; les stages sont explicitement hors périmètre (gate phase 0)
+}
+
+enum OffreStatut {
+  active
+  expiree
+}
+
+/** Statut de suivi d'une offre par un apprenant (jamais supprimé, upsert). */
+enum CandidatureStatut {
+  vue
+  candidate
+  rejetee
+}
+
+enum ScrapeRunStatut {
+  en_cours
+  succes
+  erreur
+}
+
+// J. Offre dédupliquée. Les champs non promus en colonnes (salaire, compétences,
+// geopoint…) restent dans `raw` (règle « pas de sur-modélisation », ADR-0002).
+// Jamais de suppression physique : une offre disparue passe `statut: expiree`
+// (soft-delete) pour préserver l'historique de candidature des apprenants.
+model Offre {
+  id            String          @id @default(uuid()) @db.Uuid
+  // apply.url LBA : lien de candidature/origine, clé de dédup primaire
+  url           String          @unique
+  // sha256 de (titre + entreprise + lieu) normalisés (minuscules, accents/espaces réduits)
+  dedupHash     String          @unique @map("dedup_hash")
+  // première source ayant vu l'offre (les rattachements ultérieurs vivent dans OffreSource)
+  sourceOrigine OffreSourceType @map("source_origine")
+
+  // Champs normalisés extraits du payload (mapping export LBA entre parenthèses)
+  titre           String // offer.title
+  entreprise      String? // workplace.name ?? workplace.legal_name
+  lieu            String? // workplace.location.address
+  typeContrat     OffreContratType? @map("type_contrat") // contract.type[0]
+  niveauDiplome   String?           @map("niveau_diplome") // offer.target_diploma.level
+  romeCodes       String[]          @map("rome_codes") // offer.rome_codes
+  datePublication DateTime?         @map("date_publication") @db.Timestamptz // offer.publication.creation
+  dateExpiration  DateTime?         @map("date_expiration") @db.Timestamptz // offer.publication.expiration
+
+  // Payload source complet, non retraité (audit, réextraction future sans re-fetch)
+  raw Json
+
+  statut    OffreStatut @default(active)
+  firstSeen DateTime    @default(now()) @map("first_seen") @db.Timestamptz
+  lastSeen  DateTime    @default(now()) @map("last_seen") @db.Timestamptz
+
+  sources     OffreSource[]
+  userStatuts OffreUserStatut[]
+
+  @@index([statut, datePublication])
+  @@index([typeContrat])
+  @@index([firstSeen])
+  @@map("offres")
+}
+
+// Rattachement n-n offre ↔ canal d'ingestion : une même offre peut être vue
+// par plusieurs sources (demain : LBA et FT direct). Une ligne par couple
+// (offre, source), portant l'identité de l'offre chez le partenaire d'origine.
+model OffreSource {
+  offreId      String          @map("offre_id") @db.Uuid
+  source       OffreSourceType
+  // Attribution LBA : identifier.partner_label (ex. « France Travail », « Hellowork »)
+  partnerLabel String?         @map("partner_label")
+  // identifier.partner_job_id (pour une offre FT relayée par LBA : l'id France Travail)
+  partnerJobId String?         @map("partner_job_id")
+  firstSeen    DateTime        @default(now()) @map("first_seen") @db.Timestamptz
+  lastSeen     DateTime        @default(now()) @map("last_seen") @db.Timestamptz
+
+  offre Offre @relation(fields: [offreId], references: [id], onDelete: Cascade)
+
+  // L'index (source, partnerLabel, partnerJobId) sert la dédup croisée le jour
+  // où une ingestion FT directe est ajoutée (clé robuste, rapport D).
+  @@id([offreId, source])
+  @@index([source, partnerLabel, partnerJobId])
+  @@map("offre_sources")
+}
+
+// Suivi d'une offre par un apprenant. PK composite sur le modèle de
+// TutorStudent / AnnouncementRecipient ; reposer un statut = upsert.
+model OffreUserStatut {
+  userId    String            @map("user_id") @db.Uuid
+  offreId   String            @map("offre_id") @db.Uuid
+  statut    CandidatureStatut
+  createdAt DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+
+  user  User  @relation("UserOffreStatuts", fields: [userId], references: [id], onDelete: Cascade)
+  offre Offre @relation(fields: [offreId], references: [id], onDelete: Cascade)
+
+  @@id([userId, offreId])
+  @@index([userId, statut])
+  @@map("offre_user_statuts")
+}
+
+// Journal d'exécution de l'ingestion (une ligne par run et par source).
+// La durée se dérive de `finishedAt - startedAt` (pas de colonne redondante).
+model ScrapeRun {
+  id             String          @id @default(uuid()) @db.Uuid
+  source         OffreSourceType
+  statut         ScrapeRunStatut @default(en_cours)
+  startedAt      DateTime        @default(now()) @map("started_at") @db.Timestamptz
+  finishedAt     DateTime?       @map("finished_at") @db.Timestamptz
+  pagesVues      Int             @default(0) @map("pages_vues") // pages/fichiers traités
+  offresVues     Int             @default(0) @map("offres_vues")
+  offresCreees   Int             @default(0) @map("offres_creees")
+  offresMaj      Int             @default(0) @map("offres_maj")
+  offresExpirees Int             @default(0) @map("offres_expirees")
+  creditsEstimes Int             @default(0) @map("credits_estimes") // 0 pour LBA ; Firecrawl plus tard
+  erreurs        Json? // liste { message, contexte } sérialisée par le script
+
+  @@index([source, startedAt])
+  @@map("scrape_runs")
 }
