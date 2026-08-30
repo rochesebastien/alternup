@@ -21,6 +21,14 @@
       <NuxtLink to="/alternant/tuteur" :class="navLinkClass('/alternant/tuteur')">
         Mon tuteur
       </NuxtLink>
+      <NuxtLink
+        to="/alternant/offres"
+        :class="navLinkClass('/alternant/offres')"
+        class="inline-flex items-center gap-1.5"
+      >
+        <UIcon name="i-lucide-briefcase" class="size-4" aria-hidden="true" />
+        Offres
+      </NuxtLink>
       <!-- Les pages de Suivi vivent dans le dock apprenant (coin bas-droit). -->
     </template>
 
@@ -31,6 +39,15 @@
       <NuxtLink to="/alternant/calendar" :class="linkClass" @click="close">Calendrier</NuxtLink>
       <NuxtLink to="/alternant/evolution" :class="linkClass" @click="close">Mon évolution</NuxtLink>
       <NuxtLink to="/alternant/tuteur" :class="linkClass" @click="close">Mon tuteur</NuxtLink>
+      <NuxtLink
+        to="/alternant/offres"
+        :class="linkClass"
+        class="flex items-center gap-2"
+        @click="close"
+      >
+        <UIcon name="i-lucide-briefcase" class="size-4" aria-hidden="true" />
+        Offres
+      </NuxtLink>
       <NuxtLink to="/alternant/presences" :class="linkClass" @click="close">Présences</NuxtLink>
       <NuxtLink to="/alternant/rapports" :class="linkClass" @click="close">Rapports</NuxtLink>
       <NuxtLink to="/alternant/annonces" :class="linkClass" @click="close">Annonces</NuxtLink>

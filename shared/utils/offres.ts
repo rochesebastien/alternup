@@ -119,6 +119,61 @@ export const offreListQuerySchema = z.object({
   inclureExpirees: z.union([z.boolean(), z.stringbool()]).default(false)
 })
 
+// ─────────────────────────── Filtres de la page (ADR-0004) ───────────────────────────
+
+/**
+ * État des filtres de la page offres (refs côté page). Les champs texte et les
+ * selects utilisent `''` pour « pas de filtre » (valeur vide d'un `USelect`).
+ */
+export interface OffreListFilters {
+  page: number
+  q: string
+  lieu: string
+  typeContrat: OffreContratType | ''
+  statut: CandidatureStatut | ''
+  inclureExpirees: boolean
+}
+
+/**
+ * Query minimale (sans valeurs par défaut ni champs vides) dérivée des filtres
+ * de la page : sert à la fois d'URL partageable (`router.replace`) et de query
+ * de `GET /api/offres` (le schéma serveur ré-applique les défauts omis).
+ */
+export function offreListQueryFrom(filters: OffreListFilters): Record<string, string> {
+  const query: Record<string, string> = {}
+  if (filters.page > 1) query.page = String(filters.page)
+  const q = filters.q.trim()
+  if (q) query.q = q
+  const lieu = filters.lieu.trim()
+  if (lieu) query.lieu = lieu
+  if (filters.typeContrat) query.typeContrat = filters.typeContrat
+  if (filters.statut) query.statut = filters.statut
+  if (filters.inclureExpirees) query.inclureExpirees = 'true'
+  return query
+}
+
+/**
+ * Relit les filtres depuis une query d'URL (arrivée directe sur un lien
+ * partagé). Inverse de `offreListQueryFrom` : toute valeur absente ou invalide
+ * retombe sur le défaut — jamais d'erreur pour une URL bricolée.
+ */
+export function offreListFiltersFrom(
+  query: Record<string, unknown>
+): OffreListFilters {
+  const str = (v: unknown): string => (typeof v === 'string' ? v : '')
+  const page = Number.parseInt(str(query.page), 10)
+  const typeContrat = str(query.typeContrat)
+  const statut = str(query.statut)
+  return {
+    page: Number.isInteger(page) && page > 1 ? page : 1,
+    q: str(query.q),
+    lieu: str(query.lieu),
+    typeContrat: typeContrat in OFFRE_CONTRAT_META ? (typeContrat as OffreContratType) : '',
+    statut: statut in CANDIDATURE_STATUT_META ? (statut as CandidatureStatut) : '',
+    inclureExpirees: str(query.inclureExpirees) === 'true'
+  }
+}
+
 /** Corps de `POST /api/offres/[id]/statut` (upsert sur la PK `[userId, offreId]`). */
 export const offreStatutInputSchema = z.object({
   statut: z.enum(CandidatureStatut, { error: 'Statut de candidature invalide.' })

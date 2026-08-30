@@ -8,8 +8,11 @@ import {
   OFFRE_PAGE_SIZE,
   estNouvelle,
   normalizeForDedup,
+  offreListFiltersFrom,
+  offreListQueryFrom,
   offreListQuerySchema,
-  offreStatutInputSchema
+  offreStatutInputSchema,
+  type OffreListFilters
 } from '~/shared/utils/offres'
 
 const NOW = new Date('2026-08-30T12:00:00Z')
@@ -178,6 +181,93 @@ describe('offreListQuerySchema', () => {
     expect(off.success && off.data.inclureExpirees).toBe(false)
     const bool = offreListQuerySchema.safeParse({ inclureExpirees: true })
     expect(bool.success && bool.data.inclureExpirees).toBe(true)
+  })
+})
+
+const FILTRES_DEFAUT: OffreListFilters = {
+  page: 1,
+  q: '',
+  lieu: '',
+  typeContrat: '',
+  statut: '',
+  inclureExpirees: false
+}
+
+describe('offreListQueryFrom', () => {
+  it('renvoie une query vide pour les filtres par défaut', () => {
+    expect(offreListQueryFrom(FILTRES_DEFAUT)).toEqual({})
+  })
+
+  it('omet page=1 mais sérialise les pages suivantes', () => {
+    expect(offreListQueryFrom({ ...FILTRES_DEFAUT, page: 3 })).toEqual({ page: '3' })
+  })
+
+  it('trim les champs texte et omet ceux devenus vides', () => {
+    expect(offreListQueryFrom({ ...FILTRES_DEFAUT, q: '  dev  ', lieu: '   ' })).toEqual({
+      q: 'dev'
+    })
+  })
+
+  it('sérialise tous les filtres actifs', () => {
+    expect(
+      offreListQueryFrom({
+        page: 2,
+        q: 'dev',
+        lieu: 'Lyon',
+        typeContrat: 'apprentissage',
+        statut: 'candidate',
+        inclureExpirees: true
+      })
+    ).toEqual({
+      page: '2',
+      q: 'dev',
+      lieu: 'Lyon',
+      typeContrat: 'apprentissage',
+      statut: 'candidate',
+      inclureExpirees: 'true'
+    })
+  })
+
+  it('omet inclureExpirees=false (le défaut serveur)', () => {
+    expect(offreListQueryFrom({ ...FILTRES_DEFAUT, inclureExpirees: false })).toEqual({})
+  })
+})
+
+describe('offreListFiltersFrom', () => {
+  it('renvoie les défauts pour une query vide', () => {
+    expect(offreListFiltersFrom({})).toEqual(FILTRES_DEFAUT)
+  })
+
+  it('est l\'inverse d\'offreListQueryFrom pour des filtres actifs', () => {
+    const filtres: OffreListFilters = {
+      page: 4,
+      q: 'dev',
+      lieu: 'Lyon',
+      typeContrat: 'professionnalisation',
+      statut: 'rejetee',
+      inclureExpirees: true
+    }
+    expect(offreListFiltersFrom(offreListQueryFrom(filtres))).toEqual(filtres)
+  })
+
+  it('retombe sur les défauts pour des valeurs invalides sans lever d\'erreur', () => {
+    expect(
+      offreListFiltersFrom({
+        page: 'abc',
+        typeContrat: 'stage',
+        statut: 'archivee',
+        inclureExpirees: 'oui'
+      })
+    ).toEqual(FILTRES_DEFAUT)
+  })
+
+  it('ignore les tableaux d\'une query répétée (?q=a&q=b)', () => {
+    expect(offreListFiltersFrom({ q: ['a', 'b'], page: ['2', '3'] })).toEqual(FILTRES_DEFAUT)
+  })
+
+  it('ramène page=0 ou page négative à 1', () => {
+    expect(offreListFiltersFrom({ page: '0' }).page).toBe(1)
+    expect(offreListFiltersFrom({ page: '-2' }).page).toBe(1)
   })
 })
 
