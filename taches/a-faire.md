@@ -14,8 +14,65 @@ une section `### Revue` une fois le lot terminé. (Les entrées les plus ancienn
 numéro d'issue au lieu d'une date — format conservé tel quel.)
 
 **Ce qui reste ouvert** — les seules cases `- [ ]` encore pertinentes du fichier :
-le backlog P1 de la roadmap « game breakers » (2026-07-28) et la dette signalée dans
-« Reste à traiter » du lot 2026-08-03.
+le backlog P1 de la roadmap « game breakers » (2026-07-28), la dette signalée dans
+« Reste à traiter » du lot 2026-08-03, et le « Reste à faire » de la mission
+split + veille ci-dessous.
+
+---
+
+## 2026-08-30 — Mission split + veille (entrée épinglée en tête, dérogation à l'ordre chronologique)
+
+> Branche : `claude/alternup-split-veille-omul5x`. Mission en 7 phases : split de l'app en
+> deux espaces par rôle (`/tuteur`, `/alternant`) + module de veille d'offres d'alternance.
+> Décisions de gate : **v1 alternance seule** (pas de stages), **ingestion LBA seule**
+> (les offres France Travail arrivent via l'export LBA), déclenchement par **Schedule Job
+> Dokploy** (`docker exec`, cron `30 3 * * *` UTC).
+
+### Phases
+
+- [x] **Phase 0 — Discovery + gate** : 5 rapports (`docs/plans/discovery/`) + synthèse ;
+      décisions actées (alternance seule, LBA seule, pas de Nitro tasks).
+- [x] **Phase 1 — ADRs** : `docs/adr/0001` (espaces par rôle) à `0004` (page offres v1).
+- [x] **Phase 2 — Split espaces** : `layouts/` (public / tuteur / alternant / default),
+      pages éclatées sous `pages/tuteur/` et `pages/alternant/`, garde par préfixe
+      (`middleware/space.global.ts`), redirections legacy
+      (`middleware/legacy-redirect.global.ts`), liens en base migrés.
+- [x] **Phase 3 — Modèle de données veille** : `Offre`, `OffreSource`, `OffreUserStatut`,
+      `ScrapeRun` + enums (miroir `shared/utils/enums.ts`), migrations `veille_offres`
+      et `offres_trgm_indexes`.
+- [x] **Phase 4 — Ingestion + exposition** : `scripts/ingest-offres.ts` (source LBA via
+      export quotidien, dédup url/hash, expiration douce, verrou, ScrapeRuns — exécuté et
+      validé avec données réelles sandbox), endpoints `/api/offres*`, page
+      `/alternant/offres`.
+- [x] ~~**Phase 5 — Sources Firecrawl (stages)**~~ **ANNULÉE** : aucun site cible retenu,
+      LBA suffit pour la v1 — les stages restent hors périmètre (décision de gate confirmée).
+- [x] **Phase 6 — Finalisation** : alerte webhook d'échec de run (`ALERTE_WEBHOOK_URL`),
+      `.env.example`, section « Veille d'offres » de `docs/deploy-dokploy.md`,
+      `docs/veille.md`, mises à jour `README.md` / `AGENTS.md`, cette entrée de journal.
+
+### Revue
+
+**Livré** : deux espaces par rôle complets (layouts, nav dédiées, garde et layout résolus
+par préfixe de route, redirections des anciennes URLs) ; module veille de bout en bout —
+4 modèles Prisma + 3 migrations, script d'ingestion idempotent journalisé en base
+(`scrape_runs`) avec alerte webhook optionnelle, API filtrée/paginée server-side, page
+offres avec suivi de candidature ; documentation d'exploitation (`docs/veille.md`) et de
+déploiement (section dédiée de `docs/deploy-dokploy.md`).
+
+**Décisions clés** : v1 alternance seule ; une seule source (LBA, qui relaie déjà France
+Travail) derrière une interface `SourceIngestion` extensible ; script isolé hors Nitro
+déclenché par Dokploy plutôt que Nitro tasks (expérimentales) ; expiration douce (3 jours,
+garde anti-expiration massive à 50 %) plutôt que suppression ; l'alerte d'échec est
+best-effort et ne peut jamais faire échouer le run.
+
+**Reste à faire (côté utilisateur, en prod)** :
+
+- [ ] Créer la clé **LBA de production** sur api.apprentissage.beta.gouv.fr et renseigner
+      `LBA_API_KEY` sur le service Dokploy.
+- [ ] Créer le **Schedule Job** dans l'UI Dokploy (type Application,
+      `node scripts/ingest-offres.ts`, cron `30 3 * * *` — cf. `docs/deploy-dokploy.md` §4).
+- [ ] Définir `ALERTE_WEBHOOK_URL` (optionnel mais recommandé) pour être prévenu des runs
+      en échec.
 
 ---
 

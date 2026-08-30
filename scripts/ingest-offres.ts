@@ -17,6 +17,8 @@
 //   LBA_API_KEY              (prod)    jeton Bearer de l'API Apprentissage
 //   LBA_EXPORT_URL_OVERRIDE  (option)  URL ou fichier local remplaçant l'appel
 //                                      /job/v1/export (tests, secours)
+//   ALERTE_WEBHOOK_URL       (option)  URL POSTée (JSON) quand au moins une
+//                                      source échoue ; rien si absente
 //
 // Déroulé par source (échec par source, jamais de crash global) :
 //   1. verrou anti-concurrence via ScrapeRun `en_cours` (< 2 h) ;
@@ -53,6 +55,10 @@ const LOT_EXPIRATION = 1_000
  * avertissement dans `ScrapeRun.erreurs`) plutôt que d'expirer tout le stock.
  */
 const SEUIL_EXPIRATION_VUES = 0.5
+/** Timeout de l'alerte webhook : court, pour ne jamais retarder la fin du script. */
+const ALERTE_TIMEOUT_MS = 10_000
+/** Troncature des messages d'erreur envoyés au webhook (payload minimal). */
+const ALERTE_MESSAGE_MAX = 500
 
 const SOURCES: SourceIngestion[] = [sourceLaBonneAlternance]
 
@@ -177,13 +183,46 @@ async function expirerOffres(
   return expirees
 }
 
+// ─────────────────────────── Alerte d'échec (webhook optionnel) ───────────────────────────
+
+/**
+ * POSTe un JSON minimal sur `ALERTE_WEBHOOK_URL` quand au moins une source a
+ * échoué. Best-effort strict : timeout court, try/catch — un webhook absent,
+ * lent ou en erreur ne doit JAMAIS faire échouer ni retarder le script
+ * (l'échec d'envoi est simplement loggé). Rien si la variable est absente.
+ */
+async function envoyerAlerte(echecs: { source: string, message: string }[]): Promise<void> {
+  const url = process.env.ALERTE_WEBHOOK_URL
+  if (!url || echecs.length === 0) return
+  try {
+    const reponse = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      signal: AbortSignal.timeout(ALERTE_TIMEOUT_MS),
+      body: JSON.stringify({
+        sujet: `[alternup] Ingestion des offres : ${echecs.length} source(s) en échec`,
+        sources: echecs.map(e => ({
+          source: e.source,
+          message: e.message.slice(0, ALERTE_MESSAGE_MAX)
+        })),
+        date: new Date().toISOString()
+      })
+    })
+    if (!reponse.ok) throw new Error(`réponse HTTP ${reponse.status}`)
+    log(`Alerte d'échec envoyée au webhook (${echecs.length} source(s))`)
+  } catch (erreur) {
+    log(`Échec d'envoi de l'alerte webhook (sans effet sur le run) : ${messageErreur(erreur)}`)
+  }
+}
+
 // ─────────────────────────── Ingestion d'une source ───────────────────────────
 
-async function ingererSource(prisma: PrismaClient, ingestion: SourceIngestion): Promise<boolean> {
+/** Renvoie `null` si la source est passée (ou sautée), sinon le message d'échec. */
+async function ingererSource(prisma: PrismaClient, ingestion: SourceIngestion): Promise<string | null> {
   const { source } = ingestion
   const logSource = (msg: string): void => log(`[${source}] ${msg}`)
 
-  if (await verrouille(prisma, source)) return true
+  if (await verrouille(prisma, source)) return null
 
   // Stock actif de la source AVANT le run, pour la garde anti-expiration massive.
   const stockActifInitial = await prisma.offre.count({
@@ -249,7 +288,7 @@ async function ingererSource(prisma: PrismaClient, ingestion: SourceIngestion): 
       }
     })
     logSource(`ScrapeRun ${run.id} réussi : ${compteurs.vues} vues, ${compteurs.creees} créées, ${compteurs.maj} mises à jour, ${offresExpirees} expirées${avertissements ? ' (expiration sautée)' : ''}`)
-    return true
+    return null
   } catch (erreur) {
     const message = messageErreur(erreur)
     logSource(`ÉCHEC : ${message}`)
@@ -266,7 +305,7 @@ async function ingererSource(prisma: PrismaClient, ingestion: SourceIngestion): 
         erreurs: [{ message, contexte: `après ${compteurs.vues} offre(s) traitée(s)` }]
       }
     }).catch((e: unknown) => logSource(`Impossible de clore le ScrapeRun ${run.id} : ${messageErreur(e)}`))
-    return false
+    return message
   }
 }
 
@@ -275,24 +314,29 @@ async function ingererSource(prisma: PrismaClient, ingestion: SourceIngestion): 
 async function main(): Promise<void> {
   chargerEnv()
   const prisma = creerPrisma()
-  let echec = false
+  const echecs: { source: string, message: string }[] = []
 
   log(`Ingestion des offres — ${SOURCES.length} source(s)`)
   try {
     for (const ingestion of SOURCES) {
       // try/catch par source : une source en échec ne bloque pas les suivantes.
       try {
-        if (!await ingererSource(prisma, ingestion)) echec = true
+        const echec = await ingererSource(prisma, ingestion)
+        if (echec !== null) echecs.push({ source: ingestion.source, message: echec })
       } catch (erreur) {
         // Erreur hors ScrapeRun (création du run impossible, etc.).
-        log(`[${ingestion.source}] ÉCHEC hors run : ${messageErreur(erreur)}`)
-        echec = true
+        const message = messageErreur(erreur)
+        log(`[${ingestion.source}] ÉCHEC hors run : ${message}`)
+        echecs.push({ source: ingestion.source, message })
       }
     }
   } finally {
     await prisma.$disconnect()
   }
 
+  await envoyerAlerte(echecs)
+
+  const echec = echecs.length > 0
   log(echec ? 'Terminé avec au moins une source en échec (exit 1)' : 'Terminé sans échec (exit 0)')
   process.exitCode = echec ? 1 : 0
 }

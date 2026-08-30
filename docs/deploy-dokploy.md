@@ -94,17 +94,57 @@ Dans le **même** projet Dokploy : **Create Service → Application**.
    { "status": "ok", "version": "1.0.0", "environment": "production", ... }
    ```
 
-## 4. Maintenance
+## 4. Veille d'offres (ingestion quotidienne)
+
+Le module de veille (page `/alternant/offres`) est alimenté par le script
+`scripts/ingest-offres.ts`, exécuté **dans le conteneur de l'app** par un Schedule Job
+Dokploy (ADR-0003). Doc d'exploitation complète : [`docs/veille.md`](veille.md).
+
+### Variables d'environnement à ajouter sur le service Nuxt
+
+| Variable | Requis | Valeur / Notes |
+|---|---|---|
+| `LBA_API_KEY` | ✅ (pour l'ingestion) | Jeton Bearer de l'API Apprentissage — clé de **production** créée sur [api.apprentissage.beta.gouv.fr](https://api.apprentissage.beta.gouv.fr). Sans elle, le run échoue (l'app web, elle, fonctionne normalement). |
+| `ALERTE_WEBHOOK_URL` | — | Si renseignée, le script POSTe un JSON minimal (sujet, sources en échec, messages, date) quand au moins une source échoue. Absente = aucune alerte ; l'échec reste visible via le statut du job Dokploy et les `ScrapeRun` en base. |
+
+### Créer le Schedule Job Dokploy
+
+Sur la page du **service Application** (l'app Nuxt), onglet **Schedules** → **Create
+Schedule** :
+
+| Champ Dokploy | Valeur | Notes |
+|---|---|---|
+| Type | **Application** | Dokploy exécute la commande via `docker exec` dans le conteneur qui tourne — mêmes env vars, même client Prisma, même réseau que l'app |
+| Task Name | `ingest-offres` (libre) | |
+| Schedule (cron) | `30 3 * * *` | **Heure UTC serveur** = 4h30/5h30 Paris, après la régénération du dump LBA (3h00 Paris) |
+| Command | `node scripts/ingest-offres.ts` | Type stripping natif de Node ≥ 22.18, aucun flag |
+| Enabled | ✅ | |
+
+Chaque exécution produit **une entrée de log dédiée** dans l'UI Dokploy (onglet du
+Schedule) : le script y détaille source par source les compteurs (vues / créées / mises à
+jour / expirées). Un code de sortie `1` (au moins une source en échec) marque l'exécution
+en échec dans Dokploy. Relance manuelle : bouton *Run* du Schedule, ou la même commande
+depuis le terminal conteneur (voir `docs/veille.md`).
+
+### Migrations et healthcheck
+
+Rien à faire de plus : le `prisma migrate deploy` du démarrage (CMD du Dockerfile)
+applique les 3 migrations du module au premier redéploiement
+(`split_espaces_notification_links`, `veille_offres`, `offres_trgm_indexes` — cette
+dernière active l'extension `pg_trgm`, incluse dans `postgres:16-alpine`). Le healthcheck
+`GET /api/health` est inchangé.
+
+## 5. Maintenance
 
 - **Logs app** : panneau *Logs* du service Nuxt dans Dokploy (ou `docker logs -f <container>` côté hôte).
 - **Shell Postgres** : depuis la page du service Database, Dokploy expose une console `psql` directe.
 - **Reset DB (staging uniquement)** : supprimer le volume Postgres depuis la page du service, puis redéployer l'app — la première instance ré-appliquera toutes les migrations.
 
-## 5. Sauvegardes
+## 6. Sauvegardes
 
 Configurer le **backup natif Dokploy** sur la ressource Postgres (interface *Backups*) : fréquence + retention + destination (S3 / FTP / etc.). Plus simple qu'un `pg_dump` en cron, et restauration en un clic.
 
-## 6. Gotchas
+## 7. Gotchas
 
 - **Hostname Postgres** = **toujours** le nom du service Dokploy. Jamais `localhost`, jamais l'IP publique.
 - **Services dans des projets Dokploy différents** : ils ne se voient pas par défaut (réseaux Docker isolés). Les garder dans le même projet.

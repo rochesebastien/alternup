@@ -22,6 +22,14 @@ notes, calendrier, présences et pointage journalier, rapports d'étape, bulleti
 visites tuteur, référentiel de compétences, messagerie, annonces, notifications et signatures
 de documents.
 
+L'app est organisée en **deux espaces par rôle** (ADR-0001) : `/tuteur/...` pour les
+tuteurs, `/alternant/...` pour les apprenants (alternants **et** stagiaires), chacun avec
+son layout et sa navigation ; les anciennes URLs sont redirigées automatiquement.
+L'espace alternant embarque un **module de veille d'offres d'alternance**
+(`/alternant/offres`) : offres ingérées quotidiennement depuis La Bonne Alternance par
+`scripts/ingest-offres.ts`, tableau filtrable + suivi de candidature par offre
+(doc d'exploitation : [`docs/veille.md`](docs/veille.md)).
+
 Front et API vivent dans la même base de code : **Nuxt** rend les pages, **Nitro** sert l'API,
 **Prisma** parle à **PostgreSQL** et **nuxt-auth-utils** gère la session.
 Déploiement cible : **Dokploy**.
@@ -39,8 +47,8 @@ Déploiement cible : **Dokploy**.
 | État | **Pinia**, **VueUse** |
 | Calendrier | **Schedule-X 4** (thème shadcn) + `temporal-polyfill` |
 | Animation | **GSAP** |
-| API | **Nitro** — ~108 routes sous `server/api/` |
-| ORM / base | **Prisma 7** (`@prisma/adapter-pg`) sur **PostgreSQL 16** — 27 modèles, 9 enums |
+| API | **Nitro** — ~113 routes sous `server/api/` |
+| ORM / base | **Prisma 7** (`@prisma/adapter-pg`) sur **PostgreSQL 16** — 30 modèles, 14 enums |
 | Auth | **nuxt-auth-utils** (cookie de session signé) + **bcrypt** |
 | Validation | **Zod 4** (messages en français) |
 | Qualité | **ESLint 10**, **Vitest 4**, Husky + lint-staged |
@@ -50,20 +58,25 @@ Déploiement cible : **Dokploy**.
 
 ```
 alternup/
-├── app.vue                # Shell applicatif (nav, dock, layout)
+├── app.vue                # Racine minimale : choisit le layout selon le préfixe de route
 ├── app.config.ts          # Config Nuxt UI (thème, toasts)
-├── pages/                 # Pages Nuxt (routing automatique)
+├── layouts/               # public.vue, tuteur.vue, alternant.vue, default.vue (shells + nav)
+├── pages/
+│   ├── tuteur/            # Espace tuteur (dashboard, alternants, projects, calendar…)
+│   ├── alternant/         # Espace apprenant (dashboard, missions, courses, offres…)
+│   └── …                  # Pages publiques (index, login…) et communes (account, notifications)
 ├── components/            # Composants Vue (à plat — cf. note ci-dessous)
 ├── composables/           # useLearnerFocus, useNotificationCountState
-├── middleware/            # auth.global.ts, role.ts
+├── middleware/            # auth.global.ts, space.global.ts (garde d'espace), legacy-redirect.global.ts
 ├── plugins/               # gsap.client.ts, zod-locale.ts
 ├── assets/                # main.css (design tokens Tailwind 4), logos, favicon
 ├── shared/utils/          # Logique métier partagée client + serveur (dont enums.ts)
 ├── server/
-│   ├── api/               # Routes API Nitro (auth, présences, bulletins, compétences…)
+│   ├── api/               # Routes API Nitro (auth, présences, bulletins, offres…)
 │   ├── middleware/        # auth-guard.ts (garde globale sur /api)
 │   ├── plugins/           # temp-account.ts, zod-locale.ts
 │   └── utils/             # prisma.ts (singleton), require-role.ts, helpers métier
+├── scripts/               # ingest-offres.ts + ingest/ (ingestion quotidienne des offres)
 ├── prisma/
 │   ├── schema.prisma      # Modèle de données
 │   └── migrations/        # Migrations Prisma générées
@@ -71,7 +84,7 @@ alternup/
 ├── types/                 # Augmentations TypeScript (auth, gsap, temporal…)
 ├── tests/shared/          # Suite Vitest (logique de shared/utils)
 ├── taches/                # Journal de plans, revues et leçons
-├── docs/                  # Documentation projet (déploiement)
+├── docs/                  # Documentation projet (déploiement, ADRs, veille d'offres)
 ├── docker-compose.yml     # Stack Postgres + app (dev local)
 └── Dockerfile             # Build multi-stage Nuxt
 ```
@@ -95,6 +108,9 @@ Copier `.env.example` vers `.env` :
 |---|---|---|
 | `DATABASE_URL` | ✅ | URL Postgres lue par Prisma |
 | `NUXT_SESSION_PASSWORD` | ✅ | Secret de signature des cookies de session (≥ 32 caractères) |
+| `LBA_API_KEY` | ingestion | Jeton Bearer de l'API Apprentissage (La Bonne Alternance) pour `scripts/ingest-offres.ts` — clé à créer sur [api.apprentissage.beta.gouv.fr](https://api.apprentissage.beta.gouv.fr) |
+| `ALERTE_WEBHOOK_URL` | — | Webhook POSTé par le script d'ingestion quand une source échoue (aucune alerte si absente) |
+| `LBA_EXPORT_URL_OVERRIDE` | — | Secours/tests : URL ou fichier local remplaçant l'export LBA (cf. [`docs/veille.md`](docs/veille.md)) |
 | `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB` | compose | Init du conteneur Postgres (dev local uniquement) |
 | `APP_PORT` | — | Port exposé sur l'hôte par compose (le conteneur écoute toujours sur 3000) |
 | `APP_VERSION` | — | Version renvoyée par `/api/health` |
