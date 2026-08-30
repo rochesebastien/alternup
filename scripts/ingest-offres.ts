@@ -1,9 +1,16 @@
 // Ingestion quotidienne des offres d'alternance (ADR-0003).
 //
 // Exécution : `node scripts/ingest-offres.ts` (type stripping natif de
-// Node ≥ 22, sans flag ni tsx) — en prod via un Schedule Job Dokploy
-// (`docker exec`, cron `30 3 * * *` UTC), en local avec le `.env` du dépôt
-// (chargé automatiquement si `DATABASE_URL` est absent de l'environnement).
+// Node ≥ 22.18, sans flag ni tsx — `engines` du package.json aligné) — en prod
+// via un Schedule Job Dokploy (`docker exec`, cron `30 3 * * *` UTC), en local
+// avec le `.env` du dépôt (chargé automatiquement si `DATABASE_URL` est absent
+// de l'environnement).
+//
+// NB : Node émet un warning bénin `MODULE_TYPELESS_PACKAGE_JSON` (le
+// package.json du dépôt n'a pas de champ `type`, imposé par l'outillage Nuxt).
+// Renommer scripts/ en `.mts` ne le supprimerait pas : il viendrait alors des
+// modules partagés (`shared/`, `server/utils/`), qui doivent rester en `.ts`
+// pour Nuxt. Assumé et sans effet fonctionnel.
 //
 // Variables d'environnement :
 //   DATABASE_URL             (requis)  connexion PostgreSQL
@@ -24,15 +31,28 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import { OffreStatut, ScrapeRunStatut } from '../shared/utils/enums.ts'
 import { OFFRE_EXPIRATION_JOURS } from '../shared/utils/offres.ts'
-import type { SourceIngestion } from './ingest/types.ts'
-import { upsertOffre, type CompteursUpsert } from './ingest/upsert.ts'
+import type { OffreNormalisee, SourceIngestion } from './ingest/types.ts'
+import { TAILLE_LOT_UPSERT, upsertLot } from './ingest/upsert.ts'
 import { sourceLaBonneAlternance } from './ingest/sources/la-bonne-alternance.ts'
 
-/** Un ScrapeRun `en_cours` plus jeune que ce délai bloque un nouveau run de la même source. */
+/**
+ * Verrou anti-concurrence : un ScrapeRun `en_cours` plus jeune que ce délai
+ * bloque un nouveau run de la même source ; plus vieux, il est considéré comme
+ * un crash antérieur et marqué `erreur`. 2 h est très large pour un run
+ * national avec les upserts par lots (quelques minutes attendues), mais couvre
+ * un réseau ou une base dégradés sans risquer deux ingestions simultanées.
+ */
 const VERROU_MAX_AGE_MS = 2 * 60 * 60 * 1000
 const JOUR_MS = 86_400_000
 /** Taille des lots d'ids pour l'expiration des offres déclarées mortes par le payload. */
 const LOT_EXPIRATION = 1_000
+/**
+ * Garde anti-expiration massive : si un run « réussi » a vu moins de
+ * `SEUIL_EXPIRATION_VUES` × (stock actif de la source au démarrage) offres
+ * — dump vide ou anormalement amputé —, l'expiration est sautée (avec un
+ * avertissement dans `ScrapeRun.erreurs`) plutôt que d'expirer tout le stock.
+ */
+const SEUIL_EXPIRATION_VUES = 0.5
 
 const SOURCES: SourceIngestion[] = [sourceLaBonneAlternance]
 
@@ -165,30 +185,55 @@ async function ingererSource(prisma: PrismaClient, ingestion: SourceIngestion): 
 
   if (await verrouille(prisma, source)) return true
 
+  // Stock actif de la source AVANT le run, pour la garde anti-expiration massive.
+  const stockActifInitial = await prisma.offre.count({
+    where: { statut: OffreStatut.active, sources: { some: { source } } }
+  })
+
   const run = await prisma.scrapeRun.create({
     data: { source, statut: ScrapeRunStatut.en_cours },
     select: { id: true }
   })
-  logSource(`ScrapeRun ${run.id} démarré`)
+  logSource(`ScrapeRun ${run.id} démarré (stock actif : ${stockActifInitial} offre(s))`)
 
-  const compteurs: CompteursUpsert = { vues: 0, creees: 0, maj: 0 }
+  const compteurs = { vues: 0, creees: 0, maj: 0 }
   const idsMortes: string[] = []
+  const lot: OffreNormalisee[] = []
+
+  const traiterLot = async (): Promise<void> => {
+    if (lot.length === 0) return
+    const contenu = lot.splice(0)
+    const resultat = await upsertLot(prisma, source, contenu, new Date())
+    compteurs.vues += contenu.length
+    compteurs.creees += resultat.creees
+    compteurs.maj += resultat.maj
+    idsMortes.push(...resultat.idsMortes)
+    if (compteurs.vues % 10_000 < contenu.length) {
+      logSource(`${compteurs.vues} offres traitées (${compteurs.creees} créées, ${compteurs.maj} mises à jour)…`)
+    }
+  }
 
   try {
     for await (const offre of ingestion.collect({ log: logSource })) {
-      const now = new Date()
-      const resultat = await upsertOffre(prisma, source, offre, now)
-      compteurs.vues++
-      if (resultat.action === 'creee') compteurs.creees++
-      else compteurs.maj++
-      if (resultat.morte) idsMortes.push(resultat.offreId)
-      if (compteurs.vues % 10_000 === 0) {
-        logSource(`${compteurs.vues} offres traitées (${compteurs.creees} créées, ${compteurs.maj} mises à jour)…`)
-      }
+      lot.push(offre)
+      if (lot.length >= TAILLE_LOT_UPSERT) await traiterLot()
     }
+    await traiterLot()
 
-    // Expiration APRÈS le parcours complet du dump : le run est réussi.
-    const offresExpirees = await expirerOffres(prisma, source, idsMortes, new Date())
+    // Expiration APRÈS le parcours complet du dump (run réussi), sauf run
+    // anormal : dump vide ou couvrant moins de la moitié du stock actif —
+    // un dump amputé ne doit pas faire expirer tout le stock 3 jours de suite.
+    let offresExpirees = 0
+    let avertissements: { message: string }[] | undefined
+    const runAnormal = compteurs.vues === 0
+      || compteurs.vues < stockActifInitial * SEUIL_EXPIRATION_VUES
+    if (runAnormal) {
+      const message = `Avertissement : expiration sautée — ${compteurs.vues} offre(s) vue(s) pour un stock actif de ${stockActifInitial} (seuil : ${SEUIL_EXPIRATION_VUES * 100} %). Dump vide ou anormalement amputé ?`
+      logSource(message)
+      avertissements = [{ message }]
+    } else {
+      offresExpirees = await expirerOffres(prisma, source, idsMortes, new Date())
+    }
 
     await prisma.scrapeRun.update({
       where: { id: run.id },
@@ -199,10 +244,11 @@ async function ingererSource(prisma: PrismaClient, ingestion: SourceIngestion): 
         offresVues: compteurs.vues,
         offresCreees: compteurs.creees,
         offresMaj: compteurs.maj,
-        offresExpirees
+        offresExpirees,
+        ...(avertissements ? { erreurs: avertissements } : {})
       }
     })
-    logSource(`ScrapeRun ${run.id} réussi : ${compteurs.vues} vues, ${compteurs.creees} créées, ${compteurs.maj} mises à jour, ${offresExpirees} expirées`)
+    logSource(`ScrapeRun ${run.id} réussi : ${compteurs.vues} vues, ${compteurs.creees} créées, ${compteurs.maj} mises à jour, ${offresExpirees} expirées${avertissements ? ' (expiration sautée)' : ''}`)
     return true
   } catch (erreur) {
     const message = messageErreur(erreur)

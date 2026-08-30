@@ -18,6 +18,15 @@ import type { OffreNormalisee, SourceIngestion, SourceIngestionContext } from '.
 
 export const LBA_EXPORT_ENDPOINT = 'https://api.apprentissage.beta.gouv.fr/api/job/v1/export'
 
+/** Timeout de l'appel API `/job/v1/export` (petite réponse JSON). */
+const TIMEOUT_API_MS = 60_000
+/**
+ * Timeout global du téléchargement/streaming du dump (plusieurs centaines de
+ * Mo) : l'AbortSignal couvre aussi la consommation du body — un stream figé
+ * fait échouer le run (ScrapeRun `erreur`) au lieu de laisser un process zombie.
+ */
+const TIMEOUT_DUMP_MS = 30 * 60_000
+
 /** `contract.type` LBA → enum `OffreContratType` (garde-fou : tout le reste est filtré). */
 const LBA_CONTRAT_VERS_TYPE: Record<string, OffreContratType> = {
   Apprentissage: OffreContratType.apprentissage,
@@ -104,7 +113,7 @@ export function mapLbaJob(entree: unknown): OffreNormalisee | null {
 // ─────────────────────────── Ouverture du flux ───────────────────────────
 
 async function telechargerFlux(url: string): Promise<AsyncIterable<Uint8Array>> {
-  const reponse = await fetch(url)
+  const reponse = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_DUMP_MS) })
   if (!reponse.ok || reponse.body === null) {
     throw new Error(`Téléchargement du dump LBA : HTTP ${reponse.status} sur ${url.split('?')[0]}`)
   }
@@ -128,7 +137,8 @@ async function ouvrirFluxExport(log: (msg: string) => void): Promise<AsyncIterab
   }
 
   const reponse = await fetch(LBA_EXPORT_ENDPOINT, {
-    headers: { authorization: `Bearer ${cle}` }
+    headers: { authorization: `Bearer ${cle}` },
+    signal: AbortSignal.timeout(TIMEOUT_API_MS)
   })
   if (!reponse.ok) {
     throw new Error(`GET /job/v1/export : HTTP ${reponse.status}`)
