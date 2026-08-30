@@ -176,9 +176,10 @@ function isCurrent(to: string): boolean {
          modale Reka verrouille le scroll (voir assets/css/main.css). -->
 
     <!-- Zone interactive : un seul groupe de survol pour le bouton de
-         changement, la pastille et leurs panneaux. -->
+         changement, la pastille et leurs panneaux. `items-center` : le bouton
+         de changement (36px) reste centré sur la hauteur de la pastille. -->
     <div
-      class="relative flex items-end justify-end gap-2 p-5"
+      class="relative flex items-center justify-end gap-2 p-5"
       @mouseenter="openMenu"
       @mouseleave="scheduleClose"
       @focusin="openMenu"

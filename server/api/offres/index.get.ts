@@ -9,8 +9,11 @@ import { estNouvelle, offreListQuerySchema } from '~/shared/utils/offres'
 // du dépôt : réponse en enveloppe `{ items, total, page, limit, lastSync }`
 // (dérogation documentée — le `total` est indispensable à UPagination, le
 // `lastSync` à l'encart d'attribution LBA). `raw` n'est jamais renvoyé.
+// Lecture ouverte au tuteur (consultation pure sur /tuteur/offres) : son
+// `monStatut` est toujours null et seul POST /statut reste réservé aux
+// apprenants.
 export default defineEventHandler(async (event) => {
-  const user = await requireRole(event, Role.Alternant, Role.Stagiaire)
+  const user = await requireRole(event, Role.Alternant, Role.Stagiaire, Role.Tutor)
 
   const parsed = offreListQuerySchema.safeParse(getQuery(event))
   if (!parsed.success) {

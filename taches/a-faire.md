@@ -1306,3 +1306,40 @@ implémentations → 1 vérification adversariale), relue ensuite dans le contex
 Points signalés à l'utilisateur : sur `/` et `/features`, un utilisateur connecté n'a plus
 d'accès desktop au Suivi (dock masqué sur les pages plein écran) ; la cible décorative
 recouvre visuellement le coin bas-droit des pages applicatives (clics non bloqués).
+
+## 2026-08-30 — Dock aligné, offres consultables par le tuteur, page 404
+
+Plan (réalisé) :
+
+- [x] Centrer verticalement le bouton ⇆ du dock sur la pastille du nom.
+- [x] Ouvrir la consultation du tableau des offres au tuteur, sans candidature
+      ni onglet « Mes candidatures ».
+- [x] Page 404 soignée (et erreurs fatales), rendue aussi pour les visiteurs anonymes.
+
+Revue :
+
+- **`components/LearnerDock.vue`** : le groupe de survol passait `items-end` — le bouton
+  ⇆ (36 px) se calait sur le bas de la pastille (46 px) au lieu d'être centré. Passage à
+  `items-center` ; centres vérifiés au navigateur (757.0 / 757.0 px).
+- **`components/OffresBoard.vue`** (nouveau) : la page `/alternant/offres` est extraite en
+  composant partagé avec une prop `readonly`. En lecture seule : pas d'onglet
+  « Mes candidatures », pas de filtre ni de colonne Statut (largeurs redistribuées à
+  100 %), pas de menu Actions ; un `?statut=` copié depuis l'espace apprenant est ignoré.
+  `pages/alternant/offres/index.vue` rend `<OffresBoard />`, la nouvelle page
+  `pages/tuteur/offres/index.vue` rend `<OffresBoard readonly />` (ADR-0001 : le layout et
+  la garde viennent du préfixe). Lien « Offres » ajouté à la nav tuteur (desktop + mobile).
+- **API** : `GET /api/offres` et `GET /api/offres/:id` acceptent `Role.Tutor`
+  (`monStatut` reste null pour lui) ; `POST /api/offres/:id/statut` reste réservé aux
+  apprenants — vérifié par curl : GET 200, POST 403 avec une session tuteur.
+- **`error.vue`** (nouveau) : page d'erreur globale — code géant en jaune de marque sur
+  halo flouté, logo (permutation light/dark comme AppShell), messages 404 / erreur
+  générique, « Retour à l'accueil » (landing du rôle si connecté, sinon `/`) via
+  `clearError`, footer minimal.
+- **`middleware/auth.global.ts`** : une route non matchée passe la garde (`to.matched`
+  vide) pour que le 404 s'affiche au lieu d'une redirection `/login` sur une page qui
+  n'existe pas ; la sécurité serveur des API n'est pas concernée.
+
+`vue-tsc` ✅ · `npm run lint` ✅ · `npm test` (363) ✅ · `npm run build` ✅ ·
+`grep ".prisma/client/index-browser" .output/public/_nuxt/` → rien ✅ ·
+Vérifié au navigateur (Postgres local + comptes de test) : dock ouvert, `/tuteur/offres`,
+`/alternant/offres` inchangée, `/page-inexistante` → 404.

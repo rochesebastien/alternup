@@ -5,8 +5,9 @@ import { requireRole } from '~/server/utils/require-role'
 
 // Détail d'une offre : champs normalisés + rattachements sources (attribution
 // `partnerLabel`, CGU LBA) + mon statut de candidature. Jamais `raw`.
+// Lecture ouverte au tuteur (`monStatut` toujours null pour lui).
 export default defineEventHandler(async (event) => {
-  const user = await requireRole(event, Role.Alternant, Role.Stagiaire)
+  const user = await requireRole(event, Role.Alternant, Role.Stagiaire, Role.Tutor)
 
   const idp = z.guid().safeParse(getRouterParam(event, 'id'))
   if (!idp.success) {
