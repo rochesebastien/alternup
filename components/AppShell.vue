@@ -179,7 +179,7 @@ import { landingPageFor } from '~/shared/utils/auth-redirect'
  * ses liens via les slots `#links` (desktop) et `#mobile-links` (menu burger)
  * et règle le rendu via les props.
  */
-const props = withDefaults(
+withDefaults(
   defineProps<{
     /** Contenu pleine largeur (pages marketing et d'authentification). */
     fullBleed?: boolean
