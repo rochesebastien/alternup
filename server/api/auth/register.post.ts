@@ -67,7 +67,8 @@ export default defineEventHandler(async (event) => {
       type: 'invitation_acceptee',
       title: `${user.firstName} ${user.lastName} a accepté votre invitation`,
       body: `Le compte ${user.email} a été créé et placé sous votre responsabilité.`,
-      link: '/alternants'
+      // Le destinataire est le tuteur invitant : espace tuteur.
+      link: '/tuteur/alternants'
     })
   }
 

@@ -57,7 +57,8 @@ export default defineEventHandler(async (event) => {
       : validated
         ? `${report.tutor.firstName} ${report.tutor.lastName} a validé votre rapport d'étape.`
         : `${report.tutor.firstName} ${report.tutor.lastName} vous demande de revoir votre rapport d'étape.`,
-    link: `/rapports/${report.id}`
+    // Le destinataire est l'étudiant auteur : espace alternant.
+    link: `/alternant/rapports/${report.id}`
   })
 
   return updated

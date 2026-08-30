@@ -33,7 +33,8 @@ export default defineEventHandler(async (event) => {
     type: 'rapport_soumis',
     title: `Rapport à relire : ${report.title}`,
     body: `${report.student.firstName} ${report.student.lastName} a soumis son rapport d'étape.`,
-    link: `/rapports/${report.id}`
+    // Le destinataire est le tuteur relecteur : espace tuteur.
+    link: `/tuteur/rapports/${report.id}`
   })
 
   return updated

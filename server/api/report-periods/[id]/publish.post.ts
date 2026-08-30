@@ -68,7 +68,8 @@ export default defineEventHandler(async (event) => {
     body: generalComment
       ? excerpt(generalComment)
       : 'Votre bulletin est disponible et peut être signé.',
-    link: `/bulletins/carte/${card.id}`
+    // Le destinataire est l'étudiant du bulletin : espace alternant.
+    link: `/alternant/bulletins/carte/${card.id}`
   })
 
   return card
