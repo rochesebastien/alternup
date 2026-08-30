@@ -74,6 +74,78 @@ best-effort et ne peut jamais faire échouer le run.
 - [ ] Définir `ALERTE_WEBHOOK_URL` (optionnel mais recommandé) pour être prévenu des runs
       en échec.
 
+## Fonctionnalités retirées de la landing, à construire
+
+Retirées de `pages/index.vue` et `pages/features.vue` le 2026-08-30 : la landing
+les promettait, le code ne les implémente pas. Toute réintroduction dans le
+marketing suppose la fonctionnalité livrée d'abord.
+
+### Audience « École » (bloc entier)
+- [ ] Rôle École dans `Role` — `shared/utils/enums.ts` ne connaît que
+      `Tutor` / `Alternant` / `Stagiaire`. Retiré : onglet « Écoles », audience
+      `school` sur toutes les fiches, mention « et les écoles » du sous-titre.
+- [ ] **Pilotage par promotion** — « une vue agrégée par promo : taux de rendus,
+      alertes ouvertes, visites en retard ». Aucune notion de promotion dans le
+      schéma, aucune route d'agrégation.
+- [ ] **Comparaison inter-promotions** — aucune API correspondante.
+- [ ] **Export Excel/CSV pour les jurys** — aucune route d'export dans `server/api/`.
+- [ ] **Conformité & traçabilité** (carte entière), dont :
+  - [ ] **Conventions signées électroniquement** — aucun modèle « convention »
+        (seul `docs/plans/discovery/b-conventions.md`, exploratoire, en parle).
+  - [ ] **Audit log complet** — aucun module d'audit générique.
+  - [ ] **Conservation RGPD configurable** — aucun réglage de rétention.
+
+### Notifications et invitations par e-mail
+- [ ] **Notifications par e-mail** — aucun envoi de mail dans `server/` (ni
+      nodemailer, ni SMTP, ni service tiers). `notifyUser` écrit en base : le fil
+      est in-app uniquement. Landing corrigée en « rappels dans l'application ».
+- [ ] **Invitation par e-mail** — `server/api/invitations/index.post.ts` :
+      « Pas d'envoi d'email pour l'instant : le tuteur transmet lui-même le lien. »
+      Landing corrigée en « lien d'invitation à transmettre ».
+- [ ] **Seuils d'alerte configurables par promo** — le scoring de
+      `server/utils/risk.ts` n'expose aucun réglage.
+
+### Fiche apprenant : promo, entreprise, année, statut
+- [ ] **Filtres par promo / entreprise / année / statut** sur le roster tuteur —
+      `pages/tuteur/alternants/index.vue` n'offre que la bascule cartes/tableau ;
+      le modèle `User` ne porte ni promo, ni entreprise, ni année, ni type de
+      contrat. La carte du hero et le mockup dashboard affichaient ces données.
+- [ ] Champs de profil correspondants (promo, entreprise, année, contrat) — à
+      modéliser avant toute réintroduction du filtrage.
+
+### Quiz et suivi de formation
+- [ ] **Quiz auto-corrigés**, **statistiques par module**, **reprise à l'endroit
+      où tu t'es arrêté** — aucune notion de quiz dans le code ; le module Cours
+      se limite aux sessions (`courses`) et aux notes personnelles (`course-notes`).
+- [ ] **Remontée automatique de la progression à l'école** — pas de destinataire
+      « école » ni de flux sortant.
+
+### Signatures
+- [ ] **Signature électronique multi-parties sur les visites tuteur** —
+      `server/api/tutor-visits/` n'a pas de route `sign.post.ts`. La signature
+      n'existe que sur `progress-reports` et `report-cards`.
+
+### Compétences
+- [ ] **Grilles par référentiel (RNCP, école, libre)** — les domaines et
+      compétences sont créés à la main par le tuteur, sans import de référentiel.
+- [ ] **Triple évaluation alternant / tuteur / entreprise**, **évaluations
+      partagées avec l'entreprise**, **validation tuteur + maître d'apprentissage**,
+      et le bénéfice **« un point unique pour l'alternant, le tuteur et
+      l'entreprise »** — l'entreprise n'est pas un utilisateur du produit.
+
+### Gabarits et exports
+- [ ] **Modèles de compte-rendu de visite personnalisables** — aucun système de
+      gabarit.
+- [ ] **Modèles de rapport imposés par la formation / structure imposée par
+      l'école** — idem.
+- [ ] **Export automatique des missions vers le rapport d'étape** — aucune reprise
+      automatique entre `project-assignments` et `progress-reports`.
+
+### Annonces
+- [ ] **Diffusion « à toute la promo »** — les destinataires sont sélectionnés un
+      par un (`recipientIds`), il n'existe pas d'objet promotion. Landing corrigée
+      en « aux alternants que tu choisis ».
+
 ---
 
 ## Archive — Migration Supabase → Postgres + Prisma + nuxt-auth-utils (mai 2026)
