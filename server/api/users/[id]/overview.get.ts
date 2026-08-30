@@ -259,7 +259,10 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
       })
     ])
 
-  const competencyLink = `/competences?student=${studentId}`
+  // Liens préfixés selon l'espace du demandeur (ADR-0001 §7) : la fiche est
+  // consultée par le tuteur (/tuteur/...) ou par l'apprenant lui-même.
+  const space = user.role === Role.Tutor ? '/tuteur' : '/alternant'
+  const competencyLink = `${space}/competences?student=${studentId}`
 
   const noteEvents: OverviewEvent[] = notes.map((note) => ({
     id: `note:${note.id}`,
@@ -277,7 +280,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'retour_mission',
     title: update.assignment.project.title,
     description: excerpt(update.body),
-    link: `/projects/${update.assignment.projectId}`
+    link: `${space}/projects/${update.assignment.projectId}`
   }))
 
   const reportEvents: OverviewEvent[] = reports.map((report) => ({
@@ -287,7 +290,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'rapport',
     title: report.title,
     description: reportStatusLabel(report.status),
-    link: `/rapports/${report.id}`
+    link: `${space}/rapports/${report.id}`
   }))
 
   const visitEvents: OverviewEvent[] = visits.map((visit) => ({
@@ -298,7 +301,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     description:
       [visitStatusLabel(visit.status), excerpt(visit.summary)].filter(Boolean).join(' · ') ||
       null,
-    link: '/visites'
+    link: `${space}/visites`
   }))
 
   const attendanceEvents: OverviewEvent[] = attendanceIssues.map((item) => ({
@@ -317,7 +320,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
       ]
         .filter(Boolean)
         .join(' · ') || null,
-    link: '/presences'
+    link: `${space}/presences`
   }))
 
   const cardEvents: OverviewEvent[] = cards.map((card) => ({
@@ -328,7 +331,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     description: excerpt(card.generalComment),
     // Fiche du bulletin (accessible aux deux parties), et non la page de
     // période `/bulletins/[id]` qui est réservée au tuteur.
-    link: `/bulletins/carte/${card.id}`
+    link: `${space}/bulletins/carte/${card.id}`
   }))
 
   const assessmentEvents: OverviewEvent[] = assessments.map((assessment) => ({
@@ -381,7 +384,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'visite',
     title: visitTitle(visit.mode),
     description: visit.location,
-    link: '/visites'
+    link: `${space}/visites`
   }))
 
   const upcomingSessions: OverviewUpcoming[] = futureSessions.map((session) => ({
@@ -390,7 +393,7 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'session',
     title: session.courseAssignment?.course.title ?? session.title,
     description: null,
-    link: '/calendar'
+    link: `${space}/calendar`
   }))
 
   const risk = riskByStudent.get(studentId) ?? { score: 0, level: 'ok', reasons: [] }
@@ -418,11 +421,11 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     timeline,
     upcoming: mergeUpcoming([upcomingVisits, upcomingSessions]),
     links: {
-      reports: '/rapports',
-      reportCards: '/bulletins',
+      reports: `${space}/rapports`,
+      reportCards: `${space}/bulletins`,
       competencies: competencyLink,
-      visits: '/visites',
-      conversation: conversation ? `/messages/${conversation.id}` : null
+      visits: `${space}/visites`,
+      conversation: conversation ? `${space}/messages/${conversation.id}` : null
     }
   }
 })
