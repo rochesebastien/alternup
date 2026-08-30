@@ -15,6 +15,14 @@
       <NuxtLink to="/tuteur/calendar" :class="navLinkClass('/tuteur/calendar')">
         Calendrier
       </NuxtLink>
+      <NuxtLink
+        to="/tuteur/offres"
+        :class="navLinkClass('/tuteur/offres')"
+        class="inline-flex items-center gap-1.5"
+      >
+        <UIcon name="i-lucide-briefcase" class="size-4" aria-hidden="true" />
+        Offres
+      </NuxtLink>
       <!-- Les pages de Suivi et le choix de l'apprenant vivent
            dans le dock apprenant (coin bas-droit). -->
     </template>
@@ -24,6 +32,15 @@
       <NuxtLink to="/tuteur/alternants" :class="linkClass" @click="close">Alternants</NuxtLink>
       <NuxtLink to="/tuteur/projects" :class="linkClass" @click="close">Projets</NuxtLink>
       <NuxtLink to="/tuteur/calendar" :class="linkClass" @click="close">Calendrier</NuxtLink>
+      <NuxtLink
+        to="/tuteur/offres"
+        :class="linkClass"
+        class="flex items-center gap-2"
+        @click="close"
+      >
+        <UIcon name="i-lucide-briefcase" class="size-4" aria-hidden="true" />
+        Offres
+      </NuxtLink>
       <!-- Même sélecteur qu'en desktop : il pilote les pages de Suivi listées juste après. -->
       <LearnerFocusSwitcher block class="my-1" />
       <NuxtLink to="/tuteur/presences" :class="linkClass" @click="close">Présences</NuxtLink>
