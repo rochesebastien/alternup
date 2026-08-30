@@ -2,6 +2,7 @@
 // redirection post-login. Module PUR : aucune dépendance Nuxt/serveur.
 
 import { Role } from '~/shared/utils/enums'
+import { legacyPathForRole, resolveLegacyTarget } from '~/shared/utils/legacy-routes'
 
 /** Préfixes d'espace et rôles autorisés à y naviguer. */
 export const SPACE_PREFIXES: Record<string, Role[]> = {
@@ -58,11 +59,21 @@ export function landingPageFor(role: Role): string {
  * Chemin après connexion : le `?redirect=` demandé s'il est sûr (relatif) ET
  * accessible au rôle — un redirect vers un espace interdit est ignoré au
  * profit du landing par rôle, pour éviter le rebond /login → page → /forbidden.
+ * Un chemin legacy (pré-split) est d'abord résolu vers sa cible d'espace via
+ * la table `legacy-routes`, puis soumis au même contrôle de rôle : un
+ * apprenant redirigé vers `/projects/42` retombe sur son landing au lieu du
+ * rebond login → 301 → /forbidden.
  */
 export function resolvePostLoginPath(role: Role, requested?: string | null): string {
   if (requested && requested.startsWith('/') && !requested.startsWith('//')) {
-    const allowed = rolesAllowedFor(requested)
-    if (allowed === null || allowed.includes(role)) return requested
+    const clean = stripQuery(requested)
+    const legacy = resolveLegacyTarget(clean)
+    // Query et hash sont conservés tels quels sur la cible résolue.
+    const path = legacy
+      ? legacyPathForRole(legacy, role) + requested.slice(clean.length)
+      : requested
+    const allowed = rolesAllowedFor(path)
+    if (allowed === null || allowed.includes(role)) return path
   }
   return landingPageFor(role)
 }

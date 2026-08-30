@@ -100,7 +100,7 @@
           Crée ton compte gratuit et commence à suivre tes alternants en moins de 5 minutes.
         </p>
         <UButton
-          :to="loggedIn ? '/alternants' : '/register'"
+          :to="ctaTarget"
           color="primary"
           size="xl"
           class="rounded-full font-semibold px-7"
@@ -114,11 +114,18 @@
 
 <script setup lang="ts">
 import { h } from 'vue'
+import { landingPageFor } from '~/shared/utils/auth-redirect'
 
 definePageMeta({ auth: false })
 useHead({ title: 'Fonctionnalités - alternup' })
 
-const { loggedIn } = useUserSession()
+const { loggedIn, user } = useUserSession()
+
+// CTA final : un visiteur connecté rejoint le landing de son espace, un
+// visiteur anonyme est invité à créer un compte.
+const ctaTarget = computed<string>(() =>
+  loggedIn.value && user.value ? landingPageFor(user.value.role) : '/register'
+)
 
 type Audience = 'tutor' | 'learner' | 'school'
 

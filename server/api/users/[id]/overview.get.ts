@@ -280,7 +280,12 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
     type: 'retour_mission',
     title: update.assignment.project.title,
     description: excerpt(update.body),
-    link: `${space}/projects/${update.assignment.projectId}`
+    // Les pages projets n'existent que côté tuteur ; l'apprenant retrouve ses
+    // retours de mission sur /alternant/missions.
+    link:
+      user.role === Role.Tutor
+        ? `/tuteur/projects/${update.assignment.projectId}`
+        : '/alternant/missions'
   }))
 
   const reportEvents: OverviewEvent[] = reports.map((report) => ({

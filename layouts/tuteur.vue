@@ -33,23 +33,9 @@
       <NuxtLink to="/tuteur/competences" :class="linkClass" @click="close">Compétences</NuxtLink>
       <NuxtLink to="/tuteur/visites" :class="linkClass" @click="close">Visites</NuxtLink>
       <NuxtLink to="/tuteur/messages" :class="linkClass" @click="close">Messages</NuxtLink>
-      <NuxtLink to="/notifications" class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors" @click="close">
-        Notifications
-        <span
-          v-if="notificationCount > 0"
-          class="min-w-4 h-4 px-1 rounded-full bg-[var(--ui-error)] text-white text-[10px] font-semibold leading-4 text-center"
-        >
-          {{ notificationCount > 99 ? '99+' : notificationCount }}
-        </span>
-      </NuxtLink>
+      <!-- L'entrée Notifications (commune aux espaces) est rendue par AppShell. -->
     </template>
 
     <slot />
   </AppShell>
 </template>
-
-<script setup lang="ts">
-// Compteur du centre de notifications, alimenté par <NotificationBell /> (nav
-// desktop) et réutilisé tel quel dans le menu mobile — aucune requête en double.
-const notificationCount = useNotificationCountState()
-</script>

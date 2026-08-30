@@ -78,7 +78,7 @@
               class="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start"
             >
               <UButton
-                :to="loggedIn ? '/alternants' : '/register'"
+                :to="ctaTarget"
                 color="primary"
                 size="xl"
                 class="rounded-full font-semibold px-8 shadow-[0_8px_24px_rgba(241,222,2,0.35)] hover:shadow-[0_10px_28px_rgba(241,222,2,0.45)] transition-shadow"
@@ -489,7 +489,7 @@
               Crée ton compte gratuit et commence à suivre tes alternants en moins de 5 minutes.
             </p>
             <UButton
-              :to="loggedIn ? '/alternants' : '/register'"
+              :to="ctaTarget"
               color="primary"
               size="xl"
               class="rounded-full font-semibold px-8 shadow-[0_8px_24px_rgba(241,222,2,0.25)]"
@@ -504,9 +504,17 @@
 </template>
 
 <script setup lang="ts">
+import { landingPageFor } from '~/shared/utils/auth-redirect'
+
 definePageMeta({ auth: false })
 
-const { loggedIn } = useUserSession()
+const { loggedIn, user } = useUserSession()
+
+// CTA principal : un visiteur connecté rejoint le landing de son espace, un
+// visiteur anonyme est invité à créer un compte.
+const ctaTarget = computed<string>(() =>
+  loggedIn.value && user.value ? landingPageFor(user.value.role) : '/register'
+)
 
 // Pastilles décoratives du hero : même langage visuel que les badges « À jour » et
 // « ↑ +12 % » de la carte (pilule élevée, arrondie, ombre portée, texte court).

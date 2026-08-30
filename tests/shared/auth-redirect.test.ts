@@ -100,6 +100,25 @@ describe('resolvePostLoginPath', () => {
     )
   })
 
+  it('résout un chemin legacy ex-mixte vers l\'espace du rôle', () => {
+    expect(resolvePostLoginPath(Role.Tutor, '/dashboard')).toBe('/tuteur/dashboard')
+    expect(resolvePostLoginPath(Role.Alternant, '/rapports/42')).toBe('/alternant/rapports/42')
+    expect(resolvePostLoginPath(Role.Tutor, '/competences?student=42')).toBe(
+      '/tuteur/competences?student=42'
+    )
+  })
+
+  it('ignore un chemin legacy mono-rôle interdit au rôle (pas de rebond 301 → /forbidden)', () => {
+    expect(resolvePostLoginPath(Role.Alternant, '/projects/42')).toBe('/alternant/dashboard')
+    expect(resolvePostLoginPath(Role.Stagiaire, '/alternants')).toBe('/alternant/dashboard')
+    expect(resolvePostLoginPath(Role.Tutor, '/courses')).toBe('/tuteur/dashboard')
+  })
+
+  it('résout un chemin legacy mono-rôle autorisé vers sa cible fixe', () => {
+    expect(resolvePostLoginPath(Role.Tutor, '/projects/42')).toBe('/tuteur/projects/42')
+    expect(resolvePostLoginPath(Role.Alternant, '/courses')).toBe('/alternant/courses')
+  })
+
   it.each([
     'https://evil.example.com',
     '//evil.example.com',

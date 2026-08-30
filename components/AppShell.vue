@@ -124,6 +124,22 @@
         >
           <div class="w-full px-6 py-4 flex flex-col gap-3 text-sm font-medium">
             <slot name="mobile-links" :close="closeMobile" :link-class="mobileLinkClass" />
+            <!-- Entrée commune à tous les espaces (la page /notifications est
+                 hors espace) : les layouts ne fournissent que leurs modules. -->
+            <NuxtLink
+              v-if="loggedIn"
+              to="/notifications"
+              class="flex items-center gap-2 text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors"
+              @click="closeMobile"
+            >
+              Notifications
+              <span
+                v-if="notificationCount > 0"
+                class="min-w-4 h-4 px-1 rounded-full bg-[var(--ui-error)] text-white text-[10px] font-semibold leading-4 text-center"
+              >
+                {{ notificationCount > 99 ? '99+' : notificationCount }}
+              </span>
+            </NuxtLink>
           </div>
         </div>
       </Transition>
@@ -219,6 +235,10 @@ function navLinkClass(...paths: string[]) {
 // Style commun des liens du menu mobile, partagé avec les layouts via le slot.
 const mobileLinkClass
   = 'text-[var(--ui-text-muted)] hover:text-[var(--ui-text)] transition-colors'
+
+// Compteur du centre de notifications, alimenté par <NotificationBell /> (nav
+// desktop) et réutilisé tel quel dans le menu mobile — aucune requête en double.
+const notificationCount = useNotificationCountState()
 
 // Menu du compte (nav) : lien vers le profil, puis déconnexion en rouge.
 const accountItems = computed(() => [
