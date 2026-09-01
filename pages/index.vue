@@ -578,10 +578,10 @@
             <div class="lg:col-span-6">
               <span class="inline-flex items-center gap-2.5 text-[12px] font-bold tracking-[0.18em] uppercase text-[#D8D8D5] mb-5">
                 <span class="w-[22px] h-1 rounded-full bg-brand-500" aria-hidden="true" />
-                Nouveau · Espace alternant
+                Des offres sur un marché compliqué
               </span>
               <h2 class="text-3xl sm:text-4xl lg:text-[44px] leading-[1.08] font-extrabold tracking-[-0.03em] mb-5 text-white text-balance">
-                Les offres d'alternance arrivent pendant que tu dors
+                Les offres d'alternance arrivent chaque jour
               </h2>
               <p class="text-[16px] leading-[1.6] text-[#A8A8A6] mb-6">
                 Chaque nuit, Alternup récupère les offres d'alternance publiées sur La
@@ -629,7 +629,7 @@
           <div class="dark-panel-glow dark-panel-glow--center" aria-hidden="true" />
           <div class="relative max-w-[720px] mx-auto">
             <h2 class="text-4xl sm:text-5xl lg:text-[56px] leading-[1.05] font-extrabold tracking-[-0.03em] mb-5 text-white text-balance">
-              Un compte, <span class="hl">deux espaces</span>, zéro <span class="strike">Excel
+              Un lien, <span class="hl">un avenir</span>, zéro <span class="strike">Excel
                 <svg class="strike-svg" viewBox="0 0 140 28" preserveAspectRatio="none" aria-hidden="true">
                   <path d="M4 17 Q 40 9, 72 14 T 136 11" stroke="currentColor" stroke-width="4" fill="none" stroke-linecap="round" />
                 </svg>
@@ -637,8 +637,9 @@
             </h2>
             <p class="text-[17px] text-[#A8A8A6] mb-9">
               Compte gratuit, en moins de 5 minutes. Tuteur, tu invites tes alternants
-              dans la foulée. Alternant ou stagiaire, tu accèdes tout de suite à ton
-              espace et aux offres du jour.
+              (et stagiaires). Alternant ou stagiaire, tu accèdes tout de suite à ton
+              espace et aux offres du jour. Alternup solidifie alors le lien entre vous
+              deux, et permet aux jeunes de mieux s'intégrer dans le milieu professionnel.
             </p>
             <UButton
               :to="ctaTarget"
