@@ -356,13 +356,14 @@ async function onEventMove(event: CalendarDisplayEvent, start: Date, end: Date):
       method: 'PUT',
       body: { startTime, endTime }
     })
-    // Aligne la copie locale (utilisée par les modales et la relecture des
-    // vues) sans relancer un rafraîchissement complet.
-    const local = (calendarEvents.value ?? []).find(e => e.id === event.id)
-    if (local) {
-      local.startTime = startTime
-      local.endTime = endTime
-    }
+    // Aligne la copie locale (modales et relecture des vues) sans relancer un
+    // rafraîchissement complet. `data` de useFetch est un shallowRef (Nuxt 4,
+    // `deep: false`) : une mutation en place de l'objet ne notifie personne et
+    // le bloc restait à son ancienne place jusqu'au rechargement — on remplace
+    // donc le tableau pour que les computed (bucketByDay, layoutDay) recalculent.
+    calendarEvents.value = (calendarEvents.value ?? []).map((e) =>
+      e.id === event.id ? { ...e, startTime, endTime } : e
+    )
     toast.add({ title: 'Événement déplacé', color: 'success' })
     return true
   } catch (err: unknown) {

@@ -34,7 +34,9 @@ const scroller = useTemplateRef('scroller')
 // La journée s'ouvre à 7h : rien à faire au rendu serveur, le scroll ne
 // prend effet qu'après montage côté client.
 onMounted(() => {
-  scroller.value?.scrollTo({ top: 7 * HOUR_HEIGHT })
+  // Un peu au-dessus de la ligne de 7h : le libellé « 07:00 » est centré sur
+  // cette ligne et serait sinon coupé en deux par l'en-tête des jours.
+  scroller.value?.scrollTo({ top: 7 * HOUR_HEIGHT - 10 })
 })
 
 function isToday(day: Date): boolean {
