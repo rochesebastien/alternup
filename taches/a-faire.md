@@ -1343,3 +1343,28 @@ Revue :
 `grep ".prisma/client/index-browser" .output/public/_nuxt/` → rien ✅ ·
 Vérifié au navigateur (Postgres local + comptes de test) : dock ouvert, `/tuteur/offres`,
 `/alternant/offres` inchangée, `/page-inexistante` → 404.
+
+## 2026-09-01 — Largeur, menu compte, offres, page compte, calendrier Nuxt UI
+
+> Branche : `claude/app-layout-ui-refinements-1r2593`. Lot exécuté par workflow de
+> sous-agents (Sonnet), cadrage et intégration finale par la session principale.
+
+Plan :
+
+- [ ] **Largeur** : `--container-7xl: 111rem` dans `@theme` (`assets/css/main.css`) —
+      toutes les pages servies par `AppShell` s'élargissent ; `/account` garde son `max-w-3xl`.
+- [ ] **Menu compte** (`AppShell.vue`) : « Page vitrine » → `/` sous « Mon compte » dans
+      l'app ; « Tableau de bord » → landing du rôle quand on est sur `/` ou `/features`.
+- [ ] **Offres** (`OffresBoard.vue`) : badge « Nouveau » jaune de marque / texte noir ;
+      « Voir l'offre » noir / texte blanc dans les deux thèmes.
+- [ ] **Page compte** : badge « Tuteur » retiré ; « Modifier » et « Changer » alignés en haut
+      à droite de leur carte (le bloc texte ne pousse plus le bouton à la ligne).
+- [ ] **Calendrier** : remplacement de Schedule-X par une adaptation du template Nuxt UI
+      « calendar » (github.com/nuxt-ui-templates/calendar) : vues jour / semaine / mois
+      (semaine par défaut), lundi, français, glisser-déposer + redimensionnement + création
+      par glissé réservés au tuteur, pointages en lecture seule, modales existantes
+      conservées. Logique pure dans `shared/utils/calendar-{dates,layout}.ts` + tests Vitest ;
+      composants sous `components/calendar/` ; `date-fns` ajouté, 8 paquets Schedule-X et
+      `temporal-polyfill` retirés.
+- [ ] Vérification : `prisma generate` → `nuxt prepare` → `vue-tsc` → `npm test` → `lint`
+      → `nuxt build` → grep `.prisma/client/index-browser` → rendu réel (Postgres local).
