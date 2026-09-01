@@ -1,6 +1,8 @@
 <template>
-  <!-- `tooltip` : délai court et global pour toutes les infobulles de l'app. -->
-  <UApp :tooltip="{ delayDuration: 200, skipDelayDuration: 300 }">
+  <!-- `tooltip` : délai court et global pour toutes les infobulles de l'app.
+       `locale` : libellés internes de Nuxt UI en français (mois et jours du
+       UCalendar de la page offres, aria-labels de navigation…). -->
+  <UApp :locale="fr" :tooltip="{ delayDuration: 200, skipDelayDuration: 300 }">
     <NuxtLayout :name="layoutName">
       <NuxtPage />
     </NuxtLayout>
@@ -8,6 +10,7 @@
 </template>
 
 <script setup lang="ts">
+import { fr } from '@nuxt/ui/locale'
 import { spacePrefixOf } from '~/shared/utils/auth-redirect'
 
 // Le layout est calculé depuis le préfixe de route (ADR-0001 §3) : impossible

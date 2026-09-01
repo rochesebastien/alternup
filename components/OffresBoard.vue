@@ -36,13 +36,22 @@
         aria-label="Rechercher un titre ou une entreprise"
         class="w-full sm:w-72"
       />
-      <UInput
-        v-model="lieu"
+      <UInputMenu
+        v-model="selectedVille"
+        v-model:search-term="villeSearchTerm"
+        :items="villeItems"
+        :loading="villeStatus === 'pending'"
+        ignore-filter
+        clear
         icon="i-lucide-map-pin"
-        placeholder="Lieu"
-        aria-label="Filtrer par lieu"
-        class="w-full sm:w-44"
-      />
+        placeholder="Ville ou code postal"
+        aria-label="Filtrer par ville"
+        class="w-full sm:w-64"
+      >
+        <template #item-trailing="{ item }">
+          <span class="text-xs text-[var(--ui-text-muted)]">{{ item.total }}</span>
+        </template>
+      </UInputMenu>
       <USelect
         v-model="typeContratSelect"
         :items="contratItems"
@@ -58,6 +67,56 @@
         aria-label="Filtrer par statut de candidature"
         class="w-full sm:w-56"
       />
+      <UPopover :content="{ align: 'start', side: 'bottom', sideOffset: 8 }">
+        <UButton
+          color="neutral"
+          variant="outline"
+          icon="i-lucide-calendar"
+          class="w-full sm:w-auto justify-start"
+          aria-label="Filtrer par période de publication"
+        >
+          {{ periodeLabel }}
+        </UButton>
+
+        <template #content>
+          <div class="p-3 space-y-3">
+            <!-- Chrome du calendrier (en-têtes de mois, jours, aria-labels de
+                 nav) en anglais : `Calendar.vue` n'a pas de prop `locale`, elle
+                 vient du contexte injecté par `<UApp>` (`useLocale`, non
+                 configuré côté `app.vue`, hors périmètre). Un `provide()` du
+                 contexte FR ici, sur ce seul sous-arbre, a été essayé puis
+                 retiré : `useLocale` est enveloppé côté client dans
+                 `createSharedComposable` (VueUse) et mémorise la première
+                 résolution pour toute l'app (typiquement un autre composant de
+                 la page, comme la nav, qui appelle `useLocale` avant que ce
+                 `provide` ne s'exécute) — un `provide` local n'a alors aucun
+                 effet observable. `periodeLabel` ci-dessous (bouton déclencheur)
+                 reste en français, formaté à la main via `Intl.DateTimeFormat`.
+            -->
+            <!-- `as any` sur `model-value` (voir le commentaire de `onCalendarUpdate`
+                 ci-dessous) : défaut de vue-tsc/@nuxt/ui sur le typage générique de
+                 `UCalendar` en mode `range`, pas une échappatoire de confort. -->
+            <UCalendar
+              :model-value="(calendarModel as any)"
+              range
+              :number-of-months="numberOfMonths"
+              :week-starts-on="1"
+              @update:model-value="onCalendarUpdate"
+            />
+            <div class="flex justify-end border-t border-[var(--ui-border)] pt-3">
+              <UButton
+                color="neutral"
+                variant="ghost"
+                size="sm"
+                :disabled="!dateDebut && !dateFin"
+                @click="clearPeriode"
+              >
+                Effacer
+              </UButton>
+            </div>
+          </div>
+        </template>
+      </UPopover>
       <UCheckbox
         v-model="inclureExpirees"
         label="Inclure les offres expirées"
@@ -219,14 +278,19 @@
 
 <script setup lang="ts">
 import type { TableColumn, TabsItem } from '@nuxt/ui'
+import { type DateValue, parseDate } from '@internationalized/date'
+import { breakpointsTailwind } from '@vueuse/core'
+import type { DateRange } from 'reka-ui'
 import type { CandidatureStatut, OffreContratType, OffreStatut } from '~/shared/utils/enums'
 import {
   CANDIDATURE_STATUT_META,
+  formatVilleOption,
   OFFRE_CONTRAT_META,
   OFFRE_PAGE_SIZE,
   offreListFiltersFrom,
   offreListQueryFrom,
-  type OffreListFilters
+  type OffreListFilters,
+  type OffreVilleOption
 } from '~/shared/utils/offres'
 
 /**
@@ -272,6 +336,9 @@ const toast = useToast()
 const initial = offreListFiltersFrom(route.query)
 
 const q = ref(initial.q)
+// `lieu` (`contains` texte libre) n'a plus de champ dans l'interface, remplacé
+// par le sélecteur de ville ci-dessous : conservé en lecture seule pour ne pas
+// casser un lien `?lieu=…` déjà partagé.
 const lieu = ref(initial.lieu)
 const typeContrat = ref<OffreContratType | ''>(initial.typeContrat)
 // En lecture seule le filtre de statut n'existe pas : un `?statut=` copié
@@ -280,18 +347,126 @@ const statut = ref<CandidatureStatut | ''>(props.readonly ? '' : initial.statut)
 const inclureExpirees = ref(initial.inclureExpirees)
 const page = ref(initial.page)
 
-// Les champs texte attendent la fin de frappe avant de requêter le serveur.
+// Le champ texte attend la fin de frappe avant de requêter le serveur.
 const qDebounced = refDebounced(q, 300)
-const lieuDebounced = refDebounced(lieu, 300)
+
+// ─── Filtre ville (UInputMenu alimenté par GET /api/offres/villes) ───────────
+interface VilleOption {
+  label: string
+  /** Code postal exact — c'est la valeur envoyée au filtre serveur. */
+  value: string
+  total: number
+}
+
+const villeSearchTerm = ref('')
+const villeSearchDebounced = refDebounced(villeSearchTerm, 250)
+const villeQuery = computed(() => ({ q: villeSearchDebounced.value }))
+
+const { data: villeData, status: villeStatus } = useFetch<{ items: OffreVilleOption[] }>(
+  '/api/offres/villes',
+  { query: villeQuery, default: () => ({ items: [] }) }
+)
+
+const villeItems = computed<VilleOption[]>(() =>
+  villeData.value.items.map((v) => ({
+    label: formatVilleOption(v.ville, v.codePostal),
+    value: v.codePostal,
+    total: v.total
+  }))
+)
+
+// Le v-model porte l'item entier (pas `value-key`) : l'affichage du libellé
+// sélectionné (`getDisplayValue`) retombe alors sur `selectedVille.value.label`
+// même si l'item n'est plus dans `villeItems` (dropdown revenu à une recherche
+// vide) — cas de l'arrivée directe ci-dessous.
+const selectedVille = ref<VilleOption | null>(null)
+
+// Arrivée directe avec `?codePostal=…` : le libellé n'est pas forcément dans
+// les 15 villes les plus fréquentes retournées par défaut, on le résout par un
+// appel dédié filtré sur ce code postal.
+if (initial.codePostal) {
+  const { data: initialVilleData } = await useFetch<{ items: OffreVilleOption[] }>(
+    '/api/offres/villes',
+    { query: { q: initial.codePostal }, default: () => ({ items: [] }) }
+  )
+  const match = initialVilleData.value.items.find((v) => v.codePostal === initial.codePostal)
+  selectedVille.value = match
+    ? { label: formatVilleOption(match.ville, match.codePostal), value: match.codePostal, total: match.total }
+    : { label: initial.codePostal, value: initial.codePostal, total: 0 }
+}
+
+const codePostal = computed(() => selectedVille.value?.value ?? '')
+
+// ─── Filtre période (UCalendar en mode plage, popover) ───────────────────────
+function dateValueFrom(value: string): DateValue | undefined {
+  return value ? parseDate(value) : undefined
+}
+
+const dateDebut = ref(initial.dateDebut)
+const dateFin = ref(initial.dateFin)
+
+// État propre au calendrier : reflète chaque clic (y compris une sélection en
+// cours, borne de fin non posée) sans le répercuter tout de suite sur les
+// filtres/la requête — `dateDebut`/`dateFin` ne sont mis à jour que lorsque la
+// plage est complète (borne de fin posée, éventuellement égale à la borne de
+// début pour une plage d'un seul jour).
+const calendarModel = ref<DateRange>({
+  start: dateValueFrom(initial.dateDebut),
+  end: dateValueFrom(initial.dateFin)
+})
+
+watch(calendarModel, (value) => {
+  if (!value?.start || !value?.end) return
+  dateDebut.value = value.start.toString()
+  dateFin.value = value.end.toString()
+})
+
+// `@update:model-value` en binding manuel (pas de `v-model`) : le type généré
+// par vue-tsc pour un `UCalendar` générique en mode `range` échoue à
+// réconcilier `DateValue` (`CalendarDate | CalendarDateTime | ZonedDateTime`,
+// classes à champs privés de `@internationalized/date`) avec la valeur reçue,
+// quel que soit le typage donné à `calendarModel` côté appelant (constaté avec
+// `ref<DateRange>` explicite comme avec l'inférence — la même erreur
+// `#private … manquant de ZonedDateTime` apparaît dans les deux cas). `unknown`
+// contourne ce défaut d'inférence générique de `@nuxt/ui` sans `any` diffus.
+function onCalendarUpdate(value: unknown) {
+  const range = value as { start?: DateValue, end?: DateValue } | null
+  calendarModel.value = { start: range?.start, end: range?.end }
+}
+
+function clearPeriode() {
+  calendarModel.value = { start: undefined, end: undefined }
+  dateDebut.value = ''
+  dateFin.value = ''
+}
+
+const isSmAndUp = useBreakpoints(breakpointsTailwind).greaterOrEqual('sm')
+const numberOfMonths = computed(() => (isSmAndUp.value ? 2 : 1))
+
+const anneeCourante = new Date().getFullYear()
+
+/** `forcerAnnee` : la borne de fin porte toujours l'année, celle de début uniquement si elle diffère de l'année courante. */
+function formatBorne(date: DateValue, forcerAnnee: boolean): string {
+  const jsDate = new Date(date.year, date.month - 1, date.day)
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'short',
+    year: forcerAnnee || date.year !== anneeCourante ? 'numeric' : undefined
+  }).format(jsDate)
+}
+
+const periodeLabel = computed(() => {
+  if (!dateDebut.value || !dateFin.value) return 'Période'
+  return `Du ${formatBorne(parseDate(dateDebut.value), false)} au ${formatBorne(parseDate(dateFin.value), true)}`
+})
 
 const filters = computed<OffreListFilters>(() => ({
   page: page.value,
   q: qDebounced.value,
-  lieu: lieuDebounced.value,
-  // Filtres ville / dates : câblés dans l'interface au lot suivant.
-  codePostal: '',
-  dateDebut: '',
-  dateFin: '',
+  lieu: lieu.value,
+  codePostal: codePostal.value,
+  dateDebut: dateDebut.value,
+  dateFin: dateFin.value,
   typeContrat: typeContrat.value,
   statut: statut.value,
   inclureExpirees: inclureExpirees.value
@@ -300,7 +475,7 @@ const filters = computed<OffreListFilters>(() => ({
 // Tout changement de filtre ramène à la première page. Déclaré AVANT le
 // useFetch : ce watcher s'exécute d'abord, la query part avec page=1.
 watch(
-  [qDebounced, lieuDebounced, typeContrat, statut, inclureExpirees],
+  [qDebounced, typeContrat, statut, inclureExpirees, codePostal, dateDebut, dateFin],
   () => { page.value = 1 }
 )
 
@@ -407,7 +582,10 @@ const CANDIDATURE_STATUT_COLOR: Record<CandidatureStatut, 'neutral' | 'success' 
 }
 
 const hasActiveFilters = computed(() =>
-  Boolean(q.value.trim() || lieu.value.trim() || typeContrat.value || statut.value)
+  Boolean(
+    q.value.trim() || lieu.value.trim() || typeContrat.value || statut.value
+    || codePostal.value || dateDebut.value || dateFin.value
+  )
 )
 
 const emptyLabel = computed(() =>
