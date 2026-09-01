@@ -45,7 +45,7 @@ Déploiement cible : **Dokploy**.
 | Icônes / police | `@nuxt/icon` + `@iconify-json/lucide`, **Mona Sans** self-hostée — aucun fetch réseau au runtime |
 | Images | `@nuxt/image` (provider `ipx`) |
 | État | **Pinia**, **VueUse** |
-| Calendrier | **Schedule-X 4** (thème shadcn) + `temporal-polyfill` |
+| Calendrier | Calendrier maison adapté du template Nuxt UI « calendar » (`date-fns`) |
 | Animation | **GSAP** |
 | API | **Nitro** — ~113 routes sous `server/api/` |
 | ORM / base | **Prisma 7** (`@prisma/adapter-pg`) sur **PostgreSQL 16** — 30 modèles, 14 enums |
@@ -81,7 +81,7 @@ alternup/
 │   ├── schema.prisma      # Modèle de données
 │   └── migrations/        # Migrations Prisma générées
 ├── prisma.config.ts       # Config Prisma 7 (DATABASE_URL)
-├── types/                 # Augmentations TypeScript (auth, gsap, temporal…)
+├── types/                 # Augmentations TypeScript (auth, gsap…)
 ├── tests/shared/          # Suite Vitest (logique de shared/utils)
 ├── taches/                # Journal de plans, revues et leçons
 ├── docs/                  # Documentation projet (déploiement, ADRs, veille d'offres)

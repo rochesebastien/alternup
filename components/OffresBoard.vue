@@ -90,7 +90,12 @@
             <span class="font-medium text-[var(--ui-text)]">
               {{ row.original.titre }}
             </span>
-            <UBadge v-if="row.original.nouvelle" color="primary" variant="soft" class="shrink-0">
+            <UBadge
+              v-if="row.original.nouvelle"
+              color="primary"
+              variant="solid"
+              class="shrink-0 bg-[var(--ui-primary)] text-black"
+            >
               Nouveau
             </UBadge>
             <UBadge
@@ -155,14 +160,14 @@
           <!-- La candidature se fait chez la source (CGU LBA) : lien sortant. -->
           <UButton
             color="neutral"
-            variant="ghost"
+            variant="solid"
             size="sm"
             trailing-icon="i-lucide-external-link"
             :to="row.original.url"
             target="_blank"
             rel="noopener noreferrer nofollow"
             :aria-label="`Voir l'offre ${row.original.titre} sur le site source`"
-            class="whitespace-nowrap"
+            class="whitespace-nowrap bg-black text-white hover:bg-neutral-800 active:bg-neutral-800 dark:bg-black dark:text-white dark:hover:bg-neutral-800 dark:active:bg-neutral-800"
           >
             Voir l'offre
           </UButton>
@@ -283,6 +288,10 @@ const filters = computed<OffreListFilters>(() => ({
   page: page.value,
   q: qDebounced.value,
   lieu: lieuDebounced.value,
+  // Filtres ville / dates : câblés dans l'interface au lot suivant.
+  codePostal: '',
+  dateDebut: '',
+  dateFin: '',
   typeContrat: typeContrat.value,
   statut: statut.value,
   inclureExpirees: inclureExpirees.value

@@ -7,8 +7,8 @@
       v-if="user"
       class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-6 space-y-5"
     >
-      <div class="flex items-start justify-between gap-4 flex-wrap">
-        <div class="flex items-center gap-3 min-w-0">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex items-center gap-3 min-w-0 flex-1">
           <span
             class="size-11 shrink-0 rounded-full bg-[var(--ui-bg-accented)] text-[var(--ui-text)] text-sm font-semibold flex items-center justify-center"
           >
@@ -21,18 +21,16 @@
             <p class="text-sm text-[var(--ui-text-muted)] truncate">{{ user.email }}</p>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <UBadge color="neutral" variant="soft">{{ roleLabel }}</UBadge>
-          <UButton
-            v-if="!editing"
-            color="neutral"
-            variant="outline"
-            size="sm"
-            icon="i-lucide-pencil"
-            label="Modifier"
-            @click="openEdit"
-          />
-        </div>
+        <UButton
+          v-if="!editing"
+          color="neutral"
+          variant="outline"
+          size="sm"
+          icon="i-lucide-pencil"
+          label="Modifier"
+          class="shrink-0"
+          @click="openEdit"
+        />
       </div>
 
       <!-- Lecture -->
@@ -101,8 +99,8 @@
 
     <!-- Mot de passe -->
     <section class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-6 space-y-5">
-      <div class="flex items-start justify-between gap-4 flex-wrap">
-        <div class="min-w-0">
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex-1 min-w-0">
           <h2 class="text-base font-semibold text-[var(--ui-text)]">Mot de passe</h2>
           <p class="text-sm text-[var(--ui-text-muted)] mt-1">
             {{ MIN_PASSWORD_LENGTH }} caractères minimum. Votre mot de passe actuel est demandé

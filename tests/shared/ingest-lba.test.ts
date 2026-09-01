@@ -88,6 +88,8 @@ describe('mapLbaJob', () => {
       titre: 'Assistant RH en alternance',
       entreprise: 'Carrefour',
       lieu: '45 avenue Jean Jaurès, 69007 Lyon',
+      ville: 'Lyon',
+      codePostal: '69007',
       typeContrat: 'professionnalisation',
       niveauDiplome: '5',
       romeCodes: ['M1501', 'M1502'],
@@ -134,6 +136,8 @@ describe('mapLbaJob', () => {
       titre: 'Apprenti',
       entreprise: null,
       lieu: null,
+      ville: null,
+      codePostal: null,
       typeContrat: 'apprentissage',
       niveauDiplome: null,
       romeCodes: [],
@@ -160,6 +164,26 @@ describe('mapLbaJob', () => {
     const offres = entrees.map(mapLbaJob).filter((o): o is OffreNormalisee => o !== null)
     expect(offres).toHaveLength(10)
     expect(offres.map((o) => o.partnerLabel)).toContain('France Travail')
+  })
+
+  it('extrait ville et code postal via parseLieu, quelle que soit la casse de la source', () => {
+    // Fixture : « 12 rue de la Roquette, 75011 Paris » (offre LBA) et
+    // « 12 rue de la Roquette,  75011 PARIS » (même offre relayée par Hellowork,
+    // double espace + tout capitales) doivent produire la même ville normalisée.
+    const paris = mapLbaJob({
+      ...OFFRE_LBA_COMPLETE,
+      apply: { url: 'https://exemple.test/offre/paris-1' },
+      workplace: { ...OFFRE_LBA_COMPLETE.workplace, location: { address: '12 rue de la Roquette, 75011 Paris' } }
+    })
+    const parisMaj = mapLbaJob({
+      ...OFFRE_LBA_COMPLETE,
+      apply: { url: 'https://exemple.test/offre/paris-2' },
+      workplace: { ...OFFRE_LBA_COMPLETE.workplace, location: { address: '12 rue de la Roquette,  75011 PARIS' } }
+    })
+    const lyon = mapLbaJob(OFFRE_LBA_COMPLETE)
+    expect(paris).toMatchObject({ ville: 'Paris', codePostal: '75011' })
+    expect(parisMaj).toMatchObject({ ville: 'Paris', codePostal: '75011' })
+    expect(lyon).toMatchObject({ ville: 'Lyon', codePostal: '69007' })
   })
 })
 

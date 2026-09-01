@@ -22,17 +22,18 @@ export interface ApiCalendarEvent {
 }
 
 /**
- * Catégories d'affichage du calendrier. Chaque catégorie correspond à un
- * « calendar » Schedule-X, c'est-à-dire à un jeu de couleurs (clair / sombre).
- * `presence` couvre les pointages journaliers (lecture seule dans le calendrier).
+ * Catégories d'affichage du calendrier. Chaque catégorie correspond à un jeu
+ * de classes de couleur (`components/calendar/category-classes.ts`, clair /
+ * sombre). `presence` couvre les pointages journaliers (lecture seule dans
+ * le calendrier).
  */
 export type CalendarCategoryId = 'session' | 'visite' | 'autre' | 'presence'
 
 /**
  * `TRaw` par défaut à l'union des deux sources possibles pour les usages
- * génériques (ex. le flux fusionné consommé par Schedule-X) ; `toDisplayEvent`
- * et `presenceToDisplayEvent` le fixent chacun à leur propre type pour que
- * `rawEvent` reste précisément typé côté appelant.
+ * génériques (ex. le flux fusionné consommé par les vues du calendrier) ;
+ * `toDisplayEvent` et `presenceToDisplayEvent` le fixent chacun à leur propre
+ * type pour que `rawEvent` reste précisément typé côté appelant.
  */
 export interface CalendarDisplayEvent<TRaw = ApiCalendarEvent | PresenceEntry> {
   id: string
@@ -65,10 +66,9 @@ export function toDisplayTitle(event: ApiCalendarEvent): string {
 /**
  * Projette un événement de l'API vers le format d'affichage du calendrier.
  *
- * Volontairement pur et sans dépendance au moteur de rendu : Schedule-X v4
- * attend des objets `Temporal`, mais leur construction dépend du global
- * `Temporal` (polyfill chargé côté navigateur uniquement). La conversion se
- * fait donc dans `pages/calendar.vue`, à partir des chaînes ISO ci-dessous.
+ * Volontairement pur et sans dépendance au moteur de rendu : les vues du
+ * calendrier (`components/calendar/`) travaillent en `Date` natives et
+ * `date-fns`, construites à partir des chaînes ISO ci-dessous.
  */
 export function toDisplayEvent(event: ApiCalendarEvent): CalendarDisplayEvent<ApiCalendarEvent> {
   return {
@@ -113,10 +113,9 @@ function presenceTitle(entry: PresenceEntry, viewerId: string): string {
 
 /**
  * Projette un pointage journalier vers le format d'affichage du calendrier.
- * Fonction pure, au même titre que `toDisplayEvent` : la conversion vers les
- * objets `Temporal` attendus par Schedule-X reste dans `pages/calendar.vue`.
- * L'identifiant est préfixé pour ne jamais entrer en collision avec un
- * `ApiCalendarEvent` et pour reconnaître la catégorie sans relire `calendarId`.
+ * Fonction pure, au même titre que `toDisplayEvent`. L'identifiant est
+ * préfixé pour ne jamais entrer en collision avec un `ApiCalendarEvent` et
+ * pour reconnaître la catégorie sans relire `calendarId`.
  */
 export function presenceToDisplayEvent(entry: PresenceEntry, viewerId: string): CalendarDisplayEvent<PresenceEntry> {
   return {

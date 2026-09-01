@@ -44,7 +44,7 @@ exposés par `/api/offres*` et la page `/alternant/offres`. Conventions à respe
 | Police | **Mona Sans** self-hostée via `@fontsource-variable` (`ui: { fonts: false }`) |
 | Images | `@nuxt/image`, provider `ipx` |
 | État | **Pinia** (`@pinia/nuxt`), **VueUse** |
-| Calendrier | **Schedule-X 4** (thème shadcn, drag & drop, resize) + `temporal-polyfill` |
+| Calendrier | Calendrier maison adapté du template Nuxt UI « calendar » (`date-fns`) |
 | Animation | **GSAP** (plugin client uniquement) |
 | API | **Nitro** — routes sous `server/api/` |
 | ORM / DB | **Prisma 7** (`@prisma/adapter-pg`) sur **PostgreSQL 16** |

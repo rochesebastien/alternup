@@ -7,11 +7,14 @@ import {
   OFFRE_NOUVEAUTE_JOURS,
   OFFRE_PAGE_SIZE,
   estNouvelle,
+  formatVilleOption,
   normalizeForDedup,
   offreListFiltersFrom,
   offreListQueryFrom,
   offreListQuerySchema,
   offreStatutInputSchema,
+  offreVillesQuerySchema,
+  parseLieu,
   type OffreListFilters
 } from '~/shared/utils/offres'
 
@@ -39,6 +42,70 @@ describe('normalizeForDedup', () => {
     expect(normalizeForDedup('Dev Web ACME', '', 'Paris')).not.toBe(
       normalizeForDedup('Dev Web', 'ACME', 'Paris')
     )
+  })
+})
+
+describe('parseLieu', () => {
+  it('extrait code postal et ville d\'une adresse complète', () => {
+    expect(parseLieu('12 rue de la Roquette, 75011 Paris')).toEqual({
+      ville: 'Paris',
+      codePostal: '75011'
+    })
+  })
+
+  it('normalise une ville tout en majuscules', () => {
+    expect(parseLieu('12 rue de la Roquette,  75011 PARIS')).toEqual({
+      ville: 'Paris',
+      codePostal: '75011'
+    })
+  })
+
+  it('gère les tirets et apostrophes de la casse « Titre »', () => {
+    expect(parseLieu('93200 SAINT-DENIS')).toEqual({ ville: 'Saint-Denis', codePostal: '93200' })
+    expect(parseLieu('95290 L\'ISLE-ADAM')).toEqual({ ville: 'L\'Isle-Adam', codePostal: '95290' })
+  })
+
+  it('conserve les chiffres d\'arrondissement sans les capitaliser', () => {
+    expect(parseLieu('75011 paris 11e')).toEqual({ ville: 'Paris 11e', codePostal: '75011' })
+  })
+
+  it('s\'arrête à la virgule suivant la ville', () => {
+    expect(parseLieu('69007 Lyon, France')).toEqual({ ville: 'Lyon', codePostal: '69007' })
+  })
+
+  it('renvoie des nulls sur une adresse sans code postal', () => {
+    expect(parseLieu('Chemin de la Salade Ponsan')).toEqual({ ville: null, codePostal: null })
+  })
+
+  it('renvoie une ville nulle pour un code postal seul', () => {
+    expect(parseLieu('75011')).toEqual({ ville: null, codePostal: '75011' })
+  })
+
+  it('ne confond pas un numéro de voirie ou un nombre plus long avec un code postal', () => {
+    expect(parseLieu('12 rue de la Roquette, Paris')).toEqual({ ville: null, codePostal: null })
+    expect(parseLieu('750111 Paris')).toEqual({ ville: null, codePostal: null })
+  })
+
+  it('renvoie des nulls pour une chaîne vide ou absente', () => {
+    expect(parseLieu('')).toEqual({ ville: null, codePostal: null })
+    expect(parseLieu(null)).toEqual({ ville: null, codePostal: null })
+    expect(parseLieu(undefined)).toEqual({ ville: null, codePostal: null })
+  })
+
+  it('réduit les espaces multiples dans la ville', () => {
+    expect(parseLieu('74230   Thônes')).toEqual({ ville: 'Thônes', codePostal: '74230' })
+  })
+})
+
+describe('formatVilleOption', () => {
+  it('combine ville et code postal', () => {
+    expect(formatVilleOption('Paris', '75011')).toBe('Paris (75011)')
+  })
+
+  it('replie sur le champ non nul', () => {
+    expect(formatVilleOption(null, '75011')).toBe('75011')
+    expect(formatVilleOption('Paris', null)).toBe('Paris')
+    expect(formatVilleOption(null, null)).toBe('')
   })
 })
 
@@ -163,6 +230,30 @@ describe('offreListQuerySchema', () => {
     expect(result.error?.issues[0]?.message).toBe('Type de contrat invalide.')
   })
 
+  it('accepte un code postal à 5 chiffres et refuse le reste', () => {
+    expect(offreListQuerySchema.safeParse({ codePostal: '75011' }).success).toBe(true)
+    expect(offreListQuerySchema.safeParse({ codePostal: '7501' }).success).toBe(false)
+    expect(offreListQuerySchema.safeParse({ codePostal: '750111' }).success).toBe(false)
+    expect(offreListQuerySchema.safeParse({ codePostal: 'abcde' }).success).toBe(false)
+  })
+
+  it('accepte des dates yyyy-MM-dd et refuse un autre format', () => {
+    const result = offreListQuerySchema.safeParse({ dateDebut: '2026-08-01', dateFin: '2026-08-31' })
+    expect(result.success).toBe(true)
+    expect(offreListQuerySchema.safeParse({ dateDebut: '01/08/2026' }).success).toBe(false)
+    expect(offreListQuerySchema.safeParse({ dateFin: '2026-08-31T00:00:00Z' }).success).toBe(false)
+  })
+
+  it('refuse une plage de dates inversée avec un message français', () => {
+    const result = offreListQuerySchema.safeParse({ dateDebut: '2026-08-31', dateFin: '2026-08-01' })
+    expect(result.success).toBe(false)
+    expect(result.error?.issues[0]?.message).toBe('Filtres invalides.')
+  })
+
+  it('accepte une plage de dates égale (un seul jour)', () => {
+    expect(offreListQuerySchema.safeParse({ dateDebut: '2026-08-01', dateFin: '2026-08-01' }).success).toBe(true)
+  })
+
   it('refuse un statut de candidature inconnu avec un message français', () => {
     const result = offreListQuerySchema.safeParse({ statut: 'archivee' })
     expect(result.success).toBe(false)
@@ -188,6 +279,9 @@ const FILTRES_DEFAUT: OffreListFilters = {
   page: 1,
   q: '',
   lieu: '',
+  codePostal: '',
+  dateDebut: '',
+  dateFin: '',
   typeContrat: '',
   statut: '',
   inclureExpirees: false
@@ -214,6 +308,9 @@ describe('offreListQueryFrom', () => {
         page: 2,
         q: 'dev',
         lieu: 'Lyon',
+        codePostal: '69007',
+        dateDebut: '2026-08-01',
+        dateFin: '2026-08-31',
         typeContrat: 'apprentissage',
         statut: 'candidate',
         inclureExpirees: true
@@ -222,6 +319,9 @@ describe('offreListQueryFrom', () => {
       page: '2',
       q: 'dev',
       lieu: 'Lyon',
+      codePostal: '69007',
+      dateDebut: '2026-08-01',
+      dateFin: '2026-08-31',
       typeContrat: 'apprentissage',
       statut: 'candidate',
       inclureExpirees: 'true'
@@ -243,6 +343,9 @@ describe('offreListFiltersFrom', () => {
       page: 4,
       q: 'dev',
       lieu: 'Lyon',
+      codePostal: '69007',
+      dateDebut: '2026-08-01',
+      dateFin: '2026-08-31',
       typeContrat: 'professionnalisation',
       statut: 'rejetee',
       inclureExpirees: true
@@ -256,7 +359,10 @@ describe('offreListFiltersFrom', () => {
         page: 'abc',
         typeContrat: 'stage',
         statut: 'archivee',
-        inclureExpirees: 'oui'
+        inclureExpirees: 'oui',
+        codePostal: '7501',
+        dateDebut: '01/08/2026',
+        dateFin: '2026-08-32'
       })
     ).toEqual(FILTRES_DEFAUT)
   })
@@ -285,5 +391,18 @@ describe('offreStatutInputSchema', () => {
 
   it('refuse un corps vide', () => {
     expect(offreStatutInputSchema.safeParse({}).success).toBe(false)
+  })
+})
+
+describe('offreVillesQuerySchema', () => {
+  it('applique le défaut `q` vide sur une query vide', () => {
+    const result = offreVillesQuerySchema.safeParse({})
+    expect(result.success && result.data.q).toBe('')
+  })
+
+  it('trim `q` et borne à 60 caractères', () => {
+    expect(offreVillesQuerySchema.safeParse({ q: '  Lyon  ' }).data?.q).toBe('Lyon')
+    expect(offreVillesQuerySchema.safeParse({ q: 'a'.repeat(60) }).success).toBe(true)
+    expect(offreVillesQuerySchema.safeParse({ q: 'a'.repeat(61) }).success).toBe(false)
   })
 })
