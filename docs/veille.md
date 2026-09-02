@@ -12,8 +12,12 @@ de stages). Décisions d'architecture : ADR-0002 (modèle de données), ADR-0003
    chaque nuit par un Schedule Job Dokploy (`docker exec`, cron `30 3 * * *` UTC).
 3. **Base** : upsert idempotent dans PostgreSQL — tables `offres`, `offre_sources`,
    `offre_user_statuts`, journal `scrape_runs`.
-4. **API** : `GET /api/offres` (liste filtrée/paginée server-side), `GET /api/offres/[id]`,
-   `POST /api/offres/[id]/statut`, `GET /api/offres/stats`.
+4. **API** : `GET /api/offres` (liste filtrée/paginée server-side, avec filtres `codePostal`
+   exact et plage `dateDebut`/`dateFin` sur `datePublication`, repli sur `firstSeen` si
+   absente), `GET /api/offres/villes` (liste déroulante ville/code postal, groupée par
+   fréquence sur le stock actif), `GET /api/offres/[id]`, `POST /api/offres/[id]/statut`,
+   `GET /api/offres/stats`. `Offre.ville`/`Offre.codePostal` sont extraits de `lieu` par
+   `parseLieu` (`shared/utils/offres.ts`) à l'ingestion.
 5. **Page** : `/alternant/offres` (rôles Alternant + Stagiaire), tableau + filtres +
    statut de candidature par offre.
 

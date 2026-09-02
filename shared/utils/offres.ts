@@ -79,6 +79,49 @@ export function normalizeForDedup(
     .join('|')
 }
 
+// ─────────────────────────── Ville / code postal ───────────────────────────
+
+/**
+ * Met une ville en casse « Titre » mot par mot : minuscules puis majuscule sur
+ * la première lettre de chaque mot, où un mot est délimité par un espace, un
+ * tiret ou une apostrophe (« SAINT-DENIS » → « Saint-Denis », « L'ISLE-ADAM »
+ * → « L'Isle-Adam »). Les caractères non alphabétiques (chiffres d'un
+ * arrondissement, « paris 11e ») restent inchangés.
+ */
+function toTitleCaseVille(ville: string): string {
+  return ville
+    .toLowerCase()
+    .replace(/(^|[\s'-])(\p{L})/gu, (_, sep: string, lettre: string) => sep + lettre.toLocaleUpperCase('fr'))
+}
+
+/**
+ * Extrait un code postal français (5 chiffres, en mot entier : jamais un
+ * fragment d'un nombre plus long) et la ville qui le suit jusqu'à la fin de la
+ * chaîne ou la prochaine virgule, depuis l'adresse texte LBA `Offre.lieu`
+ * (`workplace.location.address`, ex. « 12 rue de la Roquette, 75011 Paris »,
+ * parfois « 75011 PARIS » sans voirie, parfois sans aucun code postal).
+ * Fonction PURE, testée dans `tests/shared/offres.test.ts` — le backfill SQL
+ * de la migration `offres_ville_code_postal` en est une approximation (voir
+ * le commentaire de cette migration pour l'écart).
+ */
+export function parseLieu(lieu: string | null | undefined): { ville: string | null, codePostal: string | null } {
+  if (!lieu) return { ville: null, codePostal: null }
+  // `(?<!\d)…(?!\d)` = code postal en mot entier, jamais un fragment d'un
+  // numéro de voirie à 5 chiffres ou d'un nombre plus long.
+  const match = lieu.match(/(?<!\d)(\d{5})(?!\d)/)
+  if (!match || match.index === undefined) return { ville: null, codePostal: null }
+  const codePostal = match[1] as string
+  const reste = lieu.slice(match.index + codePostal.length)
+  const villeBrute = (reste.split(',')[0] ?? '').replace(/\s+/g, ' ').trim()
+  return { ville: villeBrute ? toTitleCaseVille(villeBrute) : null, codePostal }
+}
+
+/** Libellé d'option du filtre ville : « Paris (75011) ». */
+export function formatVilleOption(ville: string | null, codePostal: string | null): string {
+  if (ville && codePostal) return `${ville} (${codePostal})`
+  return ville ?? codePostal ?? ''
+}
+
 // ─────────────────────────── Badge « nouveau » ───────────────────────────
 
 /**
@@ -110,6 +153,11 @@ export const offreListQuerySchema = z.object({
   typeContrat: z.enum(OffreContratType, { error: 'Type de contrat invalide.' }).optional(),
   /** `contains` insensible sur `Offre.lieu`. */
   lieu: z.string().trim().max(120).optional(),
+  /** Filtre exact sur `Offre.codePostal` (liste déroulante alimentée par `GET /api/offres/villes`). */
+  codePostal: z.string().regex(/^\d{5}$/, { error: 'Code postal invalide.' }).optional(),
+  /** Bornes (incluses) de `Offre.datePublication`, format `yyyy-MM-dd`. */
+  dateDebut: z.iso.date({ error: 'Date de début invalide.' }).optional(),
+  dateFin: z.iso.date({ error: 'Date de fin invalide.' }).optional(),
   /** `contains` insensible sur titre + entreprise. */
   q: z.string().trim().max(120).optional(),
   /** Filtre sur MON statut de candidature (jointure `OffreUserStatut`). */
@@ -117,7 +165,10 @@ export const offreListQuerySchema = z.object({
   // Le paramètre arrive en chaîne dans l'URL : `z.stringbool()` et non
   // `z.coerce.boolean()`, qui aurait transformé `"false"` en `true`.
   inclureExpirees: z.union([z.boolean(), z.stringbool()]).default(false)
-})
+}).refine(
+  (query) => !query.dateDebut || !query.dateFin || query.dateDebut <= query.dateFin,
+  { error: 'Filtres invalides.', path: ['dateFin'] }
+)
 
 // ─────────────────────────── Filtres de la page (ADR-0004) ───────────────────────────
 
@@ -129,6 +180,11 @@ export interface OffreListFilters {
   page: number
   q: string
   lieu: string
+  /** Code postal exact (`''` = pas de filtre), choisi dans la liste de `GET /api/offres/villes`. */
+  codePostal: string
+  /** Bornes de `datePublication`, format `yyyy-MM-dd` (`''` = pas de filtre). */
+  dateDebut: string
+  dateFin: string
   typeContrat: OffreContratType | ''
   statut: CandidatureStatut | ''
   inclureExpirees: boolean
@@ -146,6 +202,9 @@ export function offreListQueryFrom(filters: OffreListFilters): Record<string, st
   if (q) query.q = q
   const lieu = filters.lieu.trim()
   if (lieu) query.lieu = lieu
+  if (filters.codePostal) query.codePostal = filters.codePostal
+  if (filters.dateDebut) query.dateDebut = filters.dateDebut
+  if (filters.dateFin) query.dateFin = filters.dateFin
   if (filters.typeContrat) query.typeContrat = filters.typeContrat
   if (filters.statut) query.statut = filters.statut
   if (filters.inclureExpirees) query.inclureExpirees = 'true'
@@ -164,10 +223,17 @@ export function offreListFiltersFrom(
   const page = Number.parseInt(str(query.page), 10)
   const typeContrat = str(query.typeContrat)
   const statut = str(query.statut)
+  const codePostal = str(query.codePostal)
+  const dateDebut = str(query.dateDebut)
+  const dateFin = str(query.dateFin)
+  const dateValide = (v: string): boolean => /^\d{4}-\d{2}-\d{2}$/.test(v) && !Number.isNaN(new Date(v).getTime())
   return {
     page: Number.isInteger(page) && page > 1 ? page : 1,
     q: str(query.q),
     lieu: str(query.lieu),
+    codePostal: /^\d{5}$/.test(codePostal) ? codePostal : '',
+    dateDebut: dateValide(dateDebut) ? dateDebut : '',
+    dateFin: dateValide(dateFin) ? dateFin : '',
     typeContrat: typeContrat in OFFRE_CONTRAT_META ? (typeContrat as OffreContratType) : '',
     statut: statut in CANDIDATURE_STATUT_META ? (statut as CandidatureStatut) : '',
     inclureExpirees: str(query.inclureExpirees) === 'true'
@@ -179,5 +245,18 @@ export const offreStatutInputSchema = z.object({
   statut: z.enum(CandidatureStatut, { error: 'Statut de candidature invalide.' })
 })
 
+/** Query de `GET /api/offres/villes` (liste déroulante du filtre ville). */
+export const offreVillesQuerySchema = z.object({
+  q: z.string().trim().max(60).default('')
+})
+
+/** Une option de la liste déroulante « ville » : `total` = nombre d'offres actives à ce couple ville/codePostal. */
+export interface OffreVilleOption {
+  ville: string
+  codePostal: string
+  total: number
+}
+
 export type OffreListQuery = z.infer<typeof offreListQuerySchema>
 export type OffreStatutInput = z.input<typeof offreStatutInputSchema>
+export type OffreVillesQuery = z.infer<typeof offreVillesQuerySchema>

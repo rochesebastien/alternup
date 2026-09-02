@@ -19,20 +19,12 @@
       :description="loadError.message"
     />
 
-    <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-4">
-      <ClientOnly>
-        <div class="sx-calendar-shell">
-          <ScheduleXCalendar v-if="calendarApp" :calendar-app="calendarApp" />
-          <div v-else class="flex justify-center py-12">
-            <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
-          </div>
-        </div>
-        <template #fallback>
-          <div class="flex justify-center py-12">
-            <UIcon name="i-lucide-loader-2" class="animate-spin h-6 w-6 text-[var(--ui-text-dimmed)]" />
-          </div>
-        </template>
-      </ClientOnly>
+    <div class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] overflow-hidden flex flex-col h-[calc(100vh-13rem)] min-h-[560px]">
+      <div class="px-4 pt-4 pb-3 border-b border-[var(--ui-border)]">
+        <CalendarToolbar />
+      </div>
+      <CalendarMonthView v-if="view === 'month'" />
+      <CalendarWeekView v-else />
     </div>
 
     <!-- Détail / édition de note (session de cours) -->
@@ -226,30 +218,12 @@
 
 <script setup lang="ts">
 import { z } from 'zod'
+import { addHours, format } from 'date-fns'
 import { Role } from '~/shared/utils/enums'
-import { ScheduleXCalendar } from '@schedule-x/vue'
-import {
-  createCalendar,
-  viewDay,
-  viewList,
-  viewMonthGrid,
-  viewWeek,
-  type CalendarApp,
-  type CalendarEvent,
-  type CalendarType,
-  type PluginBase
-} from '@schedule-x/calendar'
-import { createEventsServicePlugin } from '@schedule-x/events-service'
-import { createCalendarControlsPlugin } from '@schedule-x/calendar-controls'
-import { createCurrentTimePlugin } from '@schedule-x/current-time'
-import { createDragAndDropPlugin } from '@schedule-x/drag-and-drop'
-import { createResizePlugin } from '@schedule-x/resize'
-import '@schedule-x/theme-shadcn/dist/index.css'
 import {
   presenceEntriesToDisplayEvents,
   toDisplayEvents,
   type ApiCalendarEvent,
-  type CalendarCategoryId,
   type CalendarDisplayEvent
 } from '~/shared/utils/calendar-display'
 import {
@@ -262,17 +236,16 @@ import { formatDuration, presenceKindLabel, type PresenceEntry } from '~/shared/
 import { spacePrefixOf } from '~/shared/utils/auth-redirect'
 
 /**
- * Calendrier Schedule-X, partagé par /tuteur/calendar et /alternant/calendar :
- * le rendu est quasi identique entre rôles (ADR-0001 §2), seuls la création et
- * le glisser-déposer restent réservés au tuteur (branches `isTutor` internes,
- * doublées par les 403 de l'API).
+ * Calendrier maison (adapté du template Nuxt UI « calendar »), partagé par
+ * /tuteur/calendar et /alternant/calendar : le rendu est quasi identique
+ * entre rôles (ADR-0001 §2), seuls la création et le glisser-déposer restent
+ * réservés au tuteur (`canEdit` du contexte, doublé par les 403 de l'API).
  */
 
 const route = useRoute()
 const space = computed<string>(() => spacePrefixOf(route.path) ?? '/alternant')
 
 const toast = useToast()
-const colorMode = useColorMode()
 const { user } = useUserSession()
 const isTutor = computed(() => user.value?.role === Role.Tutor)
 // Détermine le préfixe du titre des pointages dans le calendrier (voir
@@ -290,7 +263,7 @@ interface CourseNote extends NoteByAssignmentRef {
 // studentId sinon) — contrairement à `/api/users/[id]/calendar` qui ne cherche
 // que par studentId et renvoyait donc toujours une liste vide aux tuteurs.
 const {
-  data: events,
+  data: calendarEvents,
   error: loadError,
   refresh: refreshEvents
 } = await useFetch<ApiCalendarEvent[]>('/api/calendar-events', { default: () => [] })
@@ -338,268 +311,59 @@ const selectedStudentId = computed(() =>
     : null
 )
 
-/* ───────────────────────── Calendrier (Schedule-X) ───────────────────────── */
+/* ─────────────────────────── Contexte calendrier ─────────────────────────── */
 
-/** Lundi — l'énumération `WeekDay` de Schedule-X n'est pas exportée (1 = lundi). */
-const MONDAY = 1
-/** Première heure visible à l'ouverture de la grille semaine / jour. */
-const FIRST_VISIBLE_HOUR = 7
-/** Heure par défaut d'un événement créé depuis un clic sur une case « jour ». */
-const DEFAULT_CREATE_HOUR = 9
-/** Granularité du glisser-déposer et du redimensionnement, en minutes. */
-const DRAG_INTERVAL_MINUTES = 15
+const { view, date, range, title, setView, goTo, prev, next, today } = useCalendarView()
 
-/**
- * Une « calendar » Schedule-X par catégorie d'événement. Les couleurs sont
- * alignées sur la palette de l'app : vert pour les sessions de cours, jaune de
- * marque (#F1DE02) pour les visites, neutre pour le reste.
- */
-const calendars: Record<CalendarCategoryId, CalendarType> = {
-  session: {
-    colorName: 'session',
-    label: 'Session de cours',
-    lightColors: { main: '#047857', container: '#D1FAE5', onContainer: '#053B2C' },
-    darkColors: { main: '#6EE7B7', container: '#064E3B', onContainer: '#D1FAE5' }
-  },
-  visite: {
-    colorName: 'visite',
-    label: 'Visite',
-    lightColors: { main: '#9C8E00', container: '#FFFBB3', onContainer: '#483F00' },
-    darkColors: { main: '#F1DE02', container: '#483F00', onContainer: '#FFFBB3' }
-  },
-  autre: {
-    colorName: 'autre',
-    label: 'Autre',
-    lightColors: { main: '#6B6B6A', container: '#F1F1EE', onContainer: '#1F1F1E' },
-    darkColors: { main: '#A8A8A6', container: '#3A3A39', onContainer: '#F4F4F3' }
-  },
-  presence: {
-    colorName: 'presence',
-    label: 'Pointage',
-    lightColors: { main: '#4338CA', container: '#E0E7FF', onContainer: '#312E81' },
-    darkColors: { main: '#A5B4FC', container: '#312E81', onContainer: '#E0E7FF' }
-  }
-}
-
-// On s'appuie sur le namespace global (déclaré par `types/temporal.d.ts`) et
-// non sur les types exportés par `temporal-polyfill` : c'est ce même global que
-// Schedule-X lit, et les deux jeux de déclarations ne sont pas interchangeables.
-type TemporalApi = typeof Temporal
-type PlainDateTime = Temporal.PlainDateTime
-
-const calendarApp = shallowRef<CalendarApp | null>(null)
-let eventsService: ReturnType<typeof createEventsServicePlugin> | null = null
-let calendarControls: ReturnType<typeof createCalendarControlsPlugin> | null = null
-let temporal: TemporalApi | null = null
-
-/**
- * Schedule-X v4 ne manipule plus des chaînes de dates mais des objets
- * `Temporal` qu'il lit sur le global (c'est une `peerDependency` de
- * `@schedule-x/calendar`). Tant que tous les navigateurs ne l'implémentent pas,
- * on charge le polyfill — côté client seulement, et seulement s'il manque, pour
- * que la librairie et nous partagions bien la même implémentation : Schedule-X
- * valide les dates de ses événements avec `instanceof`.
- */
-async function loadTemporal(): Promise<TemporalApi> {
-  if (!('Temporal' in globalThis)) {
-    await import('temporal-polyfill/global')
-  }
-  return Temporal
-}
-
-/** Chaîne ISO (UTC) → `Temporal.ZonedDateTime` dans le fuseau du navigateur. */
-function toZoned(api: TemporalApi, iso: string) {
-  return api.Instant.from(iso).toZonedDateTimeISO(api.Now.timeZoneId())
-}
-
-/** Date d'un événement Schedule-X → chaîne ISO (UTC) acceptée par l'API. */
-function toIsoString(value: CalendarEvent['start']): string {
-  return 'toInstant' in value ? value.toInstant().toString() : value.toString()
-}
-
-/**
- * Fusionne événements de calendrier et pointages en un seul flux d'affichage.
- * `viewerId` détermine le préfixe du titre des pointages (voir
- * `presenceToDisplayEvent`) : le nôtre reste court, ceux d'autrui sont préfixés.
- */
-function mergedDisplayEvents(
-  apiEvents: ApiCalendarEvent[],
-  entries: PresenceEntry[],
-  viewerId: string
-): CalendarDisplayEvent[] {
-  return [...toDisplayEvents(apiEvents), ...presenceEntriesToDisplayEvents(entries, viewerId)]
-}
-
-function toScheduleXEvents(api: TemporalApi, list: CalendarDisplayEvent[]): CalendarEvent[] {
-  return list.map((display) => ({
-    id: display.id,
-    title: display.title,
-    start: toZoned(api, display.start),
-    end: toZoned(api, display.end),
-    calendarId: display.calendarId,
-    // Propriété « étrangère » : Schedule-X la conserve telle quelle et nous la
-    // restitue dans les callbacks, ce qui évite de re-chercher l'événement.
-    rawEvent: display.rawEvent,
-    // Un pointage n'a pas de route PUT dédiée (`onBeforeEventUpdateAsync` le
-    // refuse déjà) : on désactive aussi le geste au niveau de l'événement pour
-    // qu'il n'esquisse même pas un déplacement avant d'être annulé.
-    ...(display.calendarId === 'presence' ? { _options: { disableDND: true, disableResize: true } } : {})
-  }))
-}
-
-/**
- * `@schedule-x/drag-and-drop` 3.7.3 (dernière version publiée) expose encore les
- * anciens noms `create*DragHandler`, alors que `@schedule-x/calendar` v4 appelle
- * `start*Drag`. Les signatures sont identiques : on ajoute les alias manquants
- * pour rétablir le glisser-déposer. Quand le plugin passera en v4, les méthodes
- * existeront déjà et rien ne sera écrasé.
- */
-function createCompatibleDragAndDropPlugin(minutesPerInterval: number) {
-  const plugin = createDragAndDropPlugin(minutesPerInterval)
-  const bridged = plugin as unknown as Record<string, unknown>
-  const aliases: Record<string, string> = {
-    startTimeGridDrag: 'createTimeGridDragHandler',
-    startDateGridDrag: 'createDateGridDragHandler',
-    startMonthGridDrag: 'createMonthGridDragHandler'
-  }
-  for (const [modernName, legacyName] of Object.entries(aliases)) {
-    if (typeof bridged[modernName] === 'function') continue
-    const legacy = bridged[legacyName]
-    if (typeof legacy !== 'function') continue
-    bridged[modernName] = (...args: unknown[]) =>
-      (legacy as (...a: unknown[]) => unknown).apply(plugin, args)
-  }
-  return plugin
-}
-
-/**
- * Amène le calendrier sur une date sans le recréer (plugin calendar-controls).
- * @param localDateTime valeur d'un champ `datetime-local` (« 2026-05-18T09:00 »)
- */
-function focusCalendarOn(localDateTime: string) {
-  const [datePart] = localDateTime.split('T')
-  if (!temporal || !calendarControls || !datePart) return
-  calendarControls.setDate(temporal.PlainDate.from(datePart))
-}
-
-/**
- * Sans le plugin `scroll-controller`, la grille horaire s'ouvre sur minuit.
- * On la repositionne sur le début de journée « utile » après le premier rendu.
- */
-function scrollToWorkingHours(wrapper?: HTMLElement) {
-  if (!wrapper) return
-  requestAnimationFrame(() => {
-    const container = wrapper.querySelector('.sx__view-container')
-    const grid = wrapper.querySelector('.sx__week-grid')
-    if (!(container instanceof HTMLElement) || !(grid instanceof HTMLElement)) return
-    container.scrollTop = (grid.clientHeight / 24) * FIRST_VISIBLE_HOUR
-  })
-}
-
-onMounted(async () => {
-  const api = await loadTemporal()
-  temporal = api
-
-  eventsService = createEventsServicePlugin()
-  calendarControls = createCalendarControlsPlugin()
-
-  const plugins: PluginBase<string>[] = [
-    eventsService,
-    calendarControls,
-    createCurrentTimePlugin()
+/** Flux fusionné consommé par les vues : événements de calendrier + pointages. */
+const events = computed<CalendarDisplayEvent[]>(() =>
+  [
+    ...toDisplayEvents(calendarEvents.value ?? []),
+    ...presenceEntriesToDisplayEvents(presenceEntries.value ?? [], viewerId.value)
   ]
-  // Seul le tuteur peut modifier un événement (PUT /api/calendar-events/[id]).
-  if (isTutor.value) {
-    plugins.push(
-      createCompatibleDragAndDropPlugin(DRAG_INTERVAL_MINUTES),
-      createResizePlugin(DRAG_INTERVAL_MINUTES)
-    )
-  }
-
-  calendarApp.value = createCalendar(
-    {
-      locale: 'fr-FR',
-      firstDayOfWeek: MONDAY,
-      // Sans cette option, Schedule-X place tous les événements sur une grille
-      // en UTC : un rendez-vous saisi à 14h à Paris s'affichait à 12h, et un
-      // pointage déclaré « arrivé à 9h » à 7h. On rend donc la grille dans le
-      // fuseau du navigateur, celui-là même dans lequel le reste de l'app
-      // formate ses dates.
-      timezone: api.Now.timeZoneId() as Parameters<typeof createCalendar>[0]['timezone'],
-      theme: 'shadcn',
-      isDark: colorMode.value === 'dark',
-      views: [viewMonthGrid, viewWeek, viewDay, viewList],
-      defaultView: viewWeek.name,
-      calendars,
-      // Semaine compactée à 40 px/heure (défaut Schedule-X : ~67 px/heure) :
-      // agit à la fois sur la hauteur des créneaux et sur la position/hauteur
-      // en pourcentage des événements, qui dérivent toutes deux de cette même
-      // valeur — une surcharge CSS de la seule hauteur de créneau les aurait
-      // désynchronisées (le grillage horaire n'aurait plus été aligné avec les
-      // événements). Voir aussi le bloc <style> pour l'en-tête de jour et la
-      // grille du mois, purement visuels et sans cet effet de bord.
-      weekOptions: { gridHeight: 24 * 40 },
-      monthGridOptions: { nEventsPerDay: 4 },
-      events: toScheduleXEvents(api, mergedDisplayEvents(events.value ?? [], presenceEntries.value ?? [], viewerId.value)),
-      callbacks: {
-        onRender: ($app) => scrollToWorkingHours($app.elements.calendarWrapper),
-        onEventClick: (calendarEvent) => {
-          if (calendarEvent.calendarId === 'presence') {
-            openPresenceDetail(calendarEvent.rawEvent as PresenceEntry)
-          } else {
-            openEventDetail(calendarEvent.rawEvent as ApiCalendarEvent)
-          }
-        },
-        // Clic sur un créneau horaire (semaine / jour) ou sur un jour (mois, liste)
-        onClickDateTime: (dateTime) => openCreateAt(dateTime.toPlainDateTime()),
-        onClickDate: (date) => openCreateAt(date.toPlainDateTime({ hour: DEFAULT_CREATE_HOUR })),
-        onBeforeEventUpdateAsync: persistEventDates
-      }
-    },
-    plugins
-  )
-})
-
-// Le calendrier n'est pas recréé quand les données changent : le service
-// d'événements remplace simplement la liste, ce qui préserve la vue et la date
-// courantes choisies par l'utilisateur.
-watch([events, presenceEntries], ([eventList, entryList]) => {
-  if (!temporal || !eventsService) return
-  eventsService.set(toScheduleXEvents(temporal, mergedDisplayEvents(eventList ?? [], entryList ?? [], viewerId.value)))
-})
-
-// Synchronise le thème du calendrier avec le mode clair / sombre de l'app.
-watch(
-  () => colorMode.value,
-  (mode) => calendarApp.value?.setTheme(mode === 'dark' ? 'dark' : 'light')
 )
+const eventsForDay = useEventsForDay(events)
+
+/** Fantôme de création en cours de dessin (glissé sur la grille horaire). */
+const draft = shallowRef<CalendarDraft | null>(null)
+
+/** `canEdit` et l'événement n'est pas un pointage : jamais déplaçable, même pour le tuteur. */
+function isEditable(event: CalendarDisplayEvent): boolean {
+  return isTutor.value && event.calendarId !== 'presence'
+}
+
+function onEventClick(event: CalendarDisplayEvent): void {
+  if (event.calendarId === 'presence') {
+    openPresenceDetail(event.rawEvent as PresenceEntry)
+  } else {
+    openEventDetail(event.rawEvent as ApiCalendarEvent)
+  }
+}
 
 /**
- * Glisser-déposer et redimensionnement : Schedule-X attend un booléen avant
- * d'entériner le déplacement. On persiste d'abord, et un `false` en cas
- * d'échec réseau remet l'événement à sa position d'origine.
+ * Persiste un déplacement/redimensionnement (grille horaire). `false` fait
+ * remettre le bloc à sa place par la vue — un rafraîchissement des données
+ * suffit puisque rien n'est retenu localement pendant le geste.
  */
-async function persistEventDates(
-  _oldEvent: CalendarEvent,
-  newEvent: CalendarEvent
-): Promise<boolean> {
-  // Un pointage n'a pas de route PUT dédiée : `_options.disableDND/disableResize`
-  // empêche déjà le geste, ce refus est la garde de dernier recours.
-  if (newEvent.calendarId === 'presence') return false
-  const startTime = toIsoString(newEvent.start)
-  const endTime = toIsoString(newEvent.end)
+async function onEventMove(event: CalendarDisplayEvent, start: Date, end: Date): Promise<boolean> {
+  // Un pointage n'a pas de route PUT dédiée : `isEditable` empêche déjà le
+  // geste de démarrer, ce refus est la garde de dernier recours.
+  if (event.calendarId === 'presence') return false
+  const startTime = start.toISOString()
+  const endTime = end.toISOString()
   try {
-    await $fetch(`/api/calendar-events/${newEvent.id}`, {
+    await $fetch(`/api/calendar-events/${event.id}`, {
       method: 'PUT',
       body: { startTime, endTime }
     })
-    // Aligne la copie locale (utilisée par les modales) sans relancer un
-    // rafraîchissement complet, qui écraserait le rendu en cours de Schedule-X.
-    const local = (events.value ?? []).find((e) => e.id === newEvent.id)
-    if (local) {
-      local.startTime = startTime
-      local.endTime = endTime
-    }
+    // Aligne la copie locale (modales et relecture des vues) sans relancer un
+    // rafraîchissement complet. `data` de useFetch est un shallowRef (Nuxt 4,
+    // `deep: false`) : une mutation en place de l'objet ne notifie personne et
+    // le bloc restait à son ancienne place jusqu'au rechargement — on remplace
+    // donc le tableau pour que les computed (bucketByDay, layoutDay) recalculent.
+    calendarEvents.value = (calendarEvents.value ?? []).map((e) =>
+      e.id === event.id ? { ...e, startTime, endTime } : e
+    )
     toast.add({ title: 'Événement déplacé', color: 'success' })
     return true
   } catch (err: unknown) {
@@ -607,9 +371,43 @@ async function persistEventDates(
       title: readErrorMessage(err) ?? 'Impossible de déplacer l\'événement.',
       color: 'error'
     })
+    await refreshEvents()
     return false
   }
 }
+
+/** Format attendu par un champ `datetime-local`, en heure locale. */
+function toDateTimeLocal(value: Date): string {
+  return format(value, "yyyy-MM-dd'T'HH:mm")
+}
+
+/** Ouvre la modale de création, pré-remplie avec la plage dessinée/cliquée. */
+function onCreateRequest(start: Date, end: Date): void {
+  resetCreateState()
+  createState.startTime = toDateTimeLocal(start)
+  createState.endTime = toDateTimeLocal(end)
+  createOpen.value = true
+}
+
+provideCalendarContext({
+  view,
+  date,
+  range,
+  title,
+  setView,
+  goTo,
+  prev,
+  next,
+  today,
+  events,
+  eventsForDay,
+  canEdit: isTutor,
+  isEditable,
+  draft,
+  onEventClick,
+  onEventMove,
+  onCreateRequest
+})
 
 /* ─────────────────────────── Modales (inchangées) ─────────────────────────── */
 
@@ -762,22 +560,19 @@ watch(selectedStudentId, (id) => {
   if (!id) createState.presenceRequired = false
 })
 
-function openCreate() {
-  resetCreateState()
-  createOpen.value = true
-}
-
 /**
- * Clic sur un créneau vide : ouvre la création pré-remplie sur une heure.
- * Réservé au tuteur, seul rôle autorisé à créer un événement.
+ * Bouton « Nouvel événement » du `PageHeader` : pré-remplit sur la prochaine
+ * heure pleine (heure réelle actuelle, pas celle de `date`, qui n'est qu'un
+ * repère de jour côté vue semaine/mois — souvent minuit) du jour affiché.
  */
-function openCreateAt(start: PlainDateTime) {
-  if (!isTutor.value) return
-  const end = start.add({ hours: 1 })
-  resetCreateState()
-  createState.startTime = start.toString({ smallestUnit: 'minute' })
-  createState.endTime = end.toString({ smallestUnit: 'minute' })
-  createOpen.value = true
+function openCreate() {
+  const now = new Date()
+  const roundedUp = now.getMinutes() === 0 && now.getSeconds() === 0 && now.getMilliseconds() === 0
+    ? now.getHours()
+    : now.getHours() + 1
+  const day = date.value
+  const start = new Date(day.getFullYear(), day.getMonth(), day.getDate(), roundedUp, 0, 0, 0)
+  onCreateRequest(start, addHours(start, 1))
 }
 
 async function onCreateSubmit() {
@@ -799,7 +594,7 @@ async function onCreateSubmit() {
     toast.add({ title: 'Événement créé', color: 'success' })
     await refreshEvents()
     // L'événement peut tomber hors de la période affichée : on s'y déplace.
-    focusCalendarOn(createdOn)
+    goTo(new Date(createdOn))
   } catch (err: unknown) {
     createError.value = readErrorMessage(err) ?? 'Impossible de créer l\'événement.'
   } finally {
@@ -832,101 +627,3 @@ function readErrorMessage(err: unknown): string | null {
   return e.data?.statusMessage || e.data?.issues?.[0]?.message || e.statusMessage || null
 }
 </script>
-
-<style>
-/* Schedule-X (thème shadcn) — mapping sur les tokens UI (clair / sombre).
-   Les règles ciblent `.sx-calendar-shell` : le calendrier est rendu par Preact,
-   ses nœuds ne portent donc pas d'attribut de scope Vue. */
-
-/* Hauteur calée sur le viewport (nav 3.5rem + paddings + en-tête de page +
-   footer ≈ 19rem) : le calendrier tient dans la page sans la faire déborder,
-   `.sx__view-container` scrolle en interne pour le reste de la grille 24 h. */
-.sx-calendar-shell {
-  height: calc(100vh - 19rem);
-  min-height: 420px;
-}
-.sx-calendar-shell .sx-vue-calendar-wrapper {
-  height: 100%;
-}
-
-/* Le thème shadcn embarque sa propre palette : on la remplace par celle de
-   l'app. Comme les variables `--ui-*` basculent déjà avec la classe `.dark`,
-   une seule déclaration couvre les deux thèmes. Le sélecteur `.is-dark` est
-   répété pour passer devant la règle `html:has(.is-shadcn) .is-dark` du thème,
-   plus spécifique que la variante sans `.is-dark`. */
-.sx-calendar-shell .sx__calendar-wrapper,
-.sx-calendar-shell .sx__calendar-wrapper.is-dark {
-  --sx-color-background: var(--ui-bg-elevated);
-  --sx-color-surface: var(--ui-bg-elevated);
-  --sx-color-surface-dim: var(--ui-bg-muted);
-  --sx-color-surface-bright: var(--ui-bg-elevated);
-  --sx-color-surface-container: var(--ui-bg-muted);
-  --sx-color-surface-container-low: var(--ui-bg-muted);
-  --sx-color-surface-container-high: var(--ui-bg-accented);
-  --sx-color-on-background: var(--ui-text);
-  --sx-color-on-surface: var(--ui-text);
-  --sx-internal-color-text: var(--ui-text);
-  --sx-internal-color-light-gray: var(--ui-bg-muted);
-  --sx-internal-color-gray-ripple-background: var(--ui-bg-accented);
-  --sx-color-outline: var(--ui-border-accented);
-  --sx-color-outline-variant: var(--ui-border);
-  --sx-color-popup-border: var(--ui-border);
-  --sx-border: 1px solid var(--ui-border);
-  --sx-color-primary: var(--ui-text);
-  --sx-color-on-primary: var(--ui-text-inverted);
-  --sx-color-primary-container: var(--ui-bg-inverted);
-  --sx-color-on-primary-container: var(--ui-text-inverted);
-  --sx-rounding-extra-small: var(--ui-radius);
-  --sx-rounding-small: var(--ui-radius);
-  --sx-rounding-medium: var(--ui-radius);
-  font-family: inherit;
-}
-
-/* La carte de la page porte déjà une bordure : celle du calendrier ferait doublon. */
-.sx-calendar-shell .sx__calendar {
-  border: none;
-}
-
-/* Les événements ouvrent la modale de détail : le curseur et un léger
-   estompage au survol le signalent. */
-.sx-calendar-shell .sx__event {
-  cursor: pointer;
-  transition: opacity 0.15s ease;
-}
-.sx-calendar-shell .sx__event:hover {
-  opacity: 0.9;
-}
-
-/* Compaction — l'en-tête de jour par défaut (vue semaine) est surdimensionné :
-   gros chiffre du jour dans une grosse pastille, padding généreux au-dessus et
-   en-dessous. On vise un rendu dense, cohérent avec le reste de l'app (esprit
-   Linear). La hauteur des créneaux horaires, elle, se règle via `weekOptions.gridHeight`
-   (config Schedule-X) et non ici : elle pilote aussi le positionnement en % des
-   événements, qu'une simple surcharge CSS aurait désynchronisé. */
-.sx-calendar-shell .sx__week-grid__date {
-  padding: 2px 0;
-  gap: 1px;
-}
-.sx-calendar-shell .sx__week-grid__day-name {
-  font-size: 10px;
-}
-.sx-calendar-shell .sx__week-grid__date-number {
-  font-size: var(--sx-font-small);
-  height: 1.75em;
-  width: 1.75em;
-}
-
-/* Grille du mois : pastille « aujourd'hui » et cases plus compactes pour que
-   davantage de semaines restent visibles sans scroller. */
-.sx-calendar-shell .sx__month-grid-day {
-  padding: 4px 0;
-}
-.sx-calendar-shell .sx__month-grid-day__header-date {
-  font-size: var(--sx-font-extra-small);
-  height: 20px;
-  width: 20px;
-}
-.sx-calendar-shell .sx__month-grid-cell {
-  height: clamp(16px, 1rem, 20px);
-}
-</style>

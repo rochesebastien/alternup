@@ -1343,3 +1343,79 @@ Revue :
 `grep ".prisma/client/index-browser" .output/public/_nuxt/` → rien ✅ ·
 Vérifié au navigateur (Postgres local + comptes de test) : dock ouvert, `/tuteur/offres`,
 `/alternant/offres` inchangée, `/page-inexistante` → 404.
+
+## 2026-09-01 — Largeur, menu compte, offres, page compte, calendrier Nuxt UI
+
+> Branche : `claude/app-layout-ui-refinements-1r2593`. Lot exécuté par workflow de
+> sous-agents (Sonnet), cadrage et intégration finale par la session principale.
+
+Plan :
+
+- [x] **Largeur** : `--container-7xl: 111rem` dans `@theme` (`assets/css/main.css`) —
+      toutes les pages servies par `AppShell` s'élargissent ; `/account` garde son `max-w-3xl`.
+- [x] **Menu compte** (`AppShell.vue`) : « Page vitrine » → `/` sous « Mon compte » dans
+      l'app ; « Tableau de bord » → landing du rôle quand on est sur `/` ou `/features`.
+- [x] **Offres** (`OffresBoard.vue`) : badge « Nouveau » jaune de marque / texte noir ;
+      « Voir l'offre » noir / texte blanc dans les deux thèmes.
+- [x] **Page compte** : badge « Tuteur » retiré ; « Modifier » et « Changer » alignés en haut
+      à droite de leur carte (le bloc texte ne pousse plus le bouton à la ligne).
+- [x] **Calendrier** : remplacement de Schedule-X par une adaptation du template Nuxt UI
+      « calendar » (github.com/nuxt-ui-templates/calendar) : vues jour / semaine / mois
+      (semaine par défaut), lundi, français, glisser-déposer + redimensionnement + création
+      par glissé réservés au tuteur, pointages en lecture seule, modales existantes
+      conservées. Logique pure dans `shared/utils/calendar-{dates,layout}.ts` + tests Vitest ;
+      composants sous `components/calendar/` ; `date-fns` ajouté, 8 paquets Schedule-X et
+      `temporal-polyfill` retirés.
+- [x] Vérification : `prisma generate` → `nuxt prepare` → `vue-tsc` → `npm test` → `lint`
+      → `nuxt build` → grep `.prisma/client/index-browser` → rendu réel (Postgres local).
+
+Demandes ajoutées en cours de lot (réalisées) :
+
+- [x] **Landing** : « Des offres sur un marché compliqué », « Les offres d'alternance arrivent
+      chaque jour », « Un lien, un avenir, zéro Excel », accroche du bloc compte reformulée.
+- [x] **Offres — filtre par ville** : colonnes `ville` / `code_postal` sur `Offre` (migration
+      `offres_ville_code_postal` avec backfill SQL depuis `lieu`, remplies à l'ingestion via
+      `parseLieu`), endpoint `GET /api/offres/villes?q=` (villes réellement présentes, recherche
+      par nom ou code postal), `UInputMenu` dans `OffresBoard.vue`, filtre `codePostal` exact.
+- [x] **Offres — filtre par période** : `dateDebut` / `dateFin` sur `datePublication` (repli
+      `firstSeen`), `UCalendar` en plage dans un popover, `<UApp locale="fr">` pour les libellés.
+
+### Revue
+
+**Livré** — tout est vérifié en navigateur (Chromium/Playwright sur le build de prod, Postgres
+local) : `vue-tsc` ✅ · `npm test` (410) ✅ · `npm run lint` ✅ · `nuxt build` ✅ ·
+`grep ".prisma/client/index-browser" .output/public/_nuxt/` → rien ✅.
+
+- **Largeur** : un seul token (`--container-7xl: 111rem`) ; `max-w-7xl` d'`AppShell` le lit,
+  toutes les vues applicatives s'élargissent, `/account` reste à `max-w-3xl`.
+- **Menu du compte** : `isShowcasePage` (`/`, `/features`) bascule entre « Page vitrine » → `/`
+  et « Tableau de bord » → `landingPageFor(role)` ; vérifié en SSR avec une session sur `/`.
+- **Offres** : `UBadge` primary solid peint `text-inverted` (blanc sur jaune) → classes
+  explicites `bg-[var(--ui-primary)] text-black` ; « Voir l'offre » en `neutral solid` avec
+  `bg-black text-white` forcé dans les deux thèmes (le token inversé aurait donné blanc en sombre).
+- **Page compte** : le bloc texte non borné + `flex-wrap` poussait « Changer » sous la
+  description ; `flex-1 min-w-0` + `shrink-0`, même structure d'en-tête pour les deux cartes.
+- **Calendrier** (adaptation du template Nuxt UI `calendar`, sans sidebar, all-day, scroll infini
+  du mois, view transitions ni popover d'édition) : `shared/utils/calendar-dates.ts` (plages,
+  clés de jour, formatteurs `fr-FR`) et `calendar-layout.ts` (empilement par clusters/colonnes,
+  snap 15 min) testés ; `useCalendarView` (vue/date dans `?view=&date=`, raccourcis t/d/w/m/←/→),
+  `useCalendarContext` (provide/inject), `useEventDrag` / `useEventDraft` (gestes pointeur, tuteur
+  uniquement, pointages verrouillés, nettoyage `onScopeDispose` ajouté après revue) ;
+  composants `components/calendar/` (Toolbar, WeekView/DayColumn/EventBlock/EventDraft/
+  NowIndicator, MonthView/MonthWeek/EventChip). `CalendarWorkspace.vue` garde ses `useFetch`
+  et ses trois modales ; la création par glissé/double-clic ouvre la modale pré-remplie.
+  Retirés : 8 paquets `@schedule-x/*`, `temporal-polyfill`, `types/temporal.d.ts`. Ajouté :
+  `date-fns`, `@internationalized/date` (épinglé à la version transitive).
+- **Bug trouvé par la vérification navigateur** : le bloc ne bougeait pas après un drag
+  (mutation en place du `shallowRef` de `useFetch`) → tableau réassigné ; leçon n°13 dans
+  `taches/lecons.md`. Scroll initial décalé de 10 px pour ne pas couper « 07:00 ».
+- **Filtres offres** : `parseLieu` (CP à 5 chiffres + ville en casse Titre, tirets/apostrophes
+  gérés) ; le filtre `q` et le filtre de dates sont combinés en `AND` (deux `OR` distincts) ;
+  la migration a dû retirer trois `DROP INDEX` trigramme générés à tort par Prisma (index GIN
+  non représentables dans le schéma, commentaire d'avertissement laissé dans le SQL).
+
+**Constats hors périmètre, non traités** (à remonter) : sur la landing, les badges décoratifs
+« Bulletins » et « Calendrier » se chevauchent à 1440 px ; le dock apprenant recouvre le bouton
+« Voir l'offre » de la dernière ligne quand le tableau des offres atteint le bas de l'écran ;
+le binding de `UCalendar` en mode plage porte un `as any` commenté (typage générique amont
+`@nuxt/ui` 4.7 + TS 6 sur les classes à champs privés de `@internationalized/date`).

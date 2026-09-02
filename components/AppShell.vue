@@ -240,9 +240,20 @@ const mobileLinkClass
 // desktop) et réutilisé tel quel dans le menu mobile — aucune requête en double.
 const notificationCount = useNotificationCountState()
 
-// Menu du compte (nav) : lien vers le profil, puis déconnexion en rouge.
+const route = useRoute()
+
+// Menu du compte (nav) : profil + bascule vitrine/tableau de bord, puis
+// déconnexion en rouge. Depuis une page vitrine, on propose de rejoindre le
+// tableau de bord du rôle connecté ; depuis l'espace applicatif, de revenir
+// à la page vitrine.
+const isShowcasePage = computed(() => route.path === '/' || route.path === '/features')
 const accountItems = computed(() => [
-  [{ label: 'Mon compte', icon: 'i-lucide-user', to: '/account' }],
+  [
+    { label: 'Mon compte', icon: 'i-lucide-user', to: '/account' },
+    isShowcasePage.value
+      ? { label: 'Tableau de bord', icon: 'i-lucide-layout-dashboard', to: user.value ? landingPageFor(user.value.role) : '/' }
+      : { label: 'Page vitrine', icon: 'i-lucide-globe', to: '/' }
+  ],
   [{ label: 'Déconnexion', icon: 'i-lucide-log-out', color: 'error' as const, onSelect: () => onLogout() }]
 ])
 
@@ -264,7 +275,6 @@ function closeMobile() {
   mobileOpen.value = false
 }
 
-const route = useRoute()
 watch(() => route.fullPath, () => { mobileOpen.value = false })
 
 async function onLogout() {

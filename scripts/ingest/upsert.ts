@@ -54,6 +54,8 @@ function champsNormalises(offre: OffreNormalisee) {
     titre: offre.titre,
     entreprise: offre.entreprise,
     lieu: offre.lieu,
+    ville: offre.ville,
+    codePostal: offre.codePostal,
     typeContrat: offre.typeContrat,
     niveauDiplome: offre.niveauDiplome,
     romeCodes: offre.romeCodes,

@@ -13,6 +13,7 @@
 
 import { createReadStream } from 'node:fs'
 import { OffreContratType, OffreSourceType } from '../../../shared/utils/enums.ts'
+import { parseLieu } from '../../../shared/utils/offres.ts'
 import { parseJsonArrayStream } from '../json-array-stream.ts'
 import type { OffreNormalisee, SourceIngestion, SourceIngestionContext } from '../types.ts'
 
@@ -91,11 +92,16 @@ export function mapLbaJob(entree: unknown): OffreNormalisee | null {
     ? String(targetDiploma.level)
     : chaine(targetDiploma?.level)
 
+  const lieu = chaine(location?.address)
+  const { ville, codePostal } = parseLieu(lieu)
+
   return {
     url,
     titre,
     entreprise: chaine(workplace?.name) ?? chaine(workplace?.legal_name),
-    lieu: chaine(location?.address),
+    lieu,
+    ville,
+    codePostal,
     typeContrat,
     niveauDiplome,
     romeCodes: Array.isArray(offer?.rome_codes)

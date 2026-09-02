@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
       data: { issues: formatZodIssues(parsed.error) }
     })
   }
-  const { page, limit, typeContrat, lieu, q, statut, inclureExpirees } = parsed.data
+  const { page, limit, typeContrat, lieu, codePostal, dateDebut, dateFin, q, statut, inclureExpirees } = parsed.data
 
   const where: Prisma.OffreWhereInput = {}
   // Fraîcheur (ADR-0002) : les offres expirées sont exclues par défaut,
@@ -31,12 +31,38 @@ export default defineEventHandler(async (event) => {
   if (!inclureExpirees) where.statut = OffreStatut.active
   if (typeContrat) where.typeContrat = typeContrat
   if (lieu) where.lieu = { contains: lieu, mode: 'insensitive' }
+  // Filtre exact (liste déroulante alimentée par GET /api/offres/villes, pas de `contains`).
+  if (codePostal) where.codePostal = codePostal
+  // `q` et la plage de dates sont chacun un OR interne (deux champs, ou deux
+  // cas datePublication/firstSeen) : combinés via `AND` pour ne jamais se
+  // télescoper avec le `where.OR` de l'autre filtre.
+  const andClauses: Prisma.OffreWhereInput[] = []
   if (q) {
-    where.OR = [
-      { titre: { contains: q, mode: 'insensitive' } },
-      { entreprise: { contains: q, mode: 'insensitive' } }
-    ]
+    andClauses.push({
+      OR: [
+        { titre: { contains: q, mode: 'insensitive' } },
+        { entreprise: { contains: q, mode: 'insensitive' } }
+      ]
+    })
   }
+  // Plage de dates sur `datePublication` (borne haute exclusive, lendemain à
+  // minuit UTC) ; une offre sans datePublication (payload source incomplet)
+  // retombe sur `firstSeen` pour rester filtrable.
+  if (dateDebut || dateFin) {
+    const debut = dateDebut ? new Date(`${dateDebut}T00:00:00.000Z`) : undefined
+    // Borne exclusive du lendemain : `dateFin` désigne un jour inclus dans son entier.
+    const fin = dateFin ? new Date(new Date(`${dateFin}T00:00:00.000Z`).getTime() + 86_400_000) : undefined
+    const plage: Prisma.DateTimeFilter = {}
+    if (debut) plage.gte = debut
+    if (fin) plage.lt = fin
+    andClauses.push({
+      OR: [
+        { datePublication: plage },
+        { datePublication: null, firstSeen: plage }
+      ]
+    })
+  }
+  if (andClauses.length > 0) where.AND = andClauses
   // Filtre sur MON statut de candidature : jointure toujours bornée au user de session.
   if (statut) where.userStatuts = { some: { userId: user.id, statut } }
 

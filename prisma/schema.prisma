@@ -645,6 +645,10 @@ model Offre {
   titre           String // offer.title
   entreprise      String? // workplace.name ?? workplace.legal_name
   lieu            String? // workplace.location.address
+  // Ville et code postal extraits de `lieu` par `parseLieu` (shared/utils/offres.ts),
+  // pour le filtre ville de la page offres (ADR-0004) — jamais renseignés par la source.
+  ville           String?
+  codePostal      String?           @map("code_postal")
   typeContrat     OffreContratType? @map("type_contrat") // contract.type[0]
   niveauDiplome   String?           @map("niveau_diplome") // offer.target_diploma.level
   romeCodes       String[]          @map("rome_codes") // offer.rome_codes
@@ -664,6 +668,7 @@ model Offre {
   @@index([statut, datePublication])
   @@index([typeContrat])
   @@index([firstSeen])
+  @@index([codePostal])
   @@map("offres")
 }
 

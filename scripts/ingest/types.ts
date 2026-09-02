@@ -16,6 +16,9 @@ export interface OffreNormalisee {
   titre: string
   entreprise: string | null
   lieu: string | null
+  /** Ville et code postal extraits de `lieu` par `parseLieu` (shared/utils/offres.ts). */
+  ville: string | null
+  codePostal: string | null
   typeContrat: OffreContratType | null
   niveauDiplome: string | null
   romeCodes: string[]
