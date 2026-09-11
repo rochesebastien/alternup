@@ -12,6 +12,7 @@
 <script setup lang="ts">
 import { fr } from '@nuxt/ui/locale'
 import { spacePrefixOf } from '~/shared/utils/auth-redirect'
+import { ONBOARDING_PATH } from '~/shared/utils/onboarding'
 
 // Le layout est calculé depuis le préfixe de route (ADR-0001 §3) : impossible
 // d'oublier une déclaration `definePageMeta({ layout })` sur une nouvelle page.
@@ -19,7 +20,8 @@ const PUBLIC_LAYOUT_PAGES = ['/', '/features', '/login', '/register']
 
 const route = useRoute()
 
-const layoutName = computed<'public' | 'tuteur' | 'alternant' | 'default'>(() => {
+const layoutName = computed<'public' | 'tuteur' | 'alternant' | 'onboarding' | 'default'>(() => {
+  if (route.path === ONBOARDING_PATH) return 'onboarding'
   const space = spacePrefixOf(route.path)
   if (space === '/tuteur') return 'tuteur'
   if (space === '/alternant') return 'alternant'

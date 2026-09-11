@@ -12,7 +12,9 @@ import { requireAuth } from '~/server/utils/require-role'
 import { assertCanViewStudent } from '~/server/utils/network'
 import { assessStudentsRisk } from '~/server/utils/risk'
 import { studentCompetencyMap } from '~/server/utils/competencies'
+import { toOnboardingView } from '~/server/utils/onboarding'
 import { attendanceStatusLabel } from '~/shared/utils/attendance'
+import { onboardingSummary } from '~/shared/utils/onboarding'
 import { competencyLevelLabel } from '~/shared/utils/competencies'
 import { reportStatusLabel } from '~/shared/utils/progress-reports'
 import { projectStatusLabel } from '~/shared/utils/projects'
@@ -80,7 +82,8 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
       email: true,
       firstName: true,
       lastName: true,
-      role: true
+      role: true,
+      onboardingProfile: true
     }
   })
   if (!student) {
@@ -412,6 +415,9 @@ export default defineEventHandler(async (event): Promise<StudentOverview> => {
       role: student.role,
       addedAt: link?.addedAt.toISOString() ?? null
     },
+    parcours: student.onboardingProfile
+      ? onboardingSummary(student.role, toOnboardingView(student.onboardingProfile))
+      : [],
     kpis: {
       avgGrade: averageGrade(gradedNotes),
       attendanceRate,

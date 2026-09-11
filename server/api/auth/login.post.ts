@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt'
 import { prisma } from '~/server/utils/prisma'
+import { toSessionUser } from '~/server/utils/session'
 import { formatZodIssues, loginInputSchema } from '~/shared/utils/auth-credentials'
 
 export default defineEventHandler(async (event) => {
@@ -19,13 +20,7 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, statusMessage: 'Identifiants invalides.' })
   }
 
-  const publicUser = {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role
-  }
+  const publicUser = toSessionUser(user)
 
   await setUserSession(event, { user: publicUser })
   return publicUser

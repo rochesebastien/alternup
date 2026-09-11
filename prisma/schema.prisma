@@ -31,6 +31,10 @@ model User {
   role         Role     @default(Alternant)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  // Onboarding de première connexion (/onboarding) : `null` tant que le
+  // questionnaire n'a été ni terminé ni passé. Recopié dans la session
+  // (`user.onboarded`) pour que le middleware n'ait rien à interroger.
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz
 
   // Relations: réseau tuteur ↔ étudiants
   tutoredStudents TutorStudent[] @relation("Tutor")
@@ -85,8 +89,48 @@ model User {
   // Relations: veille d'offres (statuts de candidature de l'apprenant)
   offreStatuts OffreUserStatut[] @relation("UserOffreStatuts")
 
+  // Relations: réponses au questionnaire d'onboarding
+  onboardingProfile OnboardingProfile?
+
   @@index([role])
   @@map("users")
+}
+
+// Réponses au questionnaire de première connexion (/onboarding), une ligne par
+// utilisateur, modifiables ensuite depuis /account. Les champs à choix fermé
+// sont des `String` validées par Zod (shared/utils/onboarding.ts, source de
+// vérité des valeurs admises) plutôt que des enums Prisma : ajouter une option
+// ne demande ni migration ni miroir dans shared/utils/enums.ts. Un champ vaut
+// `null` quand la question n'a pas été posée (branchement, rôle) ou passée.
+model OnboardingProfile {
+  userId String @id @map("user_id") @db.Uuid
+
+  // Apprenant (Alternant / Stagiaire)
+  situation        String?   // en_poste | en_recherche
+  etablissement    String?
+  formation        String?
+  niveauEtudes     String?   @map("niveau_etudes") // bac | bac_2 | bac_3 | bac_5 | autre
+  entreprise       String?
+  dateDebutContrat DateTime? @map("date_debut_contrat") @db.Date
+  dateFinContrat   DateTime? @map("date_fin_contrat") @db.Date
+  rythme           String?   // une_une | deux_trois | trois_une | autre
+
+  // Tuteur
+  fonction     String? // maitre_apprentissage | tuteur_pedagogique | rh | autre
+  organisation String?
+  effectif     String? // un | deux_cinq | six_dix | plus_dix
+
+  // Commun : intitulé du poste (apprenant en entreprise / fonction du tuteur)
+  // et attentes vis-à-vis de l'application (valeurs propres à chaque rôle).
+  poste     String?
+  objectifs String[] @default([])
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_profiles")
 }
 
 model TutorStudent {

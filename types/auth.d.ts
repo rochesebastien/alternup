@@ -7,6 +7,8 @@ declare module '#auth-utils' {
     firstName: string
     lastName: string
     role: Role
+    /** Questionnaire de première connexion terminé ou passé (voir /onboarding). */
+    onboarded: boolean
   }
 
   interface UserSession {

@@ -1419,3 +1419,64 @@ local) : `vue-tsc` ✅ · `npm test` (410) ✅ · `npm run lint` ✅ · `nuxt bu
 « Voir l'offre » de la dernière ligne quand le tableau des offres atteint le bas de l'écran ;
 le binding de `UCalendar` en mode plage porte un `as any` commenté (typage générique amont
 `@nuxt/ui` 4.7 + TS 6 sur les classes à champs privés de `@internationalized/date`).
+
+## 2026-09-11 — Onboarding de première connexion (questionnaire « une question par écran »)
+
+> Branche : `claude/onboarding-system-ulxrt6`. Demande : un système d'onboarding complet à la
+> première connexion / inscription, sur le modèle du composant **Questionnaire de shadcn/ui**
+> (une question par écran, progression, raccourcis clavier, Précédent / Passer / Continuer,
+> branchement conditionnel).
+
+### Plan
+
+- [x] **Modèle** : `User.onboardingCompletedAt` (null tant que le questionnaire n'est ni terminé
+      ni passé) + modèle `OnboardingProfile` 1:1 (`onboarding_profiles`) — migration
+      `20260911164419_onboarding_profiles`. Champs à choix fermé en `String` validées par Zod
+      (pas d'enum Prisma à miroiter). **Pas de backfill** : les comptes existants verront le
+      questionnaire une fois, à leur prochaine connexion (passable en un clic).
+- [x] **Session** : champ `user.onboarded` dans le cookie ; `server/utils/session.ts`
+      (`sessionUserSelect` + `toSessionUser`) devient le point unique des `setUserSession`
+      (login, register, `account/profile.put`, onboarding).
+- [x] **Logique pure** (`shared/utils/questionnaire.ts` : types, `visibleItems`,
+      `isItemComplete`, `questionProgress`, raccourcis ; `shared/utils/onboarding.ts` : questions
+      par rôle avec branchement, schéma Zod, `answersForRole`, `onboardingSummary`,
+      `onboardingRedirect`) — 45 tests dans `tests/shared/{questionnaire,onboarding}.test.ts`.
+- [x] **Composants** : `Questionnaire` (progression, transitions directionnelles, focus,
+      Entrée / lettres A-Z, aria-live), `QuestionnaireChoiceGroup`, `QuestionnaireChoice`
+      (carte avec `UKbd`, `aria-checked`), contexte `useQuestionnaireContext`.
+- [x] **Routage** : `middleware/onboarding.global.ts` (connecté et non onboardé → `/onboarding` ;
+      onboardé → `/onboarding` renvoie vers le landing sauf `?again=1`), layout `onboarding`
+      (logo seul) résolu dans `app.vue`.
+- [x] **API** : `GET /api/onboarding` (réponses), `POST /api/onboarding` (upsert + complétion +
+      session réécrite), `POST /api/onboarding/skip` (« Compléter plus tard »).
+- [x] **Pages** : `/onboarding` (questionnaire + écran de fin avec CTA adaptés : offres pour un
+      apprenant en recherche, invitation pour un tuteur), section « Mon parcours » sur `/account`
+      (relecture + bouton pour refaire), bloc « Parcours » sur la fiche apprenant côté tuteur
+      (`overview.parcours`).
+- [x] **Vérification** : `prisma generate` → `nuxt prepare` → `vue-tsc` → `vitest` → `nuxt build`
+      + grep `index-browser` ; API exercée en curl ; parcours complet en navigateur (Playwright :
+      inscription → redirection → clavier → fin → compte → refaire → passer, mobile 400 px et
+      thème sombre, aucune erreur console).
+
+### Questions posées
+
+- **Apprenant** : situation (en poste / en recherche, obligatoire) → formation (établissement
+  obligatoire, diplôme) → niveau → *si en poste* : entreprise (nom obligatoire, poste), dates
+  de contrat/stage, rythme (*alternant seulement*) → attentes (choix multiple).
+- **Tuteur** : rôle (maître d'apprentissage / tuteur pédagogique / RH / autre, obligatoire) →
+  organisation (nom obligatoire, fonction) → nombre d'apprenants suivis → attentes.
+
+### Revue
+
+**Livré** : tout le plan. Le serveur re-nettoie les réponses selon le rôle et le branchement
+(`answersForRole`) : un tuteur ne peut pas écrire de champ apprenant, un apprenant en recherche
+n'a jamais d'entreprise enregistrée, un stagiaire pas de rythme.
+
+**Décisions** : colonnes `String` + Zod plutôt que 5 enums Prisma (ajouter une option = zéro
+migration) ; `onboarded` en booléen dans la session (le middleware ne fait aucun appel réseau) ;
+« Passer » n'efface pas une réponse déjà donnée ; « Compléter plus tard » marque l'onboarding
+terminé sans réponse, le questionnaire reste accessible depuis « Mon compte ».
+
+**Constats hors périmètre, non traités** : avertissement d'hydratation pré-existant sur l'icône
+du bouton de thème d'`AppShell` (lune/soleil) quand le système est en mode sombre — visible sur
+toutes les pages de l'app, sans lien avec ce lot.

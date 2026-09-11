@@ -2,6 +2,7 @@ import bcrypt from 'bcrypt'
 import { Prisma } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { notifyUser } from '~/server/utils/notifications'
+import { sessionUserSelect, toSessionUser } from '~/server/utils/session'
 import { formatZodIssues, registerInputSchema } from '~/shared/utils/auth-credentials'
 
 const PASSWORD_COST = 12
@@ -34,7 +35,7 @@ export default defineEventHandler(async (event) => {
     data.role = invitation.role
   }
 
-  const select = { id: true, email: true, firstName: true, lastName: true, role: true } as const
+  const select = sessionUserSelect
 
   // `let` n'étant pas rétréci dans les callbacks, on fige la valeur non nulle.
   const inv = invitation
@@ -72,6 +73,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  await setUserSession(event, { user })
-  return user
+  const sessionUser = toSessionUser(user)
+  await setUserSession(event, { user: sessionUser })
+  return sessionUser
 })

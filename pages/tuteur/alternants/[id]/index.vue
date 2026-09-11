@@ -49,6 +49,23 @@
         Sous votre responsabilité depuis le {{ formatDate(overview.student.addedAt) }}.
       </p>
 
+      <!-- Parcours : réponses de l'apprenant au questionnaire de bienvenue -->
+      <section
+        v-if="overview.parcours.length"
+        class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5"
+      >
+        <div class="flex items-center gap-2">
+          <UIcon name="i-lucide-route" class="size-4 text-[var(--ui-text-muted)]" />
+          <h2 class="text-sm font-semibold text-[var(--ui-text)]">Parcours</h2>
+        </div>
+        <dl class="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-8 gap-y-4">
+          <div v-for="row in overview.parcours" :key="row.label">
+            <dt class="text-xs uppercase tracking-wide text-[var(--ui-text-dimmed)]">{{ row.label }}</dt>
+            <dd class="mt-1 text-sm text-[var(--ui-text)]">{{ row.value }}</dd>
+          </div>
+        </dl>
+      </section>
+
       <section
         v-if="overview.risk.reasons.length"
         class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5"
