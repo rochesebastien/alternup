@@ -881,23 +881,38 @@ const visibleGroups = computed(() =>
 
 // Apparition au scroll : même comportement que pages/index.vue (respect de
 // prefers-reduced-motion inclus), étendu à toutes les sections de cette page.
-onMounted(() => {
-  const targets = document.querySelectorAll('[data-reveal]')
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) {
+// Les blocs `[data-reveal]` naissent en `opacity: 0` : tout élément que
+// l'observateur ne voit jamais reste invisible. Un changement de filtre
+// remplace les articles (nouveaux nœuds DOM), il faut donc ré-observer après
+// chaque re-rendu — sinon retour sur « Toutes » = page vide.
+let io: IntersectionObserver | null = null
+
+function revealAll() {
+  const targets = document.querySelectorAll<HTMLElement>('[data-reveal]:not(.is-visible)')
+  if (!io) {
     targets.forEach(el => el.classList.add('is-visible'))
     return
   }
-  const io = new IntersectionObserver((entries) => {
-    for (const entry of entries) {
-      if (entry.isIntersecting) {
-        entry.target.classList.add('is-visible')
-        io.unobserve(entry.target)
+  targets.forEach(el => io!.observe(el))
+}
+
+onMounted(() => {
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    io = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('is-visible')
+          io?.unobserve(entry.target)
+        }
       }
-    }
-  }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
-  targets.forEach(el => io.observe(el))
-  onUnmounted(() => io.disconnect())
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' })
+  }
+  revealAll()
 })
+
+onUnmounted(() => io?.disconnect())
+
+watch(activeCategory, () => nextTick(revealAll))
 </script>
 
 <style scoped>

@@ -4,7 +4,9 @@
   <AppShell full-bleed :marketing-footer="isMarketing">
     <template #links="{ navLinkClass }">
       <NuxtLink to="/#product_anchor" :class="navLinkClass()">Produit</NuxtLink>
-      <NuxtLink to="/features" :class="navLinkClass('/features')">Fonctionnalités</NuxtLink>
+      <!-- Pas d'état actif : « Produit » (ancre de la landing) n'en a pas non
+           plus, un seul lien surligné sur deux détonnait. -->
+      <NuxtLink to="/features" :class="navLinkClass()">Fonctionnalités</NuxtLink>
     </template>
 
     <template #mobile-links="{ close, linkClass }">

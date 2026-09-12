@@ -124,10 +124,6 @@
           />
         </div>
       </div>
-
-      <p class="mt-3 hidden text-right text-xs text-[var(--ui-text-dimmed)] sm:block">
-        Appuyez sur <UKbd value="enter" size="sm" /> pour continuer
-      </p>
     </form>
   </div>
 </template>
