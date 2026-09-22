@@ -31,6 +31,10 @@ model User {
   role         Role     @default(Alternant)
   createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamptz
+  // Onboarding de première connexion (/onboarding) : `null` tant que le
+  // questionnaire n'a été ni terminé ni passé. Recopié dans la session
+  // (`user.onboarded`) pour que le middleware n'ait rien à interroger.
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz
 
   // Relations: réseau tuteur ↔ étudiants
   tutoredStudents TutorStudent[] @relation("Tutor")
@@ -85,8 +89,51 @@ model User {
   // Relations: veille d'offres (statuts de candidature de l'apprenant)
   offreStatuts OffreUserStatut[] @relation("UserOffreStatuts")
 
+  // Relations: réponses au questionnaire d'onboarding
+  onboardingProfile OnboardingProfile?
+
   @@index([role])
   @@map("users")
+}
+
+// Réponses au questionnaire de première connexion (/onboarding), une ligne par
+// utilisateur, modifiables ensuite depuis /account. Les champs à choix fermé
+// sont des `String` validées par Zod (shared/utils/onboarding.ts, source de
+// vérité des valeurs admises) plutôt que des enums Prisma : ajouter une option
+// ne demande ni migration ni miroir dans shared/utils/enums.ts. Un champ vaut
+// `null` quand la question n'a pas été posée (branchement, rôle) ou passée.
+model OnboardingProfile {
+  userId String @id @map("user_id") @db.Uuid
+
+  // Apprenant (Alternant / Stagiaire)
+  situation        String?   // en_poste | en_recherche
+  etablissement    String?
+  formation        String?
+  niveauEtudes     String?   @map("niveau_etudes") // bac | bac_2 | bac_3 | bac_5 | autre
+  entreprise       String?
+  dateDebutContrat DateTime? @map("date_debut_contrat") @db.Date
+  dateFinContrat   DateTime? @map("date_fin_contrat") @db.Date
+  rythme           String?   // une_une | deux_trois | trois_une | autre
+  // Rythme « autre » : semaines en entreprise / à l'école sur un cycle.
+  rythmeSemainesEntreprise Int? @map("rythme_semaines_entreprise")
+  rythmeSemainesEcole      Int? @map("rythme_semaines_ecole")
+
+  // Tuteur
+  fonction     String? // maitre_apprentissage | tuteur_pedagogique | rh | autre
+  organisation String?
+  effectif     String? // un | deux_cinq | six_dix | plus_dix
+
+  // Commun : intitulé du poste (apprenant en entreprise / fonction du tuteur)
+  // et attentes vis-à-vis de l'application (valeurs propres à chaque rôle).
+  poste     String?
+  objectifs String[] @default([])
+
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("onboarding_profiles")
 }
 
 model TutorStudent {
@@ -117,6 +164,10 @@ model Invitation {
   createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   tutor User @relation("InvitationSender", fields: [tutorId], references: [id], onDelete: Cascade)
+
+  // Événements planifiés pour l'invité avant qu'il ait un compte (point de
+  // suivi de l'onboarding tuteur) : rattachés à l'apprenant à l'acceptation.
+  calendarEvents CalendarEvent[]
 
   // Une seule invitation active par (tuteur, email) : ré-inviter la remplace.
   @@unique([tutorId, email])
@@ -229,15 +280,20 @@ model CalendarEvent {
   endTime            DateTime @map("end_time") @db.Timestamptz
   // Présence de l'alternant exigée (n'a de sens que si `studentId` est renseigné).
   presenceRequired   Boolean  @default(false) @map("presence_required")
+  // Événement prévu pour un apprenant invité qui n'a pas encore de compte :
+  // `studentId` est renseigné quand l'invitation est acceptée (register.post).
+  invitationId       String?  @map("invitation_id") @db.Uuid
   createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   student          User?             @relation("EventStudent", fields: [studentId], references: [id], onDelete: Cascade)
   tutor            User              @relation("EventTutor", fields: [tutorId], references: [id], onDelete: Cascade)
   courseAssignment CourseAssignment? @relation(fields: [courseAssignmentId], references: [id], onDelete: SetNull)
+  invitation       Invitation?       @relation(fields: [invitationId], references: [id], onDelete: SetNull)
   attendance       Attendance?
 
   @@index([studentId, startTime])
   @@index([courseAssignmentId])
+  @@index([invitationId])
   @@map("calendar_events")
 }
 
@@ -651,6 +707,7 @@ model Offre {
   codePostal      String?           @map("code_postal")
   typeContrat     OffreContratType? @map("type_contrat") // contract.type[0]
   niveauDiplome   String?           @map("niveau_diplome") // offer.target_diploma.level
+  dureeMois       Int?              @map("duree_mois") // contract.duration (mois)
   romeCodes       String[]          @map("rome_codes") // offer.rome_codes
   datePublication DateTime?         @map("date_publication") @db.Timestamptz // offer.publication.creation
   dateExpiration  DateTime?         @map("date_expiration") @db.Timestamptz // offer.publication.expiration

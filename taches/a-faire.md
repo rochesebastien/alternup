@@ -1419,3 +1419,156 @@ local) : `vue-tsc` ✅ · `npm test` (410) ✅ · `npm run lint` ✅ · `nuxt bu
 « Voir l'offre » de la dernière ligne quand le tableau des offres atteint le bas de l'écran ;
 le binding de `UCalendar` en mode plage porte un `as any` commenté (typage générique amont
 `@nuxt/ui` 4.7 + TS 6 sur les classes à champs privés de `@internationalized/date`).
+
+## 2026-09-11 — Onboarding de première connexion (questionnaire « une question par écran »)
+
+> Branche : `claude/onboarding-system-ulxrt6`. Demande : un système d'onboarding complet à la
+> première connexion / inscription, sur le modèle du composant **Questionnaire de shadcn/ui**
+> (une question par écran, progression, raccourcis clavier, Précédent / Passer / Continuer,
+> branchement conditionnel).
+
+### Plan
+
+- [x] **Modèle** : `User.onboardingCompletedAt` (null tant que le questionnaire n'est ni terminé
+      ni passé) + modèle `OnboardingProfile` 1:1 (`onboarding_profiles`) — migration
+      `20260911164419_onboarding_profiles`. Champs à choix fermé en `String` validées par Zod
+      (pas d'enum Prisma à miroiter). **Pas de backfill** : les comptes existants verront le
+      questionnaire une fois, à leur prochaine connexion (passable en un clic).
+- [x] **Session** : champ `user.onboarded` dans le cookie ; `server/utils/session.ts`
+      (`sessionUserSelect` + `toSessionUser`) devient le point unique des `setUserSession`
+      (login, register, `account/profile.put`, onboarding).
+- [x] **Logique pure** (`shared/utils/questionnaire.ts` : types, `visibleItems`,
+      `isItemComplete`, `questionProgress`, raccourcis ; `shared/utils/onboarding.ts` : questions
+      par rôle avec branchement, schéma Zod, `answersForRole`, `onboardingSummary`,
+      `onboardingRedirect`) — 45 tests dans `tests/shared/{questionnaire,onboarding}.test.ts`.
+- [x] **Composants** : `Questionnaire` (progression, transitions directionnelles, focus,
+      Entrée / lettres A-Z, aria-live), `QuestionnaireChoiceGroup`, `QuestionnaireChoice`
+      (carte avec `UKbd`, `aria-checked`), contexte `useQuestionnaireContext`.
+- [x] **Routage** : `middleware/onboarding.global.ts` (connecté et non onboardé → `/onboarding` ;
+      onboardé → `/onboarding` renvoie vers le landing sauf `?again=1`), layout `onboarding`
+      (logo seul) résolu dans `app.vue`.
+- [x] **API** : `GET /api/onboarding` (réponses), `POST /api/onboarding` (upsert + complétion +
+      session réécrite), `POST /api/onboarding/skip` (« Compléter plus tard »).
+- [x] **Pages** : `/onboarding` (questionnaire + écran de fin avec CTA adaptés : offres pour un
+      apprenant en recherche, invitation pour un tuteur), section « Mon parcours » sur `/account`
+      (relecture + bouton pour refaire), bloc « Parcours » sur la fiche apprenant côté tuteur
+      (`overview.parcours`).
+- [x] **Vérification** : `prisma generate` → `nuxt prepare` → `vue-tsc` → `vitest` → `nuxt build`
+      + grep `index-browser` ; API exercée en curl ; parcours complet en navigateur (Playwright :
+      inscription → redirection → clavier → fin → compte → refaire → passer, mobile 400 px et
+      thème sombre, aucune erreur console).
+
+### Questions posées
+
+- **Apprenant** : situation (en poste / en recherche, obligatoire) → formation (établissement
+  obligatoire, diplôme) → niveau → *si en poste* : entreprise (nom obligatoire, poste), dates
+  de contrat/stage, rythme (*alternant seulement*) → attentes (choix multiple).
+- **Tuteur** : rôle (maître d'apprentissage / tuteur pédagogique / RH / autre, obligatoire) →
+  organisation (nom obligatoire, fonction) → nombre d'apprenants suivis → attentes.
+
+### Revue
+
+**Livré** : tout le plan. Le serveur re-nettoie les réponses selon le rôle et le branchement
+(`answersForRole`) : un tuteur ne peut pas écrire de champ apprenant, un apprenant en recherche
+n'a jamais d'entreprise enregistrée, un stagiaire pas de rythme.
+
+**Décisions** : colonnes `String` + Zod plutôt que 5 enums Prisma (ajouter une option = zéro
+migration) ; `onboarded` en booléen dans la session (le middleware ne fait aucun appel réseau) ;
+« Passer » n'efface pas une réponse déjà donnée ; « Compléter plus tard » marque l'onboarding
+terminé sans réponse, le questionnaire reste accessible depuis « Mon compte ».
+
+**Constats hors périmètre, non traités** : avertissement d'hydratation pré-existant sur l'icône
+du bouton de thème d'`AppShell` (lune/soleil) quand le système est en mode sombre — visible sur
+toutes les pages de l'app, sans lien avec ce lot.
+
+## 2026-09-22 — Onboarding v2 : questions apprenant revues, actions de démarrage du tuteur
+
+> Branche : `claude/onboarding-system-ulxrt6`. Retours utilisateur sur la liste des questions,
+> onboarding tuteur orienté action, question de l'import de calendriers externes.
+
+### Plan
+
+- [x] **Questions apprenant** : « Autre rythme » ouvre un écran « Précisez votre rythme »
+      (semaines entreprise / école, entiers 1-52, colonnes `rythme_semaines_*`) ; attentes
+      réduites à 4 (missions + compétences fusionnées, « Échanger avec mon tuteur et nouer une
+      relation de confiance »).
+- [x] **Bug corrigé au passage** : les libellés d'attentes étaient fusionnés entre rôles, un
+      apprenant ayant coché « missions » voyait le libellé tuteur. Libellés séparés par rôle.
+- [x] **Questionnaire générique** : champs `email` / `time` / `number` (bornes), étape
+      `optional` (passable, vidée quand on la passe), contrôle d'étape `validate`, messages
+      d'erreur précis (`itemError`).
+- [x] **Onboarding tuteur** : après les questions de profil, écran « Deux actions pour bien
+      démarrer » → premier apprenant (invitation, ou rattachement direct si le compte existe ;
+      refus si l'email est celui d'un tuteur) → alternant ou stagiaire → jour du point de suivi
+      → créneau (10:00-10:30 proposé). Écran de fin : lien d'invitation à copier + récap des
+      rendez-vous + « Voir mon calendrier ».
+- [x] **Point de suivi** : 12 occurrences hebdomadaires calculées en heure locale du navigateur
+      (`weeklySlots`, stable au changement d'heure), créées en une transaction avec le profil.
+      Si l'apprenant n'a pas encore de compte, les événements portent `invitation_id` et
+      `register.post` les lui rattache à l'acceptation (migration
+      `20260922222410_onboarding_tuteur_actions`, `DROP INDEX` trigramme parasites retirés).
+- [x] **Serveur** : actions exécutées seulement pour un tuteur pas encore onboardé (refaire le
+      questionnaire ne duplique rien) ; `issueInvitation` factorisé dans
+      `server/utils/invitations.ts` et réutilisé par `POST /api/invitations`.
+- [x] **Vérification** : 469 tests (TZ Paris et UTC), `vue-tsc`, ESLint, build + grep
+      `index-browser` ; parcours navigateur complet (tuteur → lien → inscription de l'invitée →
+      12 rendez-vous rattachés, mardi 10:00 heure de Paris avant et après le 25/10) ; curl sur
+      les cas limites (email tuteur, compte existant, second envoi, apprenant envoyant des
+      actions).
+
+### Revue
+
+**Limite assumée** : le point de suivi n'est pas un événement récurrent mais 12 occurrences
+indépendantes (le modèle `CalendarEvent` n'a pas de récurrence). Chaque occurrence se
+déplace ou se supprime individuellement ; au-delà de 12 semaines, le tuteur en recrée depuis
+le calendrier. Une vraie récurrence (RRULE) est à traiter avec l'import de calendriers
+ci-dessous.
+
+**Constat hors périmètre** : le tableau de bord formate les dates côté serveur dans le fuseau
+du conteneur (UTC) → écart d'hydratation « 08:00 » serveur / « 10:00 » navigateur, et en
+production l'heure affichée au premier rendu est fausse de 1 à 2 h. Pré-existant, à corriger
+(formatage client ou fuseau `Europe/Paris` explicite).
+
+## Backlog — Import de calendriers externes (Outlook, Teams, Google) — reporté
+
+Évalué le 2026-09-22, **reporté à une version ultérieure** : faisable mais trop gros pour ce lot.
+
+- **Teams** n'a pas de calendrier propre : ses réunions vivent dans le calendrier Outlook /
+  Exchange. Importer Outlook couvre Teams.
+- **Étape 1 recommandée — abonnement ICS en lecture seule** : l'utilisateur colle l'URL
+  secrète de son calendrier (Outlook « Publier un calendrier », Google « Adresse secrète au
+  format iCal »). Serveur : modèle `ExternalCalendar` (URL chiffrée, c'est un secret) +
+  cache d'événements, synchronisation planifiée (même mécanique que l'ingestion des offres),
+  couche en lecture seule dans le calendrier. Points durs : parsing iCal avec récurrences et
+  exceptions (`RRULE`/`EXDATE`, dépendance type `ical.js`), fuseaux horaires, et **réseau de
+  production filtré** (sortie HTTPS vers `outlook.office365.com` / `calendar.google.com` à
+  autoriser côté Dokploy).
+- **Étape 0, plus simple et souvent plus utile — export** : un flux ICS Alternup par
+  utilisateur (`/api/calendar/<token>.ics`) auquel Outlook, Teams et Google s'abonnent. Aucune
+  dépendance, aucun appel sortant.
+- **Étape 2 — synchro bidirectionnelle OAuth** (Microsoft Graph, Google Calendar API) :
+  enregistrement d'application, consentement administrateur fréquent dans les écoles,
+  stockage de jetons. Uniquement si l'étape 1 ne suffit pas.
+
+## 2026-09-23 — Offres : niveau, durée, page détail
+
+- [x] Colonnes **Niveau** (libellé court du niveau européen : CAP/BEP, Bac, Bac +2, +3, +5)
+      et **Durée** (« 6 mois », « 1 an », « 18 mois ») dans le tableau des deux espaces.
+- [x] `Offre.dureeMois` (`contract.duration`) : mapping d'ingestion + migration
+      `20260923090000_offres_duree_mois` avec backfill depuis `raw` (rejoué et vérifié sur
+      la fixture) ; `DROP INDEX` trigramme parasites retirés.
+- [x] Page détail `/…/offres/[id]` : clic sur la ligne ou sur le titre, `UBreadcrumb`
+      « Offres › titre » qui restaure les filtres du tableau (`useOffresListQuery`). Tous les
+      champs LBA, vides compris (« Non précisé ») : description, compétences attendues /
+      à acquérir, entreprise (raison sociale, marque, taille, NAF, SIRET, OPCO, IDCC, site),
+      contrat (types, niveau, durée, début, mode de travail, postes, conditions d'accès),
+      localisation (+ lien OpenStreetMap), candidature (lien, téléphone, CFA délégataire),
+      publication (dates, statut source, ROME, diffuseur, référence). Suivi de candidature
+      côté apprenant, consultation seule côté tuteur.
+- [x] `GET /api/offres/:id` renvoie `detail` (vue typée) au lieu de `sources`, jamais `raw` ;
+      liens de la source filtrés en http(s).
+- [x] Dates du tableau des offres formatées en `Europe/Paris` : l'écart d'hydratation de
+      « Dernière synchronisation » (serveur en UTC) disparaît.
+- [x] Vérification : 477 tests, `vue-tsc`, ESLint, build + grep ; navigateur (clic ligne,
+      clic titre, « Voir l'offre » n'ouvre pas le détail, fil d'Ariane avec filtres, statut
+      « J'ai candidaté », id inconnu, tuteur, mobile sombre).

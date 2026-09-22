@@ -1,5 +1,6 @@
 import { prisma } from '~/server/utils/prisma'
 import { requireAuth } from '~/server/utils/require-role'
+import { sessionUserSelect, toSessionUser } from '~/server/utils/session'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
 import { accountProfileUpdateSchema } from '~/shared/utils/account'
 
@@ -20,12 +21,13 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const user = await prisma.user.update({
+  const updated = await prisma.user.update({
     where: { id: current.id },
     data: parsed.data,
-    select: { id: true, email: true, firstName: true, lastName: true, role: true }
+    select: sessionUserSelect
   })
 
+  const user = toSessionUser(updated)
   await setUserSession(event, { user })
   return user
 })

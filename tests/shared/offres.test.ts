@@ -184,7 +184,11 @@ describe('métadonnées d\'affichage', () => {
     for (const meta of Object.values(CANDIDATURE_STATUT_META)) {
       expect(meta.label.length).toBeGreaterThan(0)
       expect(meta.icon).toMatch(/^i-lucide-/)
+      expect(meta.badge.length).toBeGreaterThan(0)
     }
+    // Badge court, libellé complet en infobulle.
+    expect(CANDIDATURE_STATUT_META.candidate.badge).toBe('Envoyée')
+    expect(CANDIDATURE_STATUT_META.candidate.label).toBe('Candidature envoyée')
   })
 })
 

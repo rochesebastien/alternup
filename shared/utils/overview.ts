@@ -6,6 +6,8 @@
 // contrat de réponse, les libellés FR et la fusion/tri des événements — donc
 // tout ce qui est testable sans base de données.
 
+import type { OnboardingSummaryRow } from '~/shared/utils/onboarding'
+
 // ─────────────────────────── Timeline ───────────────────────────
 
 /** Nature d'un événement de la timeline unifiée. */
@@ -214,6 +216,8 @@ export interface OverviewLinks {
 
 export interface StudentOverview {
   student: OverviewStudent
+  /** Réponses du questionnaire de bienvenue (formation, entreprise, contrat…), vide si non renseigné. */
+  parcours: OnboardingSummaryRow[]
   kpis: OverviewKpis
   risk: OverviewRisk
   timeline: OverviewEvent[]

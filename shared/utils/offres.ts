@@ -47,10 +47,47 @@ export const OFFRE_CONTRAT_META: Record<OffreContratType, OffreMeta> = {
   professionnalisation: { label: 'Professionnalisation', icon: 'i-lucide-briefcase' }
 }
 
-export const CANDIDATURE_STATUT_META: Record<CandidatureStatut, OffreMeta> = {
-  vue: { label: 'Vue', icon: 'i-lucide-eye' },
-  candidate: { label: 'Candidature envoyée', icon: 'i-lucide-send' },
-  rejetee: { label: 'Rejetée', icon: 'i-lucide-x' }
+/**
+ * `label` : libellé complet (filtre, infobulle, toasts). `badge` : forme courte
+ * affichée dans les badges de statut, le libellé complet passe en infobulle.
+ */
+export const CANDIDATURE_STATUT_META: Record<CandidatureStatut, OffreMeta & { badge: string }> = {
+  vue: { label: 'Vue', badge: 'Vue', icon: 'i-lucide-eye' },
+  candidate: { label: 'Candidature envoyée', badge: 'Envoyée', icon: 'i-lucide-send' },
+  rejetee: { label: 'Rejetée', badge: 'Rejetée', icon: 'i-lucide-x' }
+}
+
+/**
+ * Niveau de diplôme visé (`offer.target_diploma.level` LBA, cadre européen des
+ * certifications) → libellé court du tableau. La source fournit aussi un
+ * libellé long (`target_diploma.label`), affiché sur la page détail.
+ */
+export const NIVEAU_DIPLOME_LABELS: Record<string, string> = {
+  '3': 'CAP, BEP',
+  '4': 'Bac',
+  '5': 'Bac +2',
+  '6': 'Bac +3',
+  '7': 'Bac +5'
+}
+
+export function niveauDiplomeLabel(level: string | null | undefined): string | null {
+  if (!level) return null
+  return NIVEAU_DIPLOME_LABELS[level] ?? `Niveau ${level}`
+}
+
+/** Durée d'un contrat : « 6 mois », « 1 an », « 2 ans », « 18 mois ». */
+export function formatDureeMois(mois: number | null | undefined): string | null {
+  if (!mois || mois <= 0) return null
+  if (mois % 12 === 0) {
+    const ans = mois / 12
+    return `${ans} an${ans > 1 ? 's' : ''}`
+  }
+  return `${mois} mois`
+}
+
+/** Durée LBA (`contract.duration`, en mois) : entier positif, sinon `null`. */
+export function dureeMoisDe(valeur: unknown): number | null {
+  return typeof valeur === 'number' && Number.isInteger(valeur) && valeur > 0 ? valeur : null
 }
 
 // ─────────────────────────── Déduplication ───────────────────────────

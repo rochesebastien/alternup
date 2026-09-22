@@ -92,6 +92,7 @@ describe('mapLbaJob', () => {
       codePostal: '69007',
       typeContrat: 'professionnalisation',
       niveauDiplome: '5',
+      dureeMois: 12,
       romeCodes: ['M1501', 'M1502'],
       datePublication: new Date('2026-08-18T09:12:00.000Z'),
       dateExpiration: new Date('2026-10-18T23:59:59.000Z'),
@@ -140,6 +141,7 @@ describe('mapLbaJob', () => {
       codePostal: null,
       typeContrat: 'apprentissage',
       niveauDiplome: null,
+      dureeMois: null,
       romeCodes: [],
       datePublication: null,
       dateExpiration: null,
@@ -148,6 +150,14 @@ describe('mapLbaJob', () => {
       partnerJobId: null,
       statutSource: null
     })
+  })
+
+  it('ne garde qu\'une durée de contrat entière et positive', () => {
+    for (const [duration, attendu] of [[12, 12], [0, null], [-3, null], [1.5, null], ['24', null]] as const) {
+      const offre = structuredClone(OFFRE_LBA_COMPLETE) as Record<string, unknown>
+      ;(offre.contract as Record<string, unknown>).duration = duration
+      expect(mapLbaJob(offre)?.dureeMois).toBe(attendu)
+    }
   })
 
   it('replie entreprise sur workplace.legal_name quand workplace.name est absent', () => {

@@ -97,6 +97,44 @@
       </UForm>
     </section>
 
+    <!-- Parcours : réponses au questionnaire de bienvenue (/onboarding) -->
+    <section
+      v-if="user"
+      class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-6 space-y-5"
+    >
+      <div class="flex items-start justify-between gap-4">
+        <div class="flex-1 min-w-0">
+          <h2 class="text-base font-semibold text-[var(--ui-text)]">Mon parcours</h2>
+          <p class="text-sm text-[var(--ui-text-muted)] mt-1">
+            {{
+              user.role === Role.Tutor
+                ? 'Votre rôle, votre organisation et vos attentes, tels que renseignés à votre arrivée.'
+                : 'Votre formation, votre entreprise et vos attentes, tels que renseignés à votre arrivée.'
+            }}
+          </p>
+        </div>
+        <UButton
+          color="neutral"
+          variant="outline"
+          size="sm"
+          :icon="parcours.length ? 'i-lucide-pencil' : 'i-lucide-sparkles'"
+          :label="parcours.length ? 'Modifier' : 'Répondre'"
+          to="/onboarding?again=1"
+          class="shrink-0"
+        />
+      </div>
+
+      <dl v-if="parcours.length" class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-5">
+        <div v-for="row in parcours" :key="row.label">
+          <dt class="text-xs uppercase tracking-wide text-[var(--ui-text-dimmed)]">{{ row.label }}</dt>
+          <dd class="mt-1 text-sm text-[var(--ui-text)]">{{ row.value }}</dd>
+        </div>
+      </dl>
+      <p v-else class="text-sm text-[var(--ui-text-muted)]">
+        Vous n'avez pas encore répondu au questionnaire de bienvenue. Deux minutes suffisent.
+      </p>
+    </section>
+
     <!-- Mot de passe -->
     <section class="rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-6 space-y-5">
       <div class="flex items-start justify-between gap-4">
@@ -190,6 +228,7 @@ import {
   accountPasswordUpdateSchema,
   accountProfileUpdateSchema
 } from '~/shared/utils/account'
+import { onboardingSummary, type OnboardingProfileView } from '~/shared/utils/onboarding'
 
 const { user, fetch: refreshSession } = useUserSession()
 const toast = useToast()
@@ -205,6 +244,14 @@ const initials = computed(() =>
   user.value
     ? `${user.value.firstName.charAt(0)}${user.value.lastName.charAt(0)}`.toUpperCase()
     : ''
+)
+
+// --- Parcours (questionnaire de bienvenue) ---------------------------------
+const { data: onboarding } = await useFetch<OnboardingProfileView | null>('/api/onboarding', {
+  default: () => null
+})
+const parcours = computed(() =>
+  user.value && onboarding.value ? onboardingSummary(user.value.role, onboarding.value) : []
 )
 
 // --- Identité ---------------------------------------------------------------

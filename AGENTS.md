@@ -17,6 +17,19 @@ le layout et la garde de rôle sont résolus **par préfixe de route**
 (`middleware/space.global.ts`), pas par `definePageMeta` page par page. Les anciennes URLs
 sont redirigées par `middleware/legacy-redirect.global.ts`.
 
+### Onboarding de première connexion
+
+Tant que `User.onboardingCompletedAt` est nul, `middleware/onboarding.global.ts` ramène tout
+utilisateur connecté sur `/onboarding` (questionnaire « une question par écran », composant
+générique `Questionnaire` + définition des questions par rôle dans `shared/utils/onboarding.ts`).
+Le flag est recopié dans la session (`user.onboarded`) par `server/utils/session.ts`, point
+unique de tous les `setUserSession`. Les réponses vivent dans `OnboardingProfile` (colonnes
+`String` validées par Zod, pas d'enum Prisma) et se relisent depuis `/account`. À sa
+première connexion, le tuteur a en plus deux actions passables, exécutées côté serveur à la
+fin du questionnaire et jamais rejouées : inviter un premier apprenant, et placer un point de
+suivi hebdomadaire (événements créés d'avance, rattachés à l'invité via
+`CalendarEvent.invitationId` quand il crée son compte).
+
 ### Module veille d'offres
 
 Veille d'offres d'alternance pour les apprenants (ADR-0002 à 0004, `docs/veille.md`) :

@@ -58,6 +58,7 @@ function champsNormalises(offre: OffreNormalisee) {
     codePostal: offre.codePostal,
     typeContrat: offre.typeContrat,
     niveauDiplome: offre.niveauDiplome,
+    dureeMois: offre.dureeMois,
     romeCodes: offre.romeCodes,
     datePublication: offre.datePublication,
     dateExpiration: offre.dateExpiration,

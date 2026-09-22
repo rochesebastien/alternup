@@ -13,7 +13,7 @@
 
 import { createReadStream } from 'node:fs'
 import { OffreContratType, OffreSourceType } from '../../../shared/utils/enums.ts'
-import { parseLieu } from '../../../shared/utils/offres.ts'
+import { dureeMoisDe, parseLieu } from '../../../shared/utils/offres.ts'
 import { parseJsonArrayStream } from '../json-array-stream.ts'
 import type { OffreNormalisee, SourceIngestion, SourceIngestionContext } from '../types.ts'
 
@@ -104,6 +104,7 @@ export function mapLbaJob(entree: unknown): OffreNormalisee | null {
     codePostal,
     typeContrat,
     niveauDiplome,
+    dureeMois: dureeMoisDe(contract?.duration),
     romeCodes: Array.isArray(offer?.rome_codes)
       ? offer.rome_codes.filter((code): code is string => typeof code === 'string')
       : [],

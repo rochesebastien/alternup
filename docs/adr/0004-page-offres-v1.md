@@ -125,3 +125,14 @@ nouvelles offres, recommandations par profil, accès tuteur aux offres, offres d
 - **Marquage « vue » automatique à l'affichage** : écritures massives et statut ambigu ;
   le badge « nouveau » calculé + action explicite est plus honnête.
 - **Page publique SEO** : décision de gate — hors périmètre v1.
+
+## Révision 2026-09-23 — page détail
+
+La v1 excluait une vue détail. Elle est ajoutée à la demande de l'utilisateur :
+`/alternant/offres/[id]` et `/tuteur/offres/[id]` (composant `OffreDetail`, fil d'Ariane
+« Offres › titre » qui ramène au tableau avec ses filtres). Un clic sur une ligne ou sur le
+titre l'ouvre ; « Voir l'offre » et le menu d'actions gardent leur comportement. La page
+affiche **toutes** les informations du payload LBA, extraites de `Offre.raw` par la
+fonction pure `offreDetailFromRaw` (`shared/utils/offre-detail.ts`) : `raw` n'est jamais
+renvoyé tel quel au client. Le tableau gagne deux colonnes, niveau de diplôme visé et durée
+du contrat (`Offre.dureeMois`, colonne ajoutée avec backfill depuis `raw`).

@@ -21,6 +21,8 @@ export interface OffreNormalisee {
   codePostal: string | null
   typeContrat: OffreContratType | null
   niveauDiplome: string | null
+  /** Durée du contrat en mois (`contract.duration` LBA). */
+  dureeMois: number | null
   romeCodes: string[]
   datePublication: Date | null
   dateExpiration: Date | null
