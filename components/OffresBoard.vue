@@ -222,15 +222,16 @@
         </template>
 
         <template #monStatut-cell="{ row }">
-          <UBadge
-            v-if="row.original.monStatut"
-            :color="CANDIDATURE_STATUT_COLOR[row.original.monStatut]"
-            variant="soft"
-            :icon="CANDIDATURE_STATUT_META[row.original.monStatut].icon"
-            class="whitespace-nowrap"
-          >
-            {{ CANDIDATURE_STATUT_META[row.original.monStatut].label }}
-          </UBadge>
+          <UTooltip v-if="row.original.monStatut" :text="CANDIDATURE_STATUT_META[row.original.monStatut].label">
+            <UBadge
+              :color="CANDIDATURE_STATUT_COLOR[row.original.monStatut]"
+              variant="soft"
+              :icon="CANDIDATURE_STATUT_META[row.original.monStatut].icon"
+              class="whitespace-nowrap"
+            >
+              {{ CANDIDATURE_STATUT_META[row.original.monStatut].badge }}
+            </UBadge>
+          </UTooltip>
           <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
         </template>
 

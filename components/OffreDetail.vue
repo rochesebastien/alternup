@@ -46,14 +46,15 @@
             <UBadge v-if="offre.statut === 'expiree'" color="neutral" variant="soft" icon="i-lucide-clock-alert">
               Expirée
             </UBadge>
-            <UBadge
-              v-if="offre.monStatut"
-              :color="STATUT_COLOR[offre.monStatut]"
-              variant="soft"
-              :icon="CANDIDATURE_STATUT_META[offre.monStatut].icon"
-            >
-              {{ CANDIDATURE_STATUT_META[offre.monStatut].label }}
-            </UBadge>
+            <UTooltip v-if="offre.monStatut" :text="CANDIDATURE_STATUT_META[offre.monStatut].label">
+              <UBadge
+                :color="STATUT_COLOR[offre.monStatut]"
+                variant="soft"
+                :icon="CANDIDATURE_STATUT_META[offre.monStatut].icon"
+              >
+                {{ CANDIDATURE_STATUT_META[offre.monStatut].badge }}
+              </UBadge>
+            </UTooltip>
           </div>
         </div>
 

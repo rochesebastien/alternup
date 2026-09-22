@@ -47,10 +47,14 @@ export const OFFRE_CONTRAT_META: Record<OffreContratType, OffreMeta> = {
   professionnalisation: { label: 'Professionnalisation', icon: 'i-lucide-briefcase' }
 }
 
-export const CANDIDATURE_STATUT_META: Record<CandidatureStatut, OffreMeta> = {
-  vue: { label: 'Vue', icon: 'i-lucide-eye' },
-  candidate: { label: 'Candidature envoyée', icon: 'i-lucide-send' },
-  rejetee: { label: 'Rejetée', icon: 'i-lucide-x' }
+/**
+ * `label` : libellé complet (filtre, infobulle, toasts). `badge` : forme courte
+ * affichée dans les badges de statut, le libellé complet passe en infobulle.
+ */
+export const CANDIDATURE_STATUT_META: Record<CandidatureStatut, OffreMeta & { badge: string }> = {
+  vue: { label: 'Vue', badge: 'Vue', icon: 'i-lucide-eye' },
+  candidate: { label: 'Candidature envoyée', badge: 'Envoyée', icon: 'i-lucide-send' },
+  rejetee: { label: 'Rejetée', badge: 'Rejetée', icon: 'i-lucide-x' }
 }
 
 /**
