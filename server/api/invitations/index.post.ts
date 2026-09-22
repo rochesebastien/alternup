@@ -1,11 +1,9 @@
-import { randomBytes } from 'node:crypto'
 import { Role } from '@prisma/client'
 import { prisma } from '~/server/utils/prisma'
 import { requireRole } from '~/server/utils/require-role'
+import { inviteUrlFor, issueInvitation } from '~/server/utils/invitations'
 import { formatZodIssues } from '~/shared/utils/auth-credentials'
-import { invitationCreateSchema, INVITATION_TTL_DAYS } from '~/shared/utils/invitations'
-
-const DAY_MS = 24 * 60 * 60 * 1000
+import { invitationCreateSchema } from '~/shared/utils/invitations'
 
 export default defineEventHandler(async (event) => {
   const tutor = await requireRole(event, Role.Tutor)
@@ -31,34 +29,10 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const token = randomBytes(32).toString('base64url')
-  const expiresAt = new Date(Date.now() + INVITATION_TTL_DAYS * DAY_MS)
-
-  // Ré-inviter la même personne remplace l'invitation précédente (nouveau
-  // token, nouvelle expiration) au lieu d'empiler des liens actifs.
-  const invitation = await prisma.invitation.upsert({
-    where: { tutorId_email: { tutorId: tutor.id, email } },
-    create: {
-      tutorId: tutor.id,
-      email,
-      firstName: firstName || null,
-      lastName: lastName || null,
-      role,
-      token,
-      expiresAt
-    },
-    update: {
-      firstName: firstName || null,
-      lastName: lastName || null,
-      role,
-      token,
-      expiresAt,
-      acceptedAt: null
-    }
-  })
+  const invitation = await issueInvitation(prisma, tutor.id, { email, firstName, lastName, role })
 
   // Pas d'envoi d'email pour l'instant : le tuteur transmet lui-même le lien.
-  const inviteUrl = `${getRequestURL(event).origin}/register?invite=${invitation.token}`
+  const inviteUrl = inviteUrlFor(event, invitation.token)
 
   return {
     id: invitation.id,

@@ -77,6 +77,8 @@
                   :model-value="textAnswer(field.name)"
                   :placeholder="field.placeholder"
                   :autocomplete="field.autocomplete"
+                  :min="field.min"
+                  :max="field.max"
                   size="xl"
                   class="w-full"
                   @update:model-value="setAnswer(field.name, String($event))"
@@ -130,8 +132,10 @@
 
 <script setup lang="ts">
 import {
-  isItemComplete,
+  answersAfterSkip,
+  fieldFormatError,
   isItemSkippable,
+  itemError,
   questionProgress,
   shortcutFor,
   toggleChoice,
@@ -174,7 +178,14 @@ const current = computed<QuestionnaireItem | undefined>(
   () => visible.value[index.value] ?? visible.value[0]
 )
 const isLast = computed(() => index.value === visible.value.length - 1)
-const skippable = computed(() => !!current.value && !isLast.value && isItemSkippable(current.value))
+// « Passer » sur la dernière étape n'a de sens que pour une étape optionnelle
+// (une action) : ailleurs, « Terminer » sans réponse revient au même.
+const skippable = computed(
+  () =>
+    !!current.value &&
+    isItemSkippable(current.value) &&
+    (!isLast.value || !!current.value.optional)
+)
 
 const progress = computed(() => questionProgress(visible.value, currentId.value))
 const progressPercent = computed(() =>
@@ -194,12 +205,15 @@ const nextLabel = computed(() => {
 
 function textAnswer(name: string): string {
   const value = props.modelValue[name]
+  if (typeof value === 'number') return String(value)
   return typeof value === 'string' ? value : ''
 }
 
 function fieldError(field: QuestionnaireField): string | undefined {
-  if (!attempted.value || !field.required) return undefined
-  return textAnswer(field.name).trim() ? undefined : 'Ce champ est requis.'
+  if (!attempted.value) return undefined
+  const value = textAnswer(field.name)
+  if (field.required && !value.trim()) return 'Ce champ est requis.'
+  return fieldFormatError(field, value) ?? undefined
 }
 
 function setAnswer(key: string, value: QuestionnaireAnswer) {
@@ -210,7 +224,10 @@ function setAnswer(key: string, value: QuestionnaireAnswer) {
 }
 
 function goTo(position: number, dir: 'forward' | 'back') {
-  const target = visible.value[position]
+  goToItem(visible.value[position], dir)
+}
+
+function goToItem(target: QuestionnaireItem | undefined, dir: 'forward' | 'back') {
   if (!target) return
   direction.value = dir
   error.value = null
@@ -220,12 +237,10 @@ function goTo(position: number, dir: 'forward' | 'back') {
 
 function next() {
   if (props.submitting || !current.value) return
-  if (!isItemComplete(current.value, props.modelValue)) {
+  const problem = itemError(current.value, props.modelValue)
+  if (problem) {
     attempted.value = true
-    error.value =
-      current.value.kind === 'fields'
-        ? 'Merci de renseigner les champs obligatoires.'
-        : 'Merci de choisir une réponse pour continuer.'
+    error.value = problem
     return
   }
   if (isLast.value) {
@@ -241,8 +256,19 @@ function prev() {
 }
 
 function skip() {
-  if (props.submitting || !skippable.value) return
-  goTo(index.value + 1, 'forward')
+  if (props.submitting || !skippable.value || !current.value) return
+  // Une étape optionnelle passée est vidée : l'action qu'elle porte n'aura pas lieu.
+  const answers = answersAfterSkip(current.value, props.modelValue)
+  if (answers !== props.modelValue) emit('update:modelValue', answers)
+  if (isLast.value) {
+    emit('submit', answers)
+    return
+  }
+  // Les réponses vidées peuvent masquer des étapes (branchement) : la suivante
+  // se cherche dans la liste recalculée, pas dans l'ancienne.
+  const nextVisible = visibleItems(props.items, answers)
+  const position = nextVisible.findIndex((item) => item.id === current.value?.id)
+  goToItem(nextVisible[position + 1], 'forward')
 }
 
 /** Après la transition, le focus va au premier champ, sinon au titre. */

@@ -52,6 +52,12 @@ export default defineEventHandler(async (event) => {
             where: { id: inv.id },
             data: { acceptedAt: new Date() }
           })
+          // Rendez-vous planifiés par le tuteur avant la création du compte
+          // (point de suivi de son onboarding) : ils visent désormais l'apprenant.
+          await tx.calendarEvent.updateMany({
+            where: { invitationId: inv.id, studentId: null },
+            data: { studentId: created.id }
+          })
           return created
         })
       : await prisma.user.create({ data: { ...data, passwordHash }, select })

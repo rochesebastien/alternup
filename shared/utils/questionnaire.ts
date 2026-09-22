@@ -5,7 +5,7 @@
 // tests/shared/questionnaire.test.ts.
 
 /** Réponse d'une question : une valeur (choix unique, champ texte) ou une liste (choix multiple). */
-export type QuestionnaireAnswer = string | string[] | null | undefined
+export type QuestionnaireAnswer = string | number | string[] | null | undefined
 
 /**
  * Réponses indexées par identifiant : `item.id` pour les questions à choix,
@@ -23,8 +23,11 @@ export interface QuestionnaireOption {
 export interface QuestionnaireField {
   name: string
   label: string
-  type: 'text' | 'date'
+  type: 'text' | 'email' | 'date' | 'time' | 'number'
   placeholder?: string
+  /** Bornes d'un champ `number`. */
+  min?: number
+  max?: number
   help?: string
   required?: boolean
   autocomplete?: string
@@ -36,6 +39,14 @@ interface QuestionnaireItemBase {
   description?: string
   /** Branchement : la question n'est posée que si le prédicat est vrai. */
   when?: (answers: QuestionnaireAnswers) => boolean
+  /**
+   * Étape entièrement facultative (typiquement une action : inviter, planifier) :
+   * « Passer » est proposé même si des champs sont obligatoires une fois
+   * l'étape entamée, et passer l'étape efface ses réponses.
+   */
+  optional?: boolean
+  /** Contrôle propre à l'étape (cohérence entre champs) : message d'erreur ou `null`. */
+  validate?: (answers: QuestionnaireAnswers) => string | null
 }
 
 export type QuestionnaireItem =
@@ -54,7 +65,24 @@ export function visibleItems(
 }
 
 function hasText(value: QuestionnaireAnswer): boolean {
+  if (typeof value === 'number') return Number.isFinite(value)
   return typeof value === 'string' && value.trim().length > 0
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+/** Message d'erreur d'un champ renseigné mais mal formé, `null` s'il est valide ou vide. */
+export function fieldFormatError(field: QuestionnaireField, value: QuestionnaireAnswer): string | null {
+  if (!hasText(value)) return null
+  const text = String(value).trim()
+  if (field.type === 'email' && !EMAIL_PATTERN.test(text)) return 'Adresse e-mail invalide.'
+  if (field.type === 'number') {
+    const n = Number(text)
+    if (!Number.isInteger(n)) return 'Nombre entier attendu.'
+    if (field.min !== undefined && n < field.min) return `Minimum ${field.min}.`
+    if (field.max !== undefined && n > field.max) return `Maximum ${field.max}.`
+  }
+  return null
 }
 
 /** Une question à réponse obligatoire ne laisse passer que si elle est renseignée. */
@@ -69,12 +97,55 @@ export function isItemComplete(item: QuestionnaireItem, answers: QuestionnaireAn
       return !item.required || (Array.isArray(value) && value.length > 0)
     }
     case 'fields':
-      return item.fields.every((field) => !field.required || hasText(answers[field.name]))
+      return item.fields.every(
+        (field) =>
+          (!field.required || hasText(answers[field.name])) &&
+          !fieldFormatError(field, answers[field.name])
+      )
   }
+}
+
+/**
+ * Erreur bloquante d'une étape au moment de continuer : réponse obligatoire
+ * manquante, champ mal formé, puis contrôle propre à l'étape. `null` si l'on
+ * peut avancer.
+ */
+export function itemError(item: QuestionnaireItem, answers: QuestionnaireAnswers): string | null {
+  if (!isItemComplete(item, answers)) {
+    if (item.kind === 'fields') {
+      const malformed = item.fields
+        .map((field) => fieldFormatError(field, answers[field.name]))
+        .find(Boolean)
+      return malformed ?? 'Merci de renseigner les champs obligatoires.'
+    }
+    return 'Merci de choisir une réponse pour continuer.'
+  }
+  return item.validate?.(answers) ?? null
+}
+
+/** Clés de réponse portées par une étape (`item.id` ou noms de ses champs). */
+export function itemAnswerKeys(item: QuestionnaireItem): string[] {
+  if (item.kind === 'intro') return []
+  return item.kind === 'fields' ? item.fields.map((field) => field.name) : [item.id]
+}
+
+/**
+ * Réponses après « Passer » : une étape `optional` est vidée (l'action qu'elle
+ * porte ne sera pas exécutée), une question facultative garde sa réponse.
+ */
+export function answersAfterSkip(
+  item: QuestionnaireItem,
+  answers: QuestionnaireAnswers
+): QuestionnaireAnswers {
+  if (!item.optional) return answers
+  const next = { ...answers }
+  for (const key of itemAnswerKeys(item)) delete next[key]
+  return next
 }
 
 /** Une question peut être passée si aucune de ses réponses n'est obligatoire. */
 export function isItemSkippable(item: QuestionnaireItem): boolean {
+  if (item.optional) return true
   switch (item.kind) {
     case 'intro':
       return false

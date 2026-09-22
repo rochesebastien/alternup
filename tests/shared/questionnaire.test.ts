@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
+  answersAfterSkip,
+  fieldFormatError,
   isItemComplete,
+  itemError,
   isItemSkippable,
   questionProgress,
   shortcutFor,
@@ -132,5 +135,67 @@ describe('toggleChoice', () => {
 
   it('ignore une valeur scalaire héritée en mode multiple', () => {
     expect(toggleChoice('a', 'b', true)).toEqual(['b'])
+  })
+})
+
+describe('fieldFormatError', () => {
+  it('valide les e-mails et les nombres bornés, ignore les champs vides', () => {
+    expect(fieldFormatError({ name: 'e', label: 'E', type: 'email' }, 'pas-un-email')).toBeTruthy()
+    expect(fieldFormatError({ name: 'e', label: 'E', type: 'email' }, 'a@b.fr')).toBeNull()
+    expect(fieldFormatError({ name: 'e', label: 'E', type: 'email' }, '')).toBeNull()
+    const semaines = { name: 'n', label: 'N', type: 'number' as const, min: 1, max: 52 }
+    expect(fieldFormatError(semaines, '0')).toBe('Minimum 1.')
+    expect(fieldFormatError(semaines, '53')).toBe('Maximum 52.')
+    expect(fieldFormatError(semaines, '2.5')).toBe('Nombre entier attendu.')
+    expect(fieldFormatError(semaines, 3)).toBeNull()
+  })
+})
+
+describe('itemError', () => {
+  const invite: QuestionnaireItem = {
+    id: 'invite',
+    kind: 'fields',
+    optional: true,
+    title: 'Inviter',
+    fields: [
+      { name: 'prenom', label: 'Prénom', type: 'text' },
+      { name: 'email', label: 'Email', type: 'email', required: true }
+    ]
+  }
+
+  it('signale d\'abord un champ mal formé, puis un champ manquant', () => {
+    expect(itemError(invite, { email: 'faux' })).toBe('Adresse e-mail invalide.')
+    expect(itemError(invite, { prenom: 'Léa' })).toBe('Merci de renseigner les champs obligatoires.')
+    expect(itemError(invite, { email: 'lea@exemple.fr' })).toBeNull()
+  })
+
+  it('applique le contrôle propre à l\'étape', () => {
+    const creneau: QuestionnaireItem = {
+      ...invite,
+      validate: (a) => (a.email === 'lea@exemple.fr' ? 'Déjà invitée.' : null)
+    }
+    expect(itemError(creneau, { email: 'lea@exemple.fr' })).toBe('Déjà invitée.')
+  })
+
+  it('une étape optionnelle est toujours passable', () => {
+    expect(isItemSkippable(invite)).toBe(true)
+  })
+})
+
+describe('answersAfterSkip', () => {
+  it('vide les réponses d\'une étape optionnelle', () => {
+    const item: QuestionnaireItem = {
+      id: 'invite',
+      kind: 'fields',
+      optional: true,
+      title: 'Inviter',
+      fields: [{ name: 'email', label: 'Email', type: 'email', required: true }]
+    }
+    expect(answersAfterSkip(item, { email: 'a@b.fr', autre: 'x' })).toEqual({ autre: 'x' })
+  })
+
+  it('garde la réponse d\'une question simplement facultative', () => {
+    const answers = { objectifs: ['a'] }
+    expect(answersAfterSkip(items[3]!, answers)).toBe(answers)
   })
 })
