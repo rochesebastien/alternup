@@ -707,6 +707,7 @@ model Offre {
   codePostal      String?           @map("code_postal")
   typeContrat     OffreContratType? @map("type_contrat") // contract.type[0]
   niveauDiplome   String?           @map("niveau_diplome") // offer.target_diploma.level
+  dureeMois       Int?              @map("duree_mois") // contract.duration (mois)
   romeCodes       String[]          @map("rome_codes") // offer.rome_codes
   datePublication DateTime?         @map("date_publication") @db.Timestamptz // offer.publication.creation
   dateExpiration  DateTime?         @map("date_expiration") @db.Timestamptz // offer.publication.expiration

@@ -1549,3 +1549,26 @@ production l'heure affichée au premier rendu est fausse de 1 à 2 h. Pré-exist
 - **Étape 2 — synchro bidirectionnelle OAuth** (Microsoft Graph, Google Calendar API) :
   enregistrement d'application, consentement administrateur fréquent dans les écoles,
   stockage de jetons. Uniquement si l'étape 1 ne suffit pas.
+
+## 2026-09-23 — Offres : niveau, durée, page détail
+
+- [x] Colonnes **Niveau** (libellé court du niveau européen : CAP/BEP, Bac, Bac +2, +3, +5)
+      et **Durée** (« 6 mois », « 1 an », « 18 mois ») dans le tableau des deux espaces.
+- [x] `Offre.dureeMois` (`contract.duration`) : mapping d'ingestion + migration
+      `20260923090000_offres_duree_mois` avec backfill depuis `raw` (rejoué et vérifié sur
+      la fixture) ; `DROP INDEX` trigramme parasites retirés.
+- [x] Page détail `/…/offres/[id]` : clic sur la ligne ou sur le titre, `UBreadcrumb`
+      « Offres › titre » qui restaure les filtres du tableau (`useOffresListQuery`). Tous les
+      champs LBA, vides compris (« Non précisé ») : description, compétences attendues /
+      à acquérir, entreprise (raison sociale, marque, taille, NAF, SIRET, OPCO, IDCC, site),
+      contrat (types, niveau, durée, début, mode de travail, postes, conditions d'accès),
+      localisation (+ lien OpenStreetMap), candidature (lien, téléphone, CFA délégataire),
+      publication (dates, statut source, ROME, diffuseur, référence). Suivi de candidature
+      côté apprenant, consultation seule côté tuteur.
+- [x] `GET /api/offres/:id` renvoie `detail` (vue typée) au lieu de `sources`, jamais `raw` ;
+      liens de la source filtrés en http(s).
+- [x] Dates du tableau des offres formatées en `Europe/Paris` : l'écart d'hydratation de
+      « Dernière synchronisation » (serveur en UTC) disparaît.
+- [x] Vérification : 477 tests, `vue-tsc`, ESLint, build + grep ; navigateur (clic ligne,
+      clic titre, « Voir l'offre » n'ouvre pas le détail, fil d'Ariane avec filtres, statut
+      « J'ai candidaté », id inconnu, tuteur, mobile sombre).

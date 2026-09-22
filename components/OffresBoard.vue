@@ -131,6 +131,7 @@
         :data="offres"
         :loading="status === 'pending'"
         :empty="emptyLabel"
+        :on-select="openOffre"
         :ui="{
           // `table-fixed` + largeurs en % (meta.class.th des colonnes) : le td
           // par défaut est en nowrap et la table en layout auto, ce qui pousse
@@ -138,17 +139,23 @@
           // une adresse complète. En layout fixe, titres et adresses passent à
           // la ligne et les 8 colonnes tiennent dans le conteneur ; sous
           // `min-w-[64rem]` (mobile), le scroll horizontal du root reprend.
-          base: 'table-fixed min-w-[64rem]',
+          base: 'table-fixed min-w-[72rem]',
           td: 'px-3 whitespace-normal',
           th: 'px-3',
-          tbody: '[&>tr]:transition-colors [&>tr]:hover:bg-[var(--ui-bg-muted)]'
+          tbody: '[&>tr]:transition-colors [&>tr]:hover:bg-[var(--ui-bg-muted)] [&>tr]:cursor-pointer'
         }"
       >
         <template #titre-cell="{ row }">
           <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span class="font-medium text-[var(--ui-text)]">
+            <!-- Lien (et pas seulement la ligne cliquable) : navigation au clavier,
+                 ouverture dans un nouvel onglet. -->
+            <NuxtLink
+              :to="offrePath(row.original.id)"
+              class="font-medium text-[var(--ui-text)] hover:underline underline-offset-4"
+              @click="rememberListQuery"
+            >
               {{ row.original.titre }}
-            </span>
+            </NuxtLink>
             <UBadge
               v-if="row.original.nouvelle"
               color="primary"
@@ -194,6 +201,18 @@
             {{ OFFRE_CONTRAT_META[row.original.typeContrat].label }}
           </UBadge>
           <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
+        </template>
+
+        <template #niveau-cell="{ row }">
+          <span class="text-sm text-[var(--ui-text)] whitespace-nowrap">
+            {{ niveauDiplomeLabel(row.original.niveauDiplome) ?? '—' }}
+          </span>
+        </template>
+
+        <template #duree-cell="{ row }">
+          <span class="text-sm text-[var(--ui-text)] whitespace-nowrap">
+            {{ formatDureeMois(row.original.dureeMois) ?? '—' }}
+          </span>
         </template>
 
         <template #publieeLe-cell="{ row }">
@@ -277,7 +296,7 @@
 </template>
 
 <script setup lang="ts">
-import type { TableColumn, TabsItem } from '@nuxt/ui'
+import type { TableColumn, TableRow, TabsItem } from '@nuxt/ui'
 import { type DateValue, parseDate } from '@internationalized/date'
 import { breakpointsTailwind } from '@vueuse/core'
 import type { DateRange } from 'reka-ui'
@@ -286,12 +305,15 @@ import {
   CANDIDATURE_STATUT_META,
   formatVilleOption,
   OFFRE_CONTRAT_META,
+  formatDureeMois,
+  niveauDiplomeLabel,
   OFFRE_PAGE_SIZE,
   offreListFiltersFrom,
   offreListQueryFrom,
   type OffreListFilters,
   type OffreVilleOption
 } from '~/shared/utils/offres'
+import { spacePrefixOf } from '~/shared/utils/auth-redirect'
 
 /**
  * Tableau des offres, partagé entre les deux espaces (ADR-0001) :
@@ -311,6 +333,7 @@ interface OffreListItem {
   lieu: string | null
   typeContrat: OffreContratType | null
   niveauDiplome: string | null
+  dureeMois: number | null
   romeCodes: string[]
   datePublication: string | null
   dateExpiration: string | null
@@ -553,27 +576,51 @@ const statutSelect = computed({
 // redistribuées pour garder un total de 100 %.
 const columns = computed<TableColumn<OffreListItem>[]>(() => props.readonly
   ? [
-      { accessorKey: 'titre', header: 'Titre', meta: { class: { th: 'w-[30%]' } } },
-      { accessorKey: 'entreprise', header: 'Entreprise', meta: { class: { th: 'w-[15%]' } } },
-      { accessorKey: 'lieu', header: 'Lieu', meta: { class: { th: 'w-[17%]' } } },
-      { accessorKey: 'typeContrat', header: 'Contrat', meta: { class: { th: 'w-[16%]' } } },
-      { accessorKey: 'publieeLe', header: 'Publiée le', meta: { class: { th: 'w-[11%]' } } },
-      { accessorKey: 'lien', header: 'Lien', meta: { class: { th: 'w-[11%]' } } }
+      { accessorKey: 'titre', header: 'Titre', meta: { class: { th: 'w-[26%]' } } },
+      { accessorKey: 'entreprise', header: 'Entreprise', meta: { class: { th: 'w-[14%]' } } },
+      { accessorKey: 'lieu', header: 'Lieu', meta: { class: { th: 'w-[15%]' } } },
+      { accessorKey: 'typeContrat', header: 'Contrat', meta: { class: { th: 'w-[14%]' } } },
+      { accessorKey: 'niveau', header: 'Niveau', meta: { class: { th: 'w-[8%]' } } },
+      { accessorKey: 'duree', header: 'Durée', meta: { class: { th: 'w-[7%]' } } },
+      { accessorKey: 'publieeLe', header: 'Publiée le', meta: { class: { th: 'w-[8%]' } } },
+      { accessorKey: 'lien', header: 'Lien', meta: { class: { th: 'w-[8%]' } } }
     ]
   : [
-      { accessorKey: 'titre', header: 'Titre', meta: { class: { th: 'w-[25%]' } } },
-      { accessorKey: 'entreprise', header: 'Entreprise', meta: { class: { th: 'w-[12%]' } } },
-      { accessorKey: 'lieu', header: 'Lieu', meta: { class: { th: 'w-[13%]' } } },
-      { accessorKey: 'typeContrat', header: 'Contrat', meta: { class: { th: 'w-[14%]' } } },
+      { accessorKey: 'titre', header: 'Titre', meta: { class: { th: 'w-[21%]' } } },
+      { accessorKey: 'entreprise', header: 'Entreprise', meta: { class: { th: 'w-[11%]' } } },
+      { accessorKey: 'lieu', header: 'Lieu', meta: { class: { th: 'w-[11%]' } } },
+      { accessorKey: 'typeContrat', header: 'Contrat', meta: { class: { th: 'w-[13%]' } } },
+      { accessorKey: 'niveau', header: 'Niveau', meta: { class: { th: 'w-[7%]' } } },
+      { accessorKey: 'duree', header: 'Durée', meta: { class: { th: 'w-[6%]' } } },
       { accessorKey: 'publieeLe', header: 'Publiée le', meta: { class: { th: 'w-[8%]' } } },
-      { accessorKey: 'monStatut', header: 'Statut', meta: { class: { th: 'w-[14%]' } } },
+      { accessorKey: 'monStatut', header: 'Statut', meta: { class: { th: 'w-[11%]' } } },
       // En-têtes non vides obligatoires : un `header: ''` SSR produit un nœud texte
       // vide absent côté client → « Hydration completed but contains mismatches »
       // (constaté au navigateur ; le gabarit tuteur n'y échappe que parce que sa
       // vue tableau n'est jamais rendue au SSR).
-      { accessorKey: 'lien', header: 'Lien', meta: { class: { th: 'w-[9%]' } } },
-      { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'w-[5%]' } } }
+      { accessorKey: 'lien', header: 'Lien', meta: { class: { th: 'w-[8%]' } } },
+      { accessorKey: 'actions', header: 'Actions', meta: { class: { th: 'w-[4%]' } } }
     ])
+
+// ─── Page détail (clic sur une ligne ou sur le titre) ────────────────────────
+// Le préfixe d'espace vient de la route : le même tableau sert /alternant et
+// /tuteur. La requête de la liste (filtres, page) est mémorisée pour que le
+// fil d'Ariane de la page détail ramène exactement au même tableau.
+const offresPrefix = computed(() => `${spacePrefixOf(route.path) ?? '/alternant'}/offres`)
+const listQuery = useOffresListQuery()
+
+function offrePath(id: string): string {
+  return `${offresPrefix.value}/${id}`
+}
+
+function rememberListQuery() {
+  listQuery.value = route.query as Record<string, string>
+}
+
+function openOffre(_event: Event, row: TableRow<OffreListItem>) {
+  rememberListQuery()
+  navigateTo(offrePath(row.original.id))
+}
 
 const CANDIDATURE_STATUT_COLOR: Record<CandidatureStatut, 'neutral' | 'success' | 'error'> = {
   vue: 'neutral',
@@ -594,10 +641,13 @@ const emptyLabel = computed(() =>
     : 'Aucune offre disponible pour le moment.'
 )
 
+// Fuseau explicite : le serveur (conteneur en UTC) et le navigateur doivent
+// produire le même texte, sinon écart d'hydratation et heure fausse au SSR.
 const dateFormatter = new Intl.DateTimeFormat('fr-FR', {
   day: '2-digit',
   month: '2-digit',
-  year: 'numeric'
+  year: 'numeric',
+  timeZone: 'Europe/Paris'
 })
 
 const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
@@ -605,7 +655,8 @@ const dateTimeFormatter = new Intl.DateTimeFormat('fr-FR', {
   month: '2-digit',
   year: 'numeric',
   hour: '2-digit',
-  minute: '2-digit'
+  minute: '2-digit',
+  timeZone: 'Europe/Paris'
 })
 
 function formatDate(value: string): string {

@@ -78,6 +78,7 @@ export default defineEventHandler(async (event) => {
         lieu: true,
         typeContrat: true,
         niveauDiplome: true,
+        dureeMois: true,
         romeCodes: true,
         datePublication: true,
         dateExpiration: true,
