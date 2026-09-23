@@ -105,3 +105,17 @@
 **Erreur :** `onEventMove` retrouvait l'événement dans `calendarEvents.value` et écrivait `local.startTime = …`. Or Nuxt 4 crée `data` avec `deep: false` (un `shallowRef`) : la mutation en place d'un élément ne notifie aucun `computed` en aval (`bucketByDay`, `layoutDay`), qui continuaient de servir l'ancienne position. Le code venait de l'ancienne intégration Schedule-X, où le moteur portait lui-même sa copie mutée.
 **Correction :** Remplacer le tableau (`calendarEvents.value = calendarEvents.value.map(e => e.id === id ? { ...e, startTime, endTime } : e)`) pour que la chaîne réactive recalcule.
 **Règle à appliquer :** Sur ce projet, ne jamais muter en place un élément de `data` renvoyé par `useFetch`/`useAsyncData` : réassigner le tableau (ou appeler `refresh()`). Et toute interaction dont l'effet est visuel (drag, resize, tri) se vérifie par une mesure dans le navigateur, pas par un `GET` sur l'API.
+
+### 2026-09-23 — Les champs texte d'une source externe contiennent du HTML
+
+**Contexte :** Page détail des offres La Bonne Alternance : la description était affichée en texte brut (`whitespace-pre-line`).
+**Erreur :** L'API renvoie des descriptions en HTML (`<p>`, `<strong>`, `<ul>`…) : les balises s'affichaient telles quelles. Je n'avais regardé que la fixture de test, dont les descriptions sont du texte simple.
+**Correction utilisateur :** « Il y a des éléments HTML dans les sorties API, il faut que tu les prennes en compte. »
+**Règle à appliquer :** Tout champ texte long d'une source externe est traité comme du HTML potentiel : assaini côté serveur par liste blanche (`richTextHtml`, `shared/utils/rich-text.ts`, balises sans attribut, rééquilibrées) puis rendu en `v-html`. Les champs courts passent par `plainText` (balises retirées, entités décodées). Jamais de `v-html` sur une donnée non assainie. Et vérifier sur des données réelles, pas seulement sur la fixture.
+
+### 2026-09-23 — Pas de cartes pour du contenu de lecture
+
+**Contexte :** Page détail d'une offre : description, compétences et entreprise étaient chacune dans une carte bordée.
+**Erreur :** Empiler des cartes pour du texte long alourdit la lecture.
+**Correction utilisateur :** « Évite les blocs de card, je préfère le simple texte déposé. Tu peux garder les blocs à droite. »
+**Règle à appliquer :** Sur ce projet, le contenu principal à lire (description, texte long) est posé sur la page avec des intertitres ; les cartes sont réservées aux fiches récapitulatives latérales (métadonnées libellé → valeur).

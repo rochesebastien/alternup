@@ -142,7 +142,13 @@
           base: 'table-fixed min-w-[72rem]',
           td: 'px-3 whitespace-normal',
           th: 'px-3',
-          tbody: '[&>tr]:transition-colors [&>tr]:hover:bg-[var(--ui-bg-muted)] [&>tr]:cursor-pointer'
+          // Survol : ligne en fond inversé (noir en clair, blanc en sombre),
+          // comme le lien actif de la nav. Les textes suivent via `group-hover`.
+          tr: 'group',
+          // Même chaîne de variantes que le thème Nuxt UI
+          // (`[&>tr]:data-[selectable=true]:hover:bg-elevated/50`) : sinon ce
+          // dernier, plus spécifique, l'emporte et le fond reste clair.
+          tbody: '[&>tr]:transition-colors [&>tr]:data-[selectable=true]:hover:bg-[var(--ui-bg-inverted)] [&>tr]:cursor-pointer'
         }"
       >
         <template #titre-cell="{ row }">
@@ -151,7 +157,7 @@
                  ouverture dans un nouvel onglet. -->
             <NuxtLink
               :to="offrePath(row.original.id)"
-              class="font-medium text-[var(--ui-text)] hover:underline underline-offset-4"
+              class="font-medium text-[var(--ui-text)] hover:underline underline-offset-4 group-hover:text-[var(--ui-text-inverted)]"
               @click="rememberListQuery"
             >
               {{ row.original.titre }}
@@ -177,17 +183,17 @@
         </template>
 
         <template #entreprise-cell="{ row }">
-          <span v-if="row.original.entreprise" class="block text-sm text-[var(--ui-text)]">
+          <span v-if="row.original.entreprise" class="block text-sm text-[var(--ui-text)] group-hover:text-[var(--ui-text-inverted)]">
             {{ row.original.entreprise }}
           </span>
-          <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
+          <span v-else class="text-sm text-[var(--ui-text-muted)] group-hover:text-[var(--ui-text-inverted)]">—</span>
         </template>
 
         <template #lieu-cell="{ row }">
-          <span v-if="row.original.lieu" class="block text-sm text-[var(--ui-text-muted)]">
+          <span v-if="row.original.lieu" class="block text-sm text-[var(--ui-text-muted)] group-hover:text-[var(--ui-text-inverted)]">
             {{ row.original.lieu }}
           </span>
-          <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
+          <span v-else class="text-sm text-[var(--ui-text-muted)] group-hover:text-[var(--ui-text-inverted)]">—</span>
         </template>
 
         <template #typeContrat-cell="{ row }">
@@ -200,23 +206,23 @@
           >
             {{ OFFRE_CONTRAT_META[row.original.typeContrat].label }}
           </UBadge>
-          <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
+          <span v-else class="text-sm text-[var(--ui-text-muted)] group-hover:text-[var(--ui-text-inverted)]">—</span>
         </template>
 
         <template #niveau-cell="{ row }">
-          <span class="text-sm text-[var(--ui-text)] whitespace-nowrap">
+          <span class="text-sm text-[var(--ui-text)] whitespace-nowrap group-hover:text-[var(--ui-text-inverted)]">
             {{ niveauDiplomeLabel(row.original.niveauDiplome) ?? '—' }}
           </span>
         </template>
 
         <template #duree-cell="{ row }">
-          <span class="text-sm text-[var(--ui-text)] whitespace-nowrap">
+          <span class="text-sm text-[var(--ui-text)] whitespace-nowrap group-hover:text-[var(--ui-text-inverted)]">
             {{ formatDureeMois(row.original.dureeMois) ?? '—' }}
           </span>
         </template>
 
         <template #publieeLe-cell="{ row }">
-          <span class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap">
+          <span class="text-sm text-[var(--ui-text-muted)] whitespace-nowrap group-hover:text-[var(--ui-text-inverted)]">
             {{ formatDate(row.original.datePublication ?? row.original.firstSeen) }}
           </span>
         </template>
@@ -232,7 +238,7 @@
               {{ CANDIDATURE_STATUT_META[row.original.monStatut].badge }}
             </UBadge>
           </UTooltip>
-          <span v-else class="text-sm text-[var(--ui-text-muted)]">—</span>
+          <span v-else class="text-sm text-[var(--ui-text-muted)] group-hover:text-[var(--ui-text-inverted)]">—</span>
         </template>
 
         <template #lien-cell="{ row }">
@@ -246,7 +252,7 @@
             target="_blank"
             rel="noopener noreferrer nofollow"
             :aria-label="`Voir l'offre ${row.original.titre} sur le site source`"
-            class="whitespace-nowrap bg-black text-white hover:bg-neutral-800 active:bg-neutral-800 dark:bg-black dark:text-white dark:hover:bg-neutral-800 dark:active:bg-neutral-800"
+            class="whitespace-nowrap bg-black text-white hover:bg-neutral-800 active:bg-neutral-800 dark:bg-black dark:text-white dark:hover:bg-neutral-800 dark:active:bg-neutral-800 group-hover:bg-[var(--ui-bg)] group-hover:text-[var(--ui-text)] dark:group-hover:bg-[var(--ui-bg)] dark:group-hover:text-[var(--ui-text)]"
           >
             Voir l'offre
           </UButton>
@@ -259,6 +265,7 @@
               variant="ghost"
               icon="i-lucide-ellipsis"
               size="sm"
+              class="group-hover:text-[var(--ui-text-inverted)] group-hover:hover:bg-white/15"
               :loading="statutPending === row.original.id"
               :aria-label="`Actions sur l'offre ${row.original.titre}`"
             />

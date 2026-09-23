@@ -23,15 +23,16 @@ const unreadCount = computed<number>(
   () => notifications.value.filter((item) => !item.readAt).length
 )
 
-// Compteur partagé avec la cloche de la nav.
+// Compteur partagé avec la cloche de la nav. Mis à jour une fois monté
+// seulement : au rendu serveur, la cloche (dans la nav) est déjà rendue quand
+// cette page s'exécute ; modifier le compteur à ce moment désynchronise le HTML
+// serveur de l'hydratation (badge absent côté serveur, présent côté client).
 const count = useNotificationCountState()
-watch(
-  [unreadCount, reminders],
-  () => {
-    count.value = unreadCount.value + reminders.value.length
-  },
-  { immediate: true }
-)
+function syncCount() {
+  count.value = unreadCount.value + reminders.value.length
+}
+watch([unreadCount, reminders], syncCount)
+onMounted(syncCount)
 
 // `now` reste nul au rendu serveur : les dates relatives n'apparaissent qu'après
 // le montage, ce qui évite tout écart d'hydratation.

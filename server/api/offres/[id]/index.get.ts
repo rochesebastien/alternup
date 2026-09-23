@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '~/server/utils/prisma'
 import { requireRole } from '~/server/utils/require-role'
 import { offreDetailFromRaw, type OffreDetailResponse } from '~/shared/utils/offre-detail'
+import { plainText } from '~/shared/utils/rich-text'
 
 // Détail d'une offre (page `/…/offres/[id]`) : champs normalisés + toutes les
 // informations du payload source, extraites par `offreDetailFromRaw` vers une
@@ -48,6 +49,10 @@ export default defineEventHandler(async (event): Promise<OffreDetailResponse> =>
   const { userStatuts, raw, datePublication, dateExpiration, firstSeen, lastSeen, ...rest } = offre
   return {
     ...rest,
+    // Entités HTML éventuelles de la source (`&amp;`…) décodées pour l'affichage.
+    titre: plainText(rest.titre),
+    entreprise: rest.entreprise ? plainText(rest.entreprise) : null,
+    lieu: rest.lieu ? plainText(rest.lieu) : null,
     datePublication: datePublication?.toISOString() ?? null,
     dateExpiration: dateExpiration?.toISOString() ?? null,
     firstSeen: firstSeen.toISOString(),

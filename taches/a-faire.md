@@ -1572,3 +1572,28 @@ production l'heure affichée au premier rendu est fausse de 1 à 2 h. Pré-exist
 - [x] Vérification : 477 tests, `vue-tsc`, ESLint, build + grep ; navigateur (clic ligne,
       clic titre, « Voir l'offre » n'ouvre pas le détail, fil d'Ariane avec filtres, statut
       « J'ai candidaté », id inconnu, tuteur, mobile sombre).
+
+## 2026-09-23 — Offres (HTML, page détail sans cartes, survol) et onboarding « à terminer »
+
+- [x] **HTML des descriptions LBA** : assaini côté serveur (`richTextHtml`, liste blanche
+      p/strong/em/u/ul/ol/li/h3/h4/blockquote/br sans attribut ; script, style, iframe…
+      supprimés avec leur contenu ; balises rééquilibrées comme un navigateur ; texte brut
+      converti en paragraphes) et rendu en `v-html`. Champs courts : `plainText` (entités
+      décodées). 12 tests dont contournements (`<scr<script>ipt>`, `onerror`, `javascript:`).
+      Vérifié avec l'exemple REDSUP + une injection : aucun script ni `img` rendu.
+- [x] **Page détail** : description, compétences et entreprise en texte posé avec intertitres,
+      sans cartes ; les quatre fiches de droite restent.
+- [x] **Survol des lignes du tableau** : fond inversé (noir en clair, blanc en sombre), textes
+      inversés, bouton « Voir l'offre » inversé. Le survol du thème Nuxt UI
+      (`[&>tr]:data-[selectable=true]:hover:bg-elevated/50`) l'emportait : même chaîne de
+      variantes pour que la fusion de classes le remplace.
+- [x] **Onboarding à trois états** (`todo` / `later` / `done`, colonne `onboarding_skipped_at`,
+      migration `20260923120000_onboarding_skipped_at` qui reclasse en `later` les comptes
+      marqués terminés sans aucune réponse). « Compléter plus tard » ne termine plus
+      l'onboarding : entrée rouge « Onboarding » dans le menu du compte + relance épinglée
+      `relance_onboarding` (calculée, jamais stockée, insensible à « Tout marquer comme lu »)
+      jusqu'à l'envoi du questionnaire. Les actions du tuteur s'exécutent à la première
+      complétion, même après un report.
+- [x] **Correctif au passage** : la page /notifications fixait le compteur de la cloche au
+      rendu serveur, après le rendu de la nav → écart d'hydratation du badge ; compteur
+      désormais synchronisé au montage.

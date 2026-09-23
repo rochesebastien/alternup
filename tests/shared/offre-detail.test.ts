@@ -16,7 +16,7 @@ describe('offreDetailFromRaw', () => {
   it('extrait toutes les informations d\'une offre LBA complète', () => {
     expect(offreDetailFromRaw(fixture[0])).toEqual({
       offre: {
-        description: "Participez au développement d'applications Nuxt/TypeScript.",
+        descriptionHtml: "<p>Participez au développement d'applications Nuxt/TypeScript.</p>",
         niveau: { code: '6', libelle: 'Licence, Bac+3' },
         competencesAttendues: ['TypeScript', 'Vue.js'],
         competencesAcquises: ['Nuxt', 'PostgreSQL'],
@@ -32,7 +32,7 @@ describe('offreDetailFromRaw', () => {
         siret: '90123456700018',
         siteWeb: 'https://alternup-studio.example',
         taille: '10-19',
-        description: 'Studio de développement web parisien.',
+        descriptionHtml: '<p>Studio de développement web parisien.</p>',
         naf: { code: '62.01Z', libelle: 'Programmation informatique' },
         opco: 'ATLAS',
         idcc: '1486'
@@ -68,6 +68,16 @@ describe('offreDetailFromRaw', () => {
     })
     expect(detail.entreprise.siteWeb).toBeNull()
     expect(detail.candidature.url).toBeNull()
+  })
+
+  it('assainit le HTML des descriptions et décode les entités des champs simples', () => {
+    const detail = offreDetailFromRaw({
+      offer: { description: '<p onclick="x()"><strong>Qui sommes-nous ?</strong></p><script>alert(1)</script>' },
+      workplace: { name: 'Caf&eacute; &amp; Co', description: '<ul><li>Un</li></ul>' }
+    })
+    expect(detail.offre.descriptionHtml).toBe('<p><strong>Qui sommes-nous ?</strong></p>')
+    expect(detail.entreprise.descriptionHtml).toBe('<ul><li>Un</li></ul>')
+    expect(detail.entreprise.nom).toBe('Café & Co')
   })
 
   it('traite toute la fixture sans erreur', () => {

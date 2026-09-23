@@ -35,6 +35,9 @@ model User {
   // questionnaire n'a été ni terminé ni passé. Recopié dans la session
   // (`user.onboarded`) pour que le middleware n'ait rien à interroger.
   onboardingCompletedAt DateTime? @map("onboarding_completed_at") @db.Timestamptz
+  // « Compléter plus tard » : le questionnaire ne bloque plus la navigation,
+  // mais reste à terminer (entrée rouge du menu compte + relance épinglée).
+  onboardingSkippedAt   DateTime? @map("onboarding_skipped_at") @db.Timestamptz
 
   // Relations: réseau tuteur ↔ étudiants
   tutoredStudents TutorStudent[] @relation("Tutor")

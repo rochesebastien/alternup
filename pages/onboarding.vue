@@ -88,7 +88,7 @@
           variant="link"
           size="sm"
           class="text-[var(--ui-text-muted)]"
-          :label="again ? 'Annuler' : 'Compléter plus tard'"
+          :label="skipLabel"
           :loading="skipping"
           @click="onSkip"
         />
@@ -140,11 +140,20 @@ const { data: existing } = await useFetch<OnboardingProfileView | null>('/api/on
   default: () => null
 })
 
-// Actions de démarrage (premier apprenant, point de suivi) : tuteur, première
-// connexion seulement. Le serveur applique la même règle.
-// Figé au premier rendu : la session passe à `onboarded` pendant l'envoi,
-// la liste des étapes ne doit pas changer sous les pieds du questionnaire.
-const actionsAtStart = user.value?.role === 'Tutor' && !user.value.onboarded
+// Actions de démarrage (premier apprenant, point de suivi) : tuteur, tant que
+// l'onboarding n'a jamais été terminé (même après « Compléter plus tard »).
+// Le serveur applique la même règle. Figé au premier rendu : la session passe
+// à `done` pendant l'envoi, la liste des étapes ne doit pas changer sous les
+// pieds du questionnaire.
+const stateAtStart = user.value?.onboarding ?? 'todo'
+const actionsAtStart = user.value?.role === 'Tutor' && stateAtStart !== 'done'
+
+// Sortie du questionnaire : annuler (refait depuis le compte), repousser
+// encore (déjà passé une fois), ou « Compléter plus tard » la première fois.
+const skipLabel = computed(() => {
+  if (again.value && stateAtStart === 'done') return 'Annuler'
+  return stateAtStart === 'later' ? 'Plus tard' : 'Compléter plus tard'
+})
 
 const answers = ref<QuestionnaireAnswers>({
   // Créneau proposé par défaut pour le point de suivi hebdomadaire.
@@ -191,7 +200,8 @@ async function onSubmit(payload: QuestionnaireAnswers) {
       }
     })
     result.value = response.actions
-    // La session porte `onboarded` : la rafraîchir libère la navigation.
+    // La session porte l'état d'onboarding : la rafraîchir libère la navigation
+    // et retire l'entrée du menu et la relance.
     await refreshSession()
     done.value = true
     window.scrollTo({ top: 0 })
@@ -206,8 +216,12 @@ async function onSkip() {
   if (!user.value) return
   skipping.value = true
   try {
-    if (again.value) {
+    if (again.value && stateAtStart === 'done') {
       await navigateTo('/account')
+      return
+    }
+    if (stateAtStart === 'later') {
+      await navigateTo(landingPageFor(user.value.role))
       return
     }
     await $fetch('/api/onboarding/skip', { method: 'POST' })

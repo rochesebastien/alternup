@@ -3,7 +3,7 @@ import { onboardingRedirect } from '~/shared/utils/onboarding'
 
 /**
  * Onboarding de première connexion : tant que le questionnaire n'a été ni
- * terminé ni passé (`user.onboarded`, recopié dans la session), toute page
+ * terminé ni passé (`user.onboarding === 'todo'`, recopié dans la session), toute page
  * protégée renvoie sur /onboarding. Exécuté après `auth.global.ts` (ordre
  * alphabétique) : un visiteur anonyme a déjà été redirigé vers /login. Les
  * pages publiques restent libres. La règle elle-même est pure et testée

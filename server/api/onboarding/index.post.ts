@@ -101,7 +101,7 @@ async function runTutorActions(
  * marque l'onboarding terminé et réécrit la session pour que le middleware
  * laisse passer sans reconnexion. Refaire le questionnaire depuis « Mon
  * compte » repasse par ici ; les actions du tuteur, elles, ne s'exécutent qu'à
- * la première complétion (sinon chaque passage dupliquerait invitation et
+ * la première complétion, même après un « Compléter plus tard » (sinon chaque passage dupliquerait invitation et
  * rendez-vous).
  */
 export default defineEventHandler(async (event): Promise<OnboardingSubmitResult> => {
@@ -113,7 +113,8 @@ export default defineEventHandler(async (event): Promise<OnboardingSubmitResult>
 
   const parsedActions = onboardingActionsSchema.safeParse(body.actions)
   if (!parsedActions.success) throw invalid('Actions invalides.', parsedActions.error)
-  const runActions = current.role === 'Tutor' && !current.onboarded
+  // Première complétion seulement (y compris après « Compléter plus tard »).
+  const runActions = current.role === 'Tutor' && current.onboarding !== 'done'
 
   const answers = answersForRole(current.role, parsed.data)
   const data = {

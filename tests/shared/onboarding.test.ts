@@ -10,6 +10,7 @@ import {
   onboardingAnswersSchema,
   onboardingItemsFor,
   onboardingRedirect,
+  onboardingStateOf,
   onboardingSummary,
   type OnboardingAnswers
 } from '~/shared/utils/onboarding'
@@ -286,30 +287,42 @@ describe('onboardingSummary', () => {
   })
 })
 
+describe('onboardingStateOf', () => {
+  const d = new Date('2026-09-23T10:00:00Z')
+  it('terminé prime sur passé', () => {
+    expect(onboardingStateOf(null, null)).toBe('todo')
+    expect(onboardingStateOf(null, d)).toBe('later')
+    expect(onboardingStateOf(d, null)).toBe('done')
+    expect(onboardingStateOf(d, d)).toBe('done')
+  })
+})
+
 describe('onboardingRedirect', () => {
-  it('ramène un utilisateur non onboardé sur /onboarding', () => {
-    expect(onboardingRedirect('/tuteur/dashboard', { role: Role.Tutor, onboarded: false })).toBe(
+  it('ramène un utilisateur qui n\'a jamais commencé sur /onboarding', () => {
+    expect(onboardingRedirect('/tuteur/dashboard', { role: Role.Tutor, onboarding: 'todo' })).toBe(
       ONBOARDING_PATH
     )
     expect(onboardingRedirect('/account', { role: Role.Alternant })).toBe(ONBOARDING_PATH)
   })
 
-  it('laisse passer un utilisateur onboardé', () => {
-    expect(onboardingRedirect('/tuteur/dashboard', { role: Role.Tutor, onboarded: true })).toBeNull()
+  it('laisse naviguer un utilisateur qui a passé ou terminé', () => {
+    expect(onboardingRedirect('/tuteur/dashboard', { role: Role.Tutor, onboarding: 'later' })).toBeNull()
+    expect(onboardingRedirect('/tuteur/dashboard', { role: Role.Tutor, onboarding: 'done' })).toBeNull()
   })
 
-  it('ne redirige pas /onboarding vers lui-même', () => {
-    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Alternant, onboarded: false })).toBeNull()
+  it('laisse /onboarding ouvert tant que ce n\'est pas terminé', () => {
+    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Alternant, onboarding: 'todo' })).toBeNull()
+    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Alternant, onboarding: 'later' })).toBeNull()
   })
 
-  it('renvoie un utilisateur onboardé de /onboarding vers son landing, sauf ?again', () => {
-    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Tutor, onboarded: true })).toBe(
+  it('renvoie un utilisateur terminé de /onboarding vers son landing, sauf ?again', () => {
+    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Tutor, onboarding: 'done' })).toBe(
       '/tuteur/dashboard'
     )
-    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Stagiaire, onboarded: true })).toBe(
+    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Stagiaire, onboarding: 'done' })).toBe(
       '/alternant/dashboard'
     )
-    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Tutor, onboarded: true }, true)).toBeNull()
+    expect(onboardingRedirect(ONBOARDING_PATH, { role: Role.Tutor, onboarding: 'done' }, true)).toBeNull()
   })
 })
 

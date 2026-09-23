@@ -30,7 +30,7 @@ export type NotificationType =
   | 'invitation_acceptee'
 
 /** Types calculés à la volée, jamais persistés. */
-export type ReminderType = 'relance_rapport' | 'relance_visite' | 'relance_revue'
+export type ReminderType = 'relance_rapport' | 'relance_visite' | 'relance_revue' | 'relance_onboarding'
 
 export type FeedItemType = NotificationType | ReminderType
 
@@ -52,7 +52,8 @@ export const NOTIFICATION_META: Record<FeedItemType, FeedItemMeta> = {
   invitation_acceptee: { label: 'Invitation acceptée', icon: 'i-lucide-user-check' },
   relance_rapport: { label: 'Relance', icon: 'i-lucide-clock' },
   relance_visite: { label: 'Rappel', icon: 'i-lucide-calendar-clock' },
-  relance_revue: { label: 'Relance', icon: 'i-lucide-inbox' }
+  relance_revue: { label: 'Relance', icon: 'i-lucide-inbox' },
+  relance_onboarding: { label: 'À terminer', icon: 'i-lucide-sparkles' }
 }
 
 const FALLBACK_META: FeedItemMeta = { label: 'Notification', icon: 'i-lucide-bell' }
@@ -208,6 +209,29 @@ export interface LearnerReminderSource {
 export interface TutorReminderSource {
   pendingReviews: PendingReviewSource[]
   visits: VisitReminderSource[]
+}
+
+/**
+ * Relance d'onboarding : présente tant que le questionnaire de bienvenue n'est
+ * pas terminé (état `todo` ou `later`). Comme toute relance, elle n'est jamais
+ * stockée ni marquable comme lue : seul l'envoi du questionnaire la retire.
+ */
+export function onboardingReminders(
+  state: 'todo' | 'later' | 'done' | undefined,
+  now: Date
+): ReminderItem[] {
+  if (state === 'done' || state === undefined) return []
+  return [
+    {
+      id: 'relance-onboarding',
+      type: 'relance_onboarding',
+      title: 'Terminez votre onboarding',
+      body: 'Deux minutes pour adapter votre espace. Cette relance disparaîtra une fois le questionnaire terminé.',
+      link: '/onboarding',
+      createdAt: now.toISOString(),
+      reminder: true
+    }
+  ]
 }
 
 /** Rappels de visites imminentes, communs au tuteur et à l'étudiant. */
