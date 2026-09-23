@@ -1,4 +1,5 @@
 import type { User } from '#auth-utils'
+import { onboardingStateOf } from '~/shared/utils/onboarding'
 
 /**
  * Projection Prisma d'un utilisateur destiné au cookie de session, et sa
@@ -12,7 +13,8 @@ export const sessionUserSelect = {
   firstName: true,
   lastName: true,
   role: true,
-  onboardingCompletedAt: true
+  onboardingCompletedAt: true,
+  onboardingSkippedAt: true
 } as const
 
 type SessionUserRow = {
@@ -22,6 +24,7 @@ type SessionUserRow = {
   lastName: string
   role: User['role']
   onboardingCompletedAt: Date | null
+  onboardingSkippedAt: Date | null
 }
 
 export function toSessionUser(row: SessionUserRow): User {
@@ -31,6 +34,6 @@ export function toSessionUser(row: SessionUserRow): User {
     firstName: row.firstName,
     lastName: row.lastName,
     role: row.role,
-    onboarded: row.onboardingCompletedAt !== null
+    onboarding: onboardingStateOf(row.onboardingCompletedAt, row.onboardingSkippedAt)
   }
 }

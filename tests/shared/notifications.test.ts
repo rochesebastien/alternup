@@ -10,6 +10,7 @@ import {
   isReviewOverdue,
   isVisitSoon,
   learnerReminders,
+  onboardingReminders,
   relativeTimeFr,
   toDate,
   tutorReminders
@@ -242,5 +243,19 @@ describe('tutorReminders', () => {
       NOW
     )
     expect(items).toHaveLength(0)
+  })
+})
+
+describe('onboardingReminders', () => {
+  it('épingle une relance tant que l\'onboarding n\'est pas terminé', () => {
+    for (const state of ['todo', 'later'] as const) {
+      const [item, ...rest] = onboardingReminders(state, NOW)
+      expect(rest).toEqual([])
+      expect(item).toMatchObject({ type: 'relance_onboarding', link: '/onboarding', reminder: true })
+    }
+  })
+
+  it('disparaît une fois le questionnaire terminé', () => {
+    expect(onboardingReminders('done', NOW)).toEqual([])
   })
 })

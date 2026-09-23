@@ -82,30 +82,22 @@
       </header>
 
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <!-- Colonne principale : le poste -->
-        <div class="space-y-6 lg:col-span-2">
-          <section :class="card">
-            <h2 :class="cardTitle">
-              <UIcon name="i-lucide-file-text" class="size-4 text-[var(--ui-text-muted)]" />
-              Description du poste
-            </h2>
-            <p
-              v-if="offre.detail.offre.description"
-              class="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--ui-text-toned)]"
-            >
-              {{ offre.detail.offre.description }}
-            </p>
-            <p v-else class="mt-3 text-sm text-[var(--ui-text-dimmed)]">
+        <!-- Colonne principale : texte posé sur la page, sans cartes. -->
+        <div class="space-y-10 lg:col-span-2 lg:pr-4">
+          <section>
+            <h2 :class="sectionTitle">Description du poste</h2>
+            <!-- HTML de la source assaini côté serveur (liste blanche de balises
+                 sans attribut, shared/utils/rich-text.ts) : v-html sans risque. -->
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div v-if="offre.detail.offre.descriptionHtml" class="rich-text" v-html="offre.detail.offre.descriptionHtml" />
+            <p v-else class="text-sm text-[var(--ui-text-dimmed)]">
               L'annonce ne comporte pas de description. Consultez-la sur le site de l'offre.
             </p>
           </section>
 
-          <section :class="card">
-            <h2 :class="cardTitle">
-              <UIcon name="i-lucide-target" class="size-4 text-[var(--ui-text-muted)]" />
-              Compétences
-            </h2>
-            <div class="mt-4 grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <section>
+            <h2 :class="sectionTitle">Compétences</h2>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
               <div v-for="groupe in competences" :key="groupe.label">
                 <h3 class="text-xs uppercase tracking-wide text-[var(--ui-text-dimmed)]">{{ groupe.label }}</h3>
                 <div v-if="groupe.items.length" class="mt-2 flex flex-wrap gap-1.5">
@@ -118,18 +110,11 @@
             </div>
           </section>
 
-          <section :class="card">
-            <h2 :class="cardTitle">
-              <UIcon name="i-lucide-building-2" class="size-4 text-[var(--ui-text-muted)]" />
-              L'entreprise
-            </h2>
-            <p
-              v-if="offre.detail.entreprise.description"
-              class="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--ui-text-toned)]"
-            >
-              {{ offre.detail.entreprise.description }}
-            </p>
-            <OffreDetailRows :rows="entrepriseRows" class="mt-4" />
+          <section>
+            <h2 :class="sectionTitle">L'entreprise</h2>
+            <!-- eslint-disable-next-line vue/no-v-html -->
+            <div v-if="offre.detail.entreprise.descriptionHtml" class="rich-text mb-6" v-html="offre.detail.entreprise.descriptionHtml" />
+            <OffreDetailRows :rows="entrepriseRows" />
           </section>
         </div>
 
@@ -181,6 +166,7 @@ useHead(() => ({ title: offre.value ? `${offre.value.titre} - Alternup` : 'Offre
 
 const card = 'rounded-lg border border-[var(--ui-border)] bg-[var(--ui-bg-elevated)] p-5'
 const cardTitle = 'flex items-center gap-2 text-sm font-semibold text-[var(--ui-text)]'
+const sectionTitle = 'mb-3 text-lg font-semibold tracking-tight text-[var(--ui-text)]'
 
 // ─── Fil d'Ariane : retour au tableau tel qu'on l'a quitté ────────────────────
 const listQuery = useOffresListQuery()
@@ -337,3 +323,49 @@ async function setStatut(statut: CandidatureStatut) {
   }
 }
 </script>
+
+<style scoped>
+/* Mise en forme du HTML des annonces (pas de plugin typography) : paragraphes
+   aérés, listes à puces, gras lisible, intertitres discrets. */
+.rich-text {
+  font-size: 0.9375rem;
+  line-height: 1.7;
+  color: var(--ui-text-toned);
+}
+.rich-text :deep(p) {
+  margin: 0 0 0.75rem;
+}
+.rich-text :deep(p:last-child),
+.rich-text :deep(li > p) {
+  margin-bottom: 0;
+}
+.rich-text :deep(strong) {
+  font-weight: 600;
+  color: var(--ui-text);
+}
+.rich-text :deep(ul),
+.rich-text :deep(ol) {
+  margin: 0 0 0.75rem;
+  padding-left: 1.25rem;
+}
+.rich-text :deep(ul) {
+  list-style: disc;
+}
+.rich-text :deep(ol) {
+  list-style: decimal;
+}
+.rich-text :deep(li) {
+  margin: 0.25rem 0;
+}
+.rich-text :deep(h3),
+.rich-text :deep(h4) {
+  margin: 1.25rem 0 0.5rem;
+  font-weight: 600;
+  color: var(--ui-text);
+}
+.rich-text :deep(blockquote) {
+  margin: 0 0 0.75rem;
+  padding-left: 0.75rem;
+  border-left: 2px solid var(--ui-border-accented);
+}
+</style>

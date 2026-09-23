@@ -4,6 +4,7 @@ import { prisma } from '~/server/utils/prisma'
 import {
   VISIT_SOON_WITHIN_HOURS,
   learnerReminders,
+  onboardingReminders,
   tutorReminders
 } from '~/shared/utils/notifications'
 import type { NotificationType, ReminderItem } from '~/shared/utils/notifications'
@@ -70,6 +71,8 @@ export async function computeReminders(
   now: Date = new Date()
 ): Promise<ReminderItem[]> {
   const visitWindowEnd = new Date(now.getTime() + VISIT_SOON_WITHIN_HOURS * HOUR_MS)
+  // Épinglée en tête du fil tant que l'onboarding n'est pas terminé.
+  const onboarding = onboardingReminders(user.onboarding, now)
 
   if (user.role === Role.Tutor) {
     const [pendingReviews, visits] = await Promise.all([
@@ -103,7 +106,7 @@ export async function computeReminders(
       })
     ])
 
-    return tutorReminders(
+    return [...onboarding, ...tutorReminders(
       {
         pendingReviews: pendingReviews
           .filter((report) => report.submittedAt !== null)
@@ -119,7 +122,7 @@ export async function computeReminders(
         }))
       },
       now
-    )
+    )]
   }
 
   const [lastReport, visits] = await Promise.all([
@@ -144,7 +147,7 @@ export async function computeReminders(
     })
   ])
 
-  return learnerReminders(
+  return [...onboarding, ...learnerReminders(
     {
       lastSubmittedReportAt: lastReport?.submittedAt ?? null,
       visits: visits.map((visit) => ({
@@ -154,5 +157,5 @@ export async function computeReminders(
       }))
     },
     now
-  )
+  )]
 }

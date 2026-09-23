@@ -7,10 +7,12 @@
 // le payload est une donnée externe, un champ hors format devient `null`.
 
 import { dureeMoisDe } from './offres.ts'
+import { plainText, richTextHtml } from './rich-text.ts'
 
 export interface OffreDetailRaw {
   offre: {
-    description: string | null
+    /** HTML assaini (`richTextHtml`), à afficher avec `v-html`. */
+    descriptionHtml: string | null
     niveau: { code: string | null; libelle: string | null }
     competencesAttendues: string[]
     competencesAcquises: string[]
@@ -31,7 +33,8 @@ export interface OffreDetailRaw {
     siret: string | null
     siteWeb: string | null
     taille: string | null
-    description: string | null
+    /** HTML assaini (`richTextHtml`), à afficher avec `v-html`. */
+    descriptionHtml: string | null
     naf: { code: string | null; libelle: string | null }
     opco: string | null
     idcc: string | null
@@ -59,9 +62,12 @@ function objet(valeur: unknown): Record<string, unknown> {
     : {}
 }
 
+/** Champ texte simple : balises retirées et entités décodées (`&eacute;` → é). */
 function texte(valeur: unknown): string | null {
   if (typeof valeur === 'number' && Number.isFinite(valeur)) return String(valeur)
-  return typeof valeur === 'string' && valeur.trim() !== '' ? valeur.trim() : null
+  if (typeof valeur !== 'string') return null
+  const propre = plainText(valeur)
+  return propre !== '' ? propre : null
 }
 
 function textes(valeur: unknown): string[] {
@@ -98,7 +104,7 @@ export function offreDetailFromRaw(raw: unknown): OffreDetailRaw {
 
   return {
     offre: {
-      description: texte(offer.description),
+      descriptionHtml: richTextHtml(offer.description),
       niveau: { code: texte(diploma.level), libelle: texte(diploma.label) },
       competencesAttendues: textes(offer.desired_skills),
       competencesAcquises: textes(offer.to_be_acquired_skills),
@@ -119,7 +125,7 @@ export function offreDetailFromRaw(raw: unknown): OffreDetailRaw {
       siret: texte(workplace.siret),
       siteWeb: lien(workplace.website),
       taille: texte(workplace.size),
-      description: texte(workplace.description),
+      descriptionHtml: richTextHtml(workplace.description),
       naf: { code: texte(naf.code), libelle: texte(naf.label) },
       opco: texte(domain.opco),
       idcc: texte(domain.idcc)

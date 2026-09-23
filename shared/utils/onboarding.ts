@@ -14,6 +14,19 @@ import type { QuestionnaireAnswers, QuestionnaireItem, QuestionnaireOption } fro
 
 export const ONBOARDING_PATH = '/onboarding'
 
+/**
+ * État de l'onboarding, recopié dans la session : `todo` (jamais commencé :
+ * toute page protégée ramène sur /onboarding), `later` (« Compléter plus
+ * tard » : navigation libre, mais relance épinglée et entrée rouge dans le
+ * menu du compte), `done` (questionnaire envoyé).
+ */
+export type OnboardingState = 'todo' | 'later' | 'done'
+
+export function onboardingStateOf(completedAt: Date | null, skippedAt: Date | null): OnboardingState {
+  if (completedAt) return 'done'
+  return skippedAt ? 'later' : 'todo'
+}
+
 /** Nombre de rendez-vous hebdomadaires placés par l'action « point de suivi ». */
 export const SUIVI_OCCURRENCES = 12
 
@@ -659,18 +672,18 @@ export interface OnboardingSubmitResult {
 
 /**
  * Cible de redirection du middleware `onboarding.global.ts`, `null` si la
- * navigation est libre. Un utilisateur connecté qui n'a pas terminé son
- * onboarding est ramené sur /onboarding ; une fois terminé, /onboarding
- * renvoie vers le landing du rôle — sauf demande explicite de refaire le
- * questionnaire (`?again=1`, bouton de la page Mon compte).
+ * navigation est libre. `todo` : toute page ramène sur /onboarding. `later`
+ * (passé) : navigation libre, /onboarding reste accessible pour terminer.
+ * `done` : /onboarding renvoie vers le landing du rôle, sauf demande
+ * explicite de refaire le questionnaire (`?again=1`, page Mon compte).
  */
 export function onboardingRedirect(
   path: string,
-  user: { role: Role; onboarded?: boolean },
+  user: { role: Role; onboarding?: OnboardingState },
   again = false
 ): string | null {
   if (path === ONBOARDING_PATH) {
-    return user.onboarded && !again ? landingPageFor(user.role) : null
+    return user.onboarding === 'done' && !again ? landingPageFor(user.role) : null
   }
-  return user.onboarded ? null : ONBOARDING_PATH
+  return user.onboarding === 'todo' || user.onboarding === undefined ? ONBOARDING_PATH : null
 }

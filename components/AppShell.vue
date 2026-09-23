@@ -249,6 +249,11 @@ const route = useRoute()
 const isShowcasePage = computed(() => route.path === '/' || route.path === '/features')
 const accountItems = computed(() => [
   [
+    // Onboarding passé mais pas terminé : entrée en rouge, en tête du menu,
+    // jusqu'à l'envoi du questionnaire.
+    ...(user.value && user.value.onboarding !== 'done'
+      ? [{ label: 'Onboarding', icon: 'i-lucide-sparkles', color: 'error' as const, to: '/onboarding' }]
+      : []),
     { label: 'Mon compte', icon: 'i-lucide-user', to: '/account' },
     isShowcasePage.value
       ? { label: 'Tableau de bord', icon: 'i-lucide-layout-dashboard', to: user.value ? landingPageFor(user.value.role) : '/' }

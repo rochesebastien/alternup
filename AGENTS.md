@@ -19,14 +19,18 @@ sont redirigées par `middleware/legacy-redirect.global.ts`.
 
 ### Onboarding de première connexion
 
-Tant que `User.onboardingCompletedAt` est nul, `middleware/onboarding.global.ts` ramène tout
-utilisateur connecté sur `/onboarding` (questionnaire « une question par écran », composant
+L'onboarding a trois états, recopiés dans la session (`user.onboarding`) :
+`todo` (`onboardingCompletedAt` et `onboardingSkippedAt` nuls), `later` (« Compléter plus
+tard ») et `done`. En `todo`, `middleware/onboarding.global.ts` ramène tout utilisateur connecté
+sur `/onboarding`. En `later`, la navigation est libre, mais le menu du compte affiche une
+entrée rouge « Onboarding » et une relance épinglée non supprimable (`relance_onboarding`,
+calculée par `computeReminders`) reste dans la cloche jusqu'à la fin du questionnaire. Voir `/onboarding` (questionnaire « une question par écran », composant
 générique `Questionnaire` + définition des questions par rôle dans `shared/utils/onboarding.ts`).
-Le flag est recopié dans la session (`user.onboarded`) par `server/utils/session.ts`, point
-unique de tous les `setUserSession`. Les réponses vivent dans `OnboardingProfile` (colonnes
-`String` validées par Zod, pas d'enum Prisma) et se relisent depuis `/account`. À sa
-première connexion, le tuteur a en plus deux actions passables, exécutées côté serveur à la
-fin du questionnaire et jamais rejouées : inviter un premier apprenant, et placer un point de
+L'état est calculé par `server/utils/session.ts`, point unique de tous les
+`setUserSession`. Les réponses vivent dans `OnboardingProfile` (colonnes
+`String` validées par Zod, pas d'enum Prisma) et se relisent depuis `/account`. Le
+tuteur a en plus deux actions passables, exécutées côté serveur à la première complétion
+du questionnaire (même après un report) et jamais rejouées : inviter un premier apprenant, et placer un point de
 suivi hebdomadaire (événements créés d'avance, rattachés à l'invité via
 `CalendarEvent.invitationId` quand il crée son compte).
 
